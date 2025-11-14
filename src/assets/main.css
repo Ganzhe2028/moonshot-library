@@ -1,0 +1,45 @@
+:root {
+  font-family: 'Inter', 'SF Pro Display', 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Helvetica Neue',
+    sans-serif;
+  color: #0f1115;
+  background-color: #f5f5f8;
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: radial-gradient(circle at top, #f8fafe 0%, #f1f1f5 35%, #f7f7fb 100%);
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+  border: none;
+}
+
+input,
+textarea {
+  font: inherit;
+}
+
+::selection {
+  background-color: rgba(99, 102, 241, 0.2);
+}
