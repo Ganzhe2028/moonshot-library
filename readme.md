@@ -1,198 +1,237 @@
-# 📚 Moonshot Library System (Vue Edition)
+# Moonshot Library System
 
-A unified **library management platform** designed for Moonshot Academy — combining **online borrowing, search, and status synchronization** between web and on-site systems.
+A modern campus library management system built with Express.js, TypeScript, and SQLite.
 
-## 🚀 Overview
-Moonshot Library System enables students to:
-- Search books by title / author / ISBN / category  
-- Borrow and return books through the library or web  
-- View current and past borrowing records  
-- Sync borrowing data with school account (`@moonshotacademy.cn`)
+## 🚀 Features
 
-## 🧰 Tech Stack
+- **User Management**: Multi-role system (Admin, Librarian, Teacher, Student)
+- **Book Management**: Complete CRUD operations with search and filtering
+- **Borrowing System**: Handle book loans, returns, and renewals
+- **Authentication**: JWT-based secure authentication
+- **Security**: Rate limiting, input validation, CORS protection
+- **API Documentation**: Comprehensive API documentation
+- **Testing Suite**: Automated API testing
 
-| Module | Technology | Notes |
-|---------|-------------|-------|
-| Frontend Framework | **Vue 3 + Vite** | Fast & modular SPA |
-| State Management | **Pinia** | User + book states |
-| Routing | **Vue Router 4** | Multi-page structure |
-| API Requests | **Axios** | Connect to Supabase / REST endpoints |
-| UI Library | **Element Plus / Tailwind CSS** | Lightweight UI |
-| Auth | **MSA OAuth / Email Login** | `@moonshotacademy.cn` integration |
-| Database | **Supabase (PostgreSQL)** | Store books, users, transactions |
-| Version Control | **GitHub (main/dev branches)** | Use PR workflow |
-
-## 📦 Core Features (MVP)
-
-### 🧑‍💻 User Login
-- Login via school email (`@moonshotacademy.cn`)
-- Display personal profile + active borrowings
-
-### 🔍 Book Search
-- Search by title / author / ISBN / category
-- Display `title`, `author`, `category`, `location`, `status`
-- Highlight status (✅ available / 🕓 borrowed)
-
-### 📘 Book Details
-- Show full `basic_info` (title, author, ISBN, category, location, status)
-- Borrow button enabled only if available
-
-### 📚 My Borrowings
-- List user's current & past borrowings
-- Support renewals and return actions
-- Auto-sync with backend status
-
-### 🏛 Admin Panel (Future)
-- Add/edit books manually
-- Monitor borrowing logs
-
-## 🗂 Folder Structure
+## 📁 Project Structure
 
 ```
 moonshot-library/
- │
- ├── src/
- │   ├── assets/              # Static assets
- │   ├── components/          # Reusable components
- │   ├── pages/               # Page-level views
- │   │   ├── Login.vue
- │   │   ├── Home.vue
- │   │   ├── BookDetail.vue
- │   │   ├── MyBorrowings.vue
- │   │   └── Admin.vue
- │   ├── store/               # Pinia stores
- │   │   └── userStore.js
- │   ├── router/              # Vue Router config
- │   │   └── index.js
- │   ├── services/            # Axios / Supabase requests
- │   │   └── bookService.js
- │   ├── utils/               # Helper functions
- │   ├── App.vue
- │   └── main.js
- │
- ├── public/
- ├── .env                     # Environment variables (SUPABASE_URL, API_KEY)
- ├── package.json
- └── vite.config.js
+├── server/                 # Backend server
+│   ├── src/
+│   │   ├── controllers/    # Request handlers
+│   │   ├── middleware/     # Express middleware
+│   │   ├── models/         # Database models
+│   │   ├── routes/         # API routes
+│   │   ├── scripts/        # Utility scripts
+│   │   ├── types/          # TypeScript definitions
+│   │   └── utils/          # Utility functions
+│   ├── data/              # Database files
+│   └── README.md          # Server documentation
+└── client/                # Frontend (if applicable)
 ```
 
-## 🧩 Database Schema (Supabase)
+## 🛠️ Tech Stack
 
-### `books`
-| Field | Type | Description |
-|--------|------|-------------|
-| id | string | Unique book ID |
-| isbn | string | Standard ISBN |
-| title | string | Book title |
-| author | string | Author name |
-| category | string | Category code (A–Z + number) |
-| location | string | Shelf location |
-| status | string | `available` / `borrowed` / `reserved` |
-| user_id | string | Borrower ID |
-| history | json | Borrowing records |
+### Backend
+- **Runtime**: Node.js (v16+)
+- **Framework**: Express.js
+- **Language**: TypeScript
+- **Database**: SQLite3
+- **Authentication**: JWT
+- **Validation**: express-validator
+- **Security**: helmet, cors, express-rate-limit
 
-### `users`
-| Field | Type | Description |
-|--------|------|-------------|
-| id | string | Unique user ID |
-| email | string | School email |
-| name | string | Full name |
-| borrowed_books | array | Active borrowings |
+## 🚦 Quick Start
 
-### `transactions`
-| Field | Type | Description |
-|--------|------|-------------|
-| id | string | Transaction ID |
-| user_id | string | Borrower |
-| book_id | string | Book reference |
-| borrow_date | timestamp | Borrowing date |
-| return_date | timestamp | Return date |
-| status | string | `active` / `returned` / `overdue` |
+### Prerequisites
+- Node.js (v16 or higher)
+- npm or yarn
 
-## 🌐 API Endpoints (Mock)
+### 1. Clone the Repository
+```bash
+git clone <repository-url>
+cd moonshot-library
+```
 
-| Function | Method | Endpoint | Description |
-|-----------|---------|-----------|-------------|
-| Get all books | `GET` | `/api/books` | Fetch all book records |
-| Search books | `GET` | `/api/books?query=xxx` | Fuzzy search |
-| Borrow a book | `POST` | `/api/borrow/:book_id` | Update status & user_id |
-| Return a book | `POST` | `/api/return/:book_id` | Reset to available |
-| Get user borrowings | `GET` | `/api/user/:id/borrowings` | Query user records |
+### 2. Setup Backend Server
+```bash
+cd server
+npm install
+cp .env.example .env
+# Edit .env with your configuration
+npm run init-db
+npm run dev
+```
 
-## 🔄 Development Steps
+### 3. Setup Test Environment
+```bash
+npm run setup-test
+npm test
+```
 
-1. **Initialize Project**
-   ```bash
-   npm create vite@latest moonshot-library -- --template vue
-   cd moonshot-library
-   npm install
-   ```
+## 📋 Available Scripts
 
-2. **Add Libraries**
-   ```bash
-   npm install vue-router pinia axios element-plus tailwindcss
-   ```
-   
-3. **Setup Pages & Routing**
-   - Create `src/pages` and `src/router/index.js`
-   - Configure `Login`, `Home`, `BookDetail`, `MyBorrowings`
+### Server Scripts
+```bash
+npm run dev          # Start development server
+npm run build        # Build for production
+npm start           # Start production server
+npm run init-db     # Initialize database
+npm run setup-test  # Setup test environment
+npm test            # Run API tests
+npm run test:watch  # Run tests in watch mode
+npm run lint        # Run ESLint
+npm run lint:fix    # Fix ESLint issues
+```
 
-4. **Create API Service**
-   - Implement `/services/bookService.js`
-   - Connect to mock API or Supabase REST endpoints
+## 🔧 Configuration
 
-5. **Integrate State (Pinia)**
-   - Manage `user`, `borrowedBooks`, and `session`
+### Environment Variables
+Create a `.env` file in the server directory:
 
-6. **Connect to Supabase**
-   - Configure `.env`:
-     ```
-     VITE_SUPABASE_URL=...
-     VITE_SUPABASE_KEY=...
-     ```
+```env
+# Server Configuration
+PORT=3000
+NODE_ENV=development
 
-7. **Test MVP**
-   - Run locally:
-     ```bash
-     npm run dev
-     ```
-   - Verify login → search → borrow → return flow.
+# JWT Configuration
+JWT_SECRET=your-super-secret-jwt-key-here
+JWT_EXPIRES_IN=24h
+REFRESH_TOKEN_SECRET=your-refresh-token-secret-here
+REFRESH_TOKEN_EXPIRES_IN=7d
 
-------
+# Database
+DATABASE_PATH=./data/library.db
 
-## 🧭 Roadmap
+# Frontend URL (for CORS)
+FRONTEND_URL=http://localhost:5173
 
-| Phase     | Goal                               | Output                          |
-| --------- | ---------------------------------- | ------------------------------- |
-| 🥇 Phase 1 | Vue app skeleton + routing + login | Initial commit (main structure) |
-| 🥈 Phase 2 | Connect Supabase + data binding    | CRUD endpoints functional       |
-| 🥉 Phase 3 | Add MyBorrowings UI & renew logic  | MVP ready                       |
-| 🏁 Phase 4 | Deploy to Netlify / Vercel         | Live beta                       |
+# Borrowing Rules
+BORROWING_PERIOD_DAYS=21
+RENEWAL_PERIOD_DAYS=14
+MAX_RENEWALS=2
 
-------
+# File Upload Limits
+MAX_FILE_SIZE=5242880
+```
 
-## 🧠 Notes
+## 📚 API Documentation
 
-- Temporary mock data may be used under `/mock/books.json`
-- Align naming conventions with backend schema
+Complete API documentation is available in [server/API_DOCUMENTATION.md](./server/API_DOCUMENTATION.md).
 
-## 🎯 Project Highlights
+### Main API Endpoints
 
-1. **类型安全**：全面使用TypeScript，定义了完整的类型系统
-2. **状态管理**：使用Pinia进行集中式状态管理
-3. **组件化设计**：高度模块化的组件架构
-4. **用户体验**：现代化的UI设计和流畅的交互
-5. **响应式**：适配不同设备尺寸
-6. **数据持久化**：本地状态管理，便于后续接入后端API
+#### Authentication
+- `POST /api/auth/register` - User registration
+- `POST /api/auth/login` - User login
+- `POST /api/auth/refresh` - Refresh JWT token
+- `POST /api/auth/logout` - User logout
 
-## 🚀 Development Commands
+#### Books
+- `GET /api/books` - Get books list with pagination
+- `GET /api/books/:id` - Get book details
+- `POST /api/books` - Create new book (admin/librarian)
+- `PUT /api/books/:id` - Update book (admin/librarian)
+- `DELETE /api/books/:id` - Delete book (admin/librarian)
+
+#### Borrowings
+- `GET /api/borrowings` - Get borrowing records
+- `POST /api/borrowings` - Create borrowing record
+- `PUT /api/borrowings/:id/return` - Return book
+- `PUT /api/borrowings/:id/renew` - Renew borrowing
+
+## 🔐 User Roles
+
+- **Admin**: Full system access
+- **Librarian**: Book and borrowing management
+- **Teacher**: Book browsing and borrowing
+- **Student**: Book browsing and borrowing
+
+## 🧪 Testing
+
+The project includes comprehensive API testing:
 
 ```bash
-npm run dev      # 启动开发服务器
-npm run build    # 构建生产版本
-npm run lint     # 代码检查
-npm run format   # 代码格式化
-npm run preview  # 预览构建结果
+# Setup test environment with sample data
+npm run setup-test
+
+# Run all tests
+npm test
+
+# Run tests in watch mode during development
+npm run test:watch
 ```
 
-这个项目展现了一个完整的现代化前端应用开发实践，从架构设计到用户体验都体现了较高的水准，非常适合作为校园图书馆系统的解决方案。
+## 🛡️ Security Features
+
+- **JWT Authentication**: Secure token-based authentication
+- **Password Hashing**: bcrypt for password security
+- **Rate Limiting**: Prevents abuse and DoS attacks
+- **Input Validation**: Comprehensive request validation
+- **CORS Protection**: Configured for frontend integration
+- **Security Headers**: Helmet.js for additional security
+- **SQL Injection Prevention**: Parameterized queries
+
+## 🚀 Deployment
+
+### Production Build
+```bash
+cd server
+npm install
+npm run build
+npm start
+```
+
+### Docker Deployment (Optional)
+```dockerfile
+FROM node:18-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci --only=production
+
+COPY . .
+RUN npm run build
+
+EXPOSE 3000
+
+CMD ["npm", "start"]
+```
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes
+4. Add tests for new features
+5. Run the test suite
+6. Commit your changes (`git commit -m 'Add amazing feature'`)
+7. Push to the branch (`git push origin feature/amazing-feature`)
+8. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🆘 Support
+
+For issues and questions:
+- Create an issue in the repository
+- Check the [server documentation](./server/README.md)
+- Review the [API documentation](./server/API_DOCUMENTATION.md)
+- Check test cases for usage examples
+
+## 📈 Changelog
+
+### v1.0.0
+- Initial release
+- Complete authentication system
+- Book management functionality
+- Borrowing system
+- API documentation
+- Comprehensive testing suite
+
+---
+
+**Moonshot Library System** - Modernizing campus library management with technology.
