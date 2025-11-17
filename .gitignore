@@ -36,5 +36,5 @@ coverage
 __screenshots__/
 
 # backend
-server/.env
+/server/.env
 /server/database/library.db
