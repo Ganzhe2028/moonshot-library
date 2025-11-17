@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { useAuthStore } from './auth'
 
 import { mockBooks } from '@/data/mockBooks'
 import type { Book, BorrowingRecord, UserProfile } from '@/types/library'
@@ -25,6 +26,21 @@ const addDays = (dateString: string, days: number) => {
   const date = new Date(dateString)
   date.setDate(date.getDate() + days)
   return toISODate(date)
+}
+
+const resolveCurrentUser = (state: LibraryState): LibraryState['user'] => {
+  const authStore = useAuthStore()
+  if (!authStore.user) {
+    return state.user
+  }
+
+  // Merge authenticated user info with the demo borrowing data
+  return {
+    ...state.user,
+    ...authStore.user,
+    borrowings: state.user.borrowings,
+    history: state.user.history,
+  }
 }
 
 export const useLibraryStore = defineStore('library', {
@@ -61,14 +77,20 @@ export const useLibraryStore = defineStore('library', {
     },
   }),
   getters: {
+    currentUser: (state): LibraryState['user'] => resolveCurrentUser(state),
     getBookById: (state) => (id: string) => state.books.find((book) => book.id === id),
-    activeBorrowings: (state) => state.user.borrowings,
-    borrowingHistory: (state) => state.user.history,
+    activeBorrowings: (state): BorrowingRecord[] => resolveCurrentUser(state).borrowings,
+    borrowingHistory: (state): BorrowingRecord[] => resolveCurrentUser(state).history,
     isBookBorrowedByUser: (state) => (bookId: string) =>
-      state.user.borrowings.some((record) => record.bookId === bookId),
+      resolveCurrentUser(state).borrowings.some((record) => record.bookId === bookId),
   },
   actions: {
     borrowBook(bookId: string) {
+      const authStore = useAuthStore()
+      if (!authStore.user) {
+        return { success: false, message: '请先登录后再借阅图书。' }
+      }
+
       const targetBook = this.books.find((book) => book.id === bookId)
       if (!targetBook) {
         return { success: false, message: '未找到对应的图书。' }
@@ -93,17 +115,17 @@ export const useLibraryStore = defineStore('library', {
       }
 
       targetBook.status = 'borrowed'
-      this.user.borrowings.push(record)
+      this.currentUser.borrowings.push(record)
 
       return { success: true, message: '借阅成功，祝你阅读愉快！' }
     },
     returnBook(recordId: string) {
-      const recordIndex = this.user.borrowings.findIndex((record) => record.id === recordId)
+      const recordIndex = this.currentUser.borrowings.findIndex((record) => record.id === recordId)
       if (recordIndex === -1) {
         return { success: false, message: '未找到借阅记录。' }
       }
 
-      const record = this.user.borrowings[recordIndex]!
+      const record = this.currentUser.borrowings[recordIndex]!
       const book = this.books.find((item) => item.id === record.bookId)
 
       if (book) {
@@ -113,13 +135,13 @@ export const useLibraryStore = defineStore('library', {
       record.status = 'returned'
       record.returnDate = todayISO()
 
-      this.user.history.unshift(record)
-      this.user.borrowings.splice(recordIndex, 1)
+      this.currentUser.history.unshift(record)
+      this.currentUser.borrowings.splice(recordIndex, 1)
 
       return { success: true, message: '已归还图书。' }
     },
     renewBorrowing(recordId: string) {
-      const record = this.user.borrowings.find((item) => item.id === recordId)
+      const record = this.currentUser.borrowings.find((item) => item.id === recordId)
       if (!record) {
         return { success: false, message: '未找到借阅记录。' }
       }

@@ -2,20 +2,22 @@
 import { computed, ref } from 'vue'
 
 import { useLibraryStore } from '@/stores/library'
+import type { BorrowingRecord } from '@/types/library'
 
 const libraryStore = useLibraryStore()
+const currentUser = computed(() => libraryStore.currentUser)
 const actionMessage = ref('')
 const actionVariant = ref<'success' | 'error'>('success')
 
 const activeBorrowings = computed(() =>
-  libraryStore.activeBorrowings.map((record) => ({
+  libraryStore.activeBorrowings.map((record: BorrowingRecord) => ({
     record,
     book: libraryStore.getBookById(record.bookId),
   })),
 )
 
 const historyRecords = computed(() =>
-  libraryStore.borrowingHistory.map((record) => ({
+  libraryStore.borrowingHistory.map((record: BorrowingRecord) => ({
     record,
     book: libraryStore.getBookById(record.bookId),
   })),
@@ -34,10 +36,24 @@ const summaryCards = computed(() => [
   },
   {
     label: '历史借阅',
-    value: libraryStore.user.history.length,
+    value: currentUser.value.history.length,
     hint: '已经完成的阅读',
   },
 ])
+
+const userInitials = computed(() => {
+  const name = currentUser.value.name?.trim() ?? ''
+  if (!name) return ''
+
+  const parts = name.split(/\s+/).filter(Boolean)
+  const initials = parts.slice(0, 2).map((part) => part[0]?.toUpperCase() ?? '').join('')
+  return initials || name[0]?.toUpperCase() || ''
+})
+
+const avatarStyle = computed(() => ({
+  backgroundColor: currentUser.value.avatarColor || '#8b5cf6',
+  color: '#fff',
+}))
 
 const formatDate = (dateString?: string) =>
   dateString
@@ -74,15 +90,14 @@ const handleReturn = (recordId: string) => {
 <template>
   <div class="page">
     <section class="profile">
-      <div class="avatar" :style="{ backgroundColor: libraryStore.user.avatarColor }">
-        {{ libraryStore.user.name.split(' ').map((part) => part[0]).join('') }}
+      <div class="avatar" :style="avatarStyle">
+        {{ userInitials }}
       </div>
       <div>
         <p class="eyebrow">账号信息</p>
-        <h1>{{ libraryStore.user.name }}</h1>
+        <h1>{{ currentUser.name }}</h1>
         <p class="meta">
-          {{ libraryStore.user.email }} · {{ libraryStore.user.membership }} ·
-          {{ libraryStore.user.grade }}
+          {{ currentUser.email }} · {{ currentUser.membership }} · {{ currentUser.grade }}
         </p>
       </div>
     </section>
@@ -180,8 +195,8 @@ const handleReturn = (recordId: string) => {
 }
 
 .avatar {
-  width: 68px;
-  height: 68px;
+  width: 58px;
+  height: 58px;
   border-radius: 18px;
   color: #fff;
   display: grid;
