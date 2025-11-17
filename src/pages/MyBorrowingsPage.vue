@@ -41,6 +41,20 @@ const summaryCards = computed(() => [
   },
 ])
 
+const userInitials = computed(() => {
+  const name = currentUser.value.name?.trim() ?? ''
+  if (!name) return ''
+
+  const parts = name.split(/\s+/).filter(Boolean)
+  const initials = parts.slice(0, 2).map((part) => part[0]?.toUpperCase() ?? '').join('')
+  return initials || name[0]?.toUpperCase() || ''
+})
+
+const avatarStyle = computed(() => ({
+  backgroundColor: currentUser.value.avatarColor || '#8b5cf6',
+  color: '#fff',
+}))
+
 const formatDate = (dateString?: string) =>
   dateString
     ? new Date(dateString).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })
@@ -76,8 +90,8 @@ const handleReturn = (recordId: string) => {
 <template>
   <div class="page">
     <section class="profile">
-      <div class="avatar" :style="{ backgroundColor: currentUser.avatarColor }">
-        {{ currentUser.name.split(' ').map((part) => part[0]).join('') }}
+      <div class="avatar" :style="avatarStyle">
+        {{ userInitials }}
       </div>
       <div>
         <p class="eyebrow">账号信息</p>
@@ -181,8 +195,8 @@ const handleReturn = (recordId: string) => {
 }
 
 .avatar {
-  width: 68px;
-  height: 68px;
+  width: 58px;
+  height: 58px;
   border-radius: 18px;
   color: #fff;
   display: grid;
