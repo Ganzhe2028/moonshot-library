@@ -15,6 +15,7 @@ import bookRoutes from './routes/books';
 import borrowingRoutes from './routes/borrowings';
 import userRoutes from './routes/users';
 import { initDatabase } from './models/database';
+import { ensureDemoAccounts } from './scripts/seedData';
 
 dotenv.config();
 
@@ -64,8 +65,21 @@ const swaggerOptions = {
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
 
-// 初始化数据库
-initDatabase();
+const startServer = async () => {
+  try {
+    await initDatabase();
+    await ensureDemoAccounts();
+
+    app.listen(PORT, () => {
+      console.log(`🚀 Moonshot Library Server running on port ${PORT}`);
+      console.log(`📚 Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`🔧 Health check: http://localhost:${PORT}/health`);
+    });
+  } catch (error) {
+    console.error('❌ Failed to initialize server:', error);
+    process.exit(1);
+  }
+};
 
 // 安全中间件
 app.use(helmet());
@@ -150,10 +164,6 @@ app.use(notFound);
 app.use(errorHandler);
 
 // 启动服务器
-app.listen(PORT, () => {
-  console.log(`🚀 Moonshot Library Server running on port ${PORT}`);
-  console.log(`📚 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🔧 Health check: http://localhost:${PORT}/health`);
-});
+startServer();
 
 export default app;

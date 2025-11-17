@@ -41,19 +41,18 @@
       </form>
 
       <div class="test-accounts">
-        <h4>测试账号</h4>
-        <div class="test-account">
-          <strong>学生账号：</strong><br>
-          student@example.com / password123
-        </div>
-        <div class="test-account">
-          <strong>教师账号：</strong><br>
-          teacher@example.com / password123
-        </div>
-        <div class="test-account">
-          <strong>管理员账号：</strong><br>
-          librarian@example.com / password123
-        </div>
+        <h4>测试账号（点击自动填充）</h4>
+        <button
+          v-for="account in testAccounts"
+          :key="account.email"
+          type="button"
+          class="test-account"
+          @click="fillWithTestAccount(account)"
+          :disabled="isLoading"
+        >
+          <strong>{{ account.label }}</strong><br>
+          {{ account.email }} / {{ account.password }}
+        </button>
       </div>
 
       <div class="auth-footer">
@@ -82,6 +81,23 @@ const loginForm = reactive({
 
 const isLoading = ref(false)
 const error = ref('')
+const testAccounts = [
+  {
+    label: '学生账号',
+    email: 'student@example.com',
+    password: 'password123'
+  },
+  {
+    label: '教师账号',
+    email: 'teacher@example.com',
+    password: 'password123'
+  },
+  {
+    label: '管理员账号',
+    email: 'librarian@example.com',
+    password: 'password123'
+  }
+]
 
 const handleLogin = async () => {
   isLoading.value = true
@@ -103,6 +119,12 @@ const handleLogin = async () => {
   } finally {
     isLoading.value = false
   }
+}
+
+const fillWithTestAccount = (account: { email: string; password: string }) => {
+  loginForm.email = account.email
+  loginForm.password = account.password
+  error.value = ''
 }
 </script>
 
@@ -233,13 +255,18 @@ const handleLogin = async () => {
 }
 
 .test-account {
+  display: block;
+  width: 100%;
+  text-align: left;
   margin-bottom: 0.75rem;
   padding: 0.75rem;
   background-color: white;
   border-radius: 8px;
   border: 1px solid #e2e8f0;
-  font-size: 0.8rem;
-  color: #4b5563;
+  font-size: 0.9rem;
+  color: #374151;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.1s;
 }
 
 .test-account:last-child {
@@ -248,7 +275,18 @@ const handleLogin = async () => {
 
 .test-account strong {
   color: #1f2937;
-  font-weight: 500;
+  font-weight: 600;
+}
+
+.test-account:hover:not(:disabled) {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+  transform: translateY(-1px);
+}
+
+.test-account:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 .auth-footer p {
