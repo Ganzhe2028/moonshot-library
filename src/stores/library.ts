@@ -28,6 +28,21 @@ const addDays = (dateString: string, days: number) => {
   return toISODate(date)
 }
 
+const resolveCurrentUser = (state: LibraryState): LibraryState['user'] => {
+  const authStore = useAuthStore()
+  if (!authStore.user) {
+    return state.user
+  }
+
+  // Merge authenticated user info with the demo borrowing data
+  return {
+    ...state.user,
+    ...authStore.user,
+    borrowings: state.user.borrowings,
+    history: state.user.history,
+  }
+}
+
 export const useLibraryStore = defineStore('library', {
   state: (): LibraryState => ({
     books: mockBooks.map((book) => ({ ...book })),
@@ -62,23 +77,12 @@ export const useLibraryStore = defineStore('library', {
     },
   }),
   getters: {
-    currentUser: (state) => {
-      const authStore = useAuthStore()
-      return authStore.user || state.user
-    },
+    currentUser: (state): LibraryState['user'] => resolveCurrentUser(state),
     getBookById: (state) => (id: string) => state.books.find((book) => book.id === id),
-    activeBorrowings: (state) => {
-      const currentUser = state.currentUser
-      return currentUser.borrowings
-    },
-    borrowingHistory: (state) => {
-      const currentUser = state.currentUser
-      return currentUser.history
-    },
-    isBookBorrowedByUser: (state) => (bookId: string) => {
-      const currentUser = state.currentUser
-      return currentUser.borrowings.some((record) => record.bookId === bookId)
-    },
+    activeBorrowings: (state): BorrowingRecord[] => resolveCurrentUser(state).borrowings,
+    borrowingHistory: (state): BorrowingRecord[] => resolveCurrentUser(state).history,
+    isBookBorrowedByUser: (state) => (bookId: string) =>
+      resolveCurrentUser(state).borrowings.some((record) => record.bookId === bookId),
   },
   actions: {
     borrowBook(bookId: string) {
