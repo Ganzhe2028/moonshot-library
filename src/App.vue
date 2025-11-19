@@ -2,10 +2,8 @@
 import { computed } from 'vue'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 
-import { useLibraryStore } from '@/stores/library'
 import { useAuthStore } from '@/stores/auth'
 
-const libraryStore = useLibraryStore()
 const authStore = useAuthStore()
 const route = useRoute()
 const router = useRouter()
