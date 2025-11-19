@@ -99,6 +99,11 @@ export const useLibraryStore = defineStore('library', {
       }
 
       try {
+        const targetBook = this.getBookById(bookId)
+        if (!targetBook || targetBook.status !== 'available') {
+          return { success: false, message: '该图书暂不可借阅。' }
+        }
+
         await this.fetchBorrowings(true)
         if (this.isBookBorrowedByUser(bookId)) {
           return { success: false, message: '你已经借阅了这本书。' }

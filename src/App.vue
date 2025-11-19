@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 
 import { useAuthStore } from '@/stores/auth'
+import { useLibraryStore } from '@/stores/library'
 
 const authStore = useAuthStore()
+const libraryStore = useLibraryStore()
 const route = useRoute()
 const router = useRouter()
 
@@ -32,6 +34,15 @@ const handleLogout = async () => {
   await authStore.logout()
   router.push('/login')
 }
+
+watch(
+  () => authStore.user?.id,
+  () => {
+    libraryStore.fetchBooks(true)
+    libraryStore.fetchBorrowings(true)
+  },
+  { immediate: true },
+)
 </script>
 
 <template>

@@ -91,7 +91,7 @@ export const createBorrowing = async (req: AuthRequest, res: Response): Promise<
       throw new NotFoundError('Book not found');
     }
 
-    if (book.availableCopies <= 0) {
+    if (book.availableCopies <= 0 || book.status !== 'available') {
       throw new AppError('Book is not available for borrowing', 400);
     }
 
