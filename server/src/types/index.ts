@@ -92,7 +92,10 @@ export interface BookRequest {
   publishedYear?: number;
   category: string;
   description?: string;
+  coverImage?: string;
   totalCopies: number;
+  availableCopies?: number;
+  status?: 'available' | 'borrowed' | 'reserved' | 'maintenance';
   location?: string;
   tags?: string[];
 }
@@ -111,6 +114,6 @@ export interface RenewRequest {
 
 export interface BorrowingRequest {
   bookId: string;
-  userId: string;
+  userId?: string;
   dueDate?: string;
 }

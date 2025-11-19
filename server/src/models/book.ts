@@ -10,19 +10,24 @@ export const createBook = async (bookData: {
   publishedYear?: number;
   category: string;
   description?: string;
+  coverImage?: string;
+  status?: 'available' | 'borrowed' | 'reserved' | 'maintenance';
   totalCopies: number;
+  availableCopies?: number;
   location?: string;
   tags?: string[];
 }): Promise<Book> => {
   const db = getDatabase();
+  const availableCopies = bookData.availableCopies ?? bookData.totalCopies;
+  const status = bookData.status ?? 'available';
 
   return new Promise((resolve, reject) => {
     const sql = `
       INSERT INTO books (
         id, title, authors, isbn, publisher, published_year, 
-        category, description, total_copies, available_copies, 
+        category, description, cover_image, total_copies, available_copies, status,
         location, tags
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     
     db.run(sql, [
@@ -34,8 +39,10 @@ export const createBook = async (bookData: {
       bookData.publishedYear || null,
       bookData.category,
       bookData.description || null,
+      bookData.coverImage || null,
       bookData.totalCopies,
-      bookData.totalCopies, // 初始时可借副本等于总副本数
+      availableCopies,
+      status,
       bookData.location || null,
       JSON.stringify(bookData.tags || [])
     ], async function(err) {

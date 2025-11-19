@@ -13,19 +13,31 @@ const statusLabel = computed(() => {
     available: { text: '可借阅', className: 'available' },
     borrowed: { text: '已借出', className: 'borrowed' },
     reserved: { text: '已预约', className: 'reserved' },
+    maintenance: { text: '维护中', className: 'reserved' },
   }
 
   return map[props.book.status]
 })
+
+const authorLine = computed(() => {
+  if (!props.book.authors?.length) return '未知作者'
+  return props.book.authors.join(' / ')
+})
+
+const coverImageUrl = computed(
+  () =>
+    props.book.coverImage ||
+    'https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=600&q=80',
+)
 </script>
 
 <template>
   <RouterLink :to="`/books/${book.id}`" class="card">
-    <div class="cover" :style="{ backgroundImage: `url(${book.cover})` }" />
+    <div class="cover" :style="{ backgroundImage: `url(${coverImageUrl})` }" />
     <div class="info">
       <p class="category">{{ book.category }}</p>
       <h3>{{ book.title }}</h3>
-      <p class="author">{{ book.author }}</p>
+      <p class="author">{{ authorLine }}</p>
 
       <div class="tags">
         <span v-for="tag in book.tags" :key="tag">{{ tag }}</span>
