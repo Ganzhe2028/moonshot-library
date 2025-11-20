@@ -1,35 +1,35 @@
-export type BookStatus = 'available' | 'borrowed' | 'reserved'
+export type BookStatus = 'available' | 'borrowed' | 'reserved' | 'maintenance'
 
 export interface Book {
   id: string
   title: string
-  author: string
-  isbn: string
+  authors: string[]
+  isbn?: string
+  publisher?: string
+  publishedYear?: number
   category: string
-  location: string
+  location?: string
   status: BookStatus
-  summary: string
-  cover: string
+  description?: string
+  coverImage?: string
+  totalCopies: number
+  availableCopies: number
   tags: string[]
 }
 
+export type BorrowingStatus = 'active' | 'returned' | 'overdue'
+
 export interface BorrowingRecord {
   id: string
+  userId: string
   bookId: string
   borrowDate: string
   dueDate: string
   returnDate?: string
-  status: 'active' | 'returned' | 'overdue'
+  status: BorrowingStatus
   renewals: number
-}
-
-export interface UserProfile {
-  id: string
-  name: string
-  email: string
-  grade: string
-  avatarColor: string
-  membership: string
+  createdAt?: string
+  updatedAt?: string
 }
 
 export interface AuthUser {

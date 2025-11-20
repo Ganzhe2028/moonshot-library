@@ -13,7 +13,7 @@ import {
 } from '../models/borrowing';
 import { getBookById } from '../models/book';
 import { getUserById } from '../models/user';
-import { ApiResponse, BorrowingRequest } from '../types';
+import { ApiResponse, BorrowingRequest, AuthRequest } from '../types';
 import { AppError, ValidationError, NotFoundError } from '../middleware/errorHandler';
 
 export const validateCreateBorrowing = [
@@ -21,10 +21,6 @@ export const validateCreateBorrowing = [
     .trim()
     .isLength({ min: 1 })
     .withMessage('Book ID is required'),
-  body('userId')
-    .trim()
-    .isLength({ min: 1 })
-    .withMessage('User ID is required'),
   body('dueDate')
     .optional()
     .isISO8601()
@@ -70,7 +66,7 @@ export const validateBorrowingQuery = [
     .withMessage('Offset must be a non-negative integer')
 ];
 
-export const createBorrowing = async (req: Request, res: Response): Promise<void> => {
+export const createBorrowing = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -82,7 +78,12 @@ export const createBorrowing = async (req: Request, res: Response): Promise<void
       }
     }
 
-    const { bookId, userId, dueDate } = req.body as BorrowingRequest;
+    const { bookId, dueDate } = req.body as BorrowingRequest;
+    const userId = req.body.userId || req.user?.id;
+
+    if (!userId) {
+      throw new ValidationError('User ID is required');
+    }
 
     // 验证图书是否存在且可用
     const book = await getBookById(bookId);
@@ -90,7 +91,7 @@ export const createBorrowing = async (req: Request, res: Response): Promise<void
       throw new NotFoundError('Book not found');
     }
 
-    if (book.availableCopies <= 0) {
+    if (book.availableCopies <= 0 || book.status !== 'available') {
       throw new AppError('Book is not available for borrowing', 400);
     }
 

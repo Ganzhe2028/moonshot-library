@@ -1,11 +1,15 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 
+import { useAuthStore } from '@/stores/auth'
 import { useLibraryStore } from '@/stores/library'
 import type { BorrowingRecord } from '@/types/library'
 
+const authStore = useAuthStore()
 const libraryStore = useLibraryStore()
-const currentUser = computed(() => libraryStore.currentUser)
+
+const currentUser = computed(() => authStore.user)
+const isLoggedIn = computed(() => !!currentUser.value)
 const actionMessage = ref('')
 const actionVariant = ref<'success' | 'error'>('success')
 
@@ -36,13 +40,13 @@ const summaryCards = computed(() => [
   },
   {
     label: '历史借阅',
-    value: currentUser.value.history.length,
+    value: libraryStore.borrowingHistory.length,
     hint: '已经完成的阅读',
   },
 ])
 
 const userInitials = computed(() => {
-  const name = currentUser.value.name?.trim() ?? ''
+  const name = currentUser.value?.name?.trim() ?? ''
   if (!name) return ''
 
   const parts = name.split(/\s+/).filter(Boolean)
@@ -51,7 +55,7 @@ const userInitials = computed(() => {
 })
 
 const avatarStyle = computed(() => ({
-  backgroundColor: currentUser.value.avatarColor || '#8b5cf6',
+  backgroundColor: currentUser.value?.avatarColor || '#8b5cf6',
   color: '#fff',
 }))
 
@@ -74,31 +78,65 @@ const dueLabel = (dateString: string) => {
   return `剩余 ${diff} 天`
 }
 
-const handleRenew = (recordId: string) => {
-  const result = libraryStore.renewBorrowing(recordId)
+const formatAuthors = (authors?: string[]) => (authors?.length ? authors.join(' / ') : '--')
+
+const requireAuth = () => {
+  if (!authStore.user) {
+    actionVariant.value = 'error'
+    actionMessage.value = '请登录后使用借阅功能。'
+    return false
+  }
+  return true
+}
+
+const handleRenew = async (recordId: string) => {
+  if (!requireAuth()) return
+  const result = await libraryStore.renewBorrowing(recordId)
   actionVariant.value = result.success ? 'success' : 'error'
   actionMessage.value = result.message
 }
 
-const handleReturn = (recordId: string) => {
-  const result = libraryStore.returnBook(recordId)
+const handleReturn = async (recordId: string) => {
+  if (!requireAuth()) return
+  const result = await libraryStore.returnBook(recordId)
   actionVariant.value = result.success ? 'success' : 'error'
   actionMessage.value = result.message
 }
+
+onMounted(() => {
+  libraryStore.fetchBooks()
+  libraryStore.fetchBorrowings()
+})
+
+watch(
+  () => currentUser.value?.id,
+  () => {
+    libraryStore.fetchBorrowings(true)
+  },
+)
 </script>
 
 <template>
   <div class="page">
-    <section class="profile">
+    <section v-if="isLoggedIn" class="profile">
       <div class="avatar" :style="avatarStyle">
         {{ userInitials }}
       </div>
       <div>
         <p class="eyebrow">账号信息</p>
-        <h1>{{ currentUser.name }}</h1>
+        <h1>{{ currentUser!.name }}</h1>
         <p class="meta">
-          {{ currentUser.email }} · {{ currentUser.membership }} · {{ currentUser.grade }}
+          {{ currentUser!.email }}
+          <template v-if="currentUser!.membership"> · {{ currentUser!.membership }} </template>
+          <template v-if="currentUser!.grade"> · {{ currentUser!.grade }} </template>
         </p>
+      </div>
+    </section>
+    <section v-else class="profile not-logged">
+      <div>
+        <p class="eyebrow">尚未登录</p>
+        <h1>请登录后查看借阅信息</h1>
+        <router-link class="primary" to="/login">前往登录</router-link>
       </div>
     </section>
 
@@ -112,7 +150,7 @@ const handleReturn = (recordId: string) => {
 
     <p v-if="actionMessage" :class="['action-message', actionVariant]">{{ actionMessage }}</p>
 
-    <section class="borrowings">
+    <section class="borrowings" v-if="isLoggedIn">
       <div class="section-header">
         <div>
           <p class="eyebrow">借阅中</p>
@@ -128,7 +166,7 @@ const handleReturn = (recordId: string) => {
               {{ dueLabel(item.record.dueDate) }}
             </span>
           </div>
-          <p class="book-author">{{ item.book?.author }}</p>
+          <p class="book-author">{{ formatAuthors(item.book?.authors) }}</p>
           <p class="book-meta">
             借阅时间：{{ formatDate(item.record.borrowDate) }} · 到期：
             {{ formatDate(item.record.dueDate) }}
@@ -148,8 +186,14 @@ const handleReturn = (recordId: string) => {
         <p>当前没有借阅中的图书。快去探索新的馆藏吧！</p>
       </div>
     </section>
+    <section v-else class="borrowings">
+      <div class="empty-state">
+        <p>登录后可以查看和管理你的借阅记录。</p>
+        <router-link class="primary" to="/login">立即登录</router-link>
+      </div>
+    </section>
 
-    <section class="history">
+    <section class="history" v-if="isLoggedIn">
       <div class="section-header">
         <div>
           <p class="eyebrow">借阅历史</p>
@@ -161,7 +205,7 @@ const handleReturn = (recordId: string) => {
         <article v-for="item in historyRecords" :key="item.record.id">
           <div>
             <p class="book-title">{{ item.book?.title }}</p>
-            <p class="book-author">{{ item.book?.author }}</p>
+            <p class="book-author">{{ formatAuthors(item.book?.authors) }}</p>
           </div>
           <p class="book-meta">
             {{ formatDate(item.record.borrowDate) }} — {{ formatDate(item.record.returnDate) }}
@@ -171,6 +215,12 @@ const handleReturn = (recordId: string) => {
       </div>
       <div v-else class="empty-state">
         <p>借阅历史暂为空。</p>
+      </div>
+    </section>
+    <section v-else class="history">
+      <div class="empty-state">
+        <p>登录后可以查看你曾经借阅的图书。</p>
+        <router-link class="primary" to="/login">前往登录</router-link>
       </div>
     </section>
   </div>
@@ -192,6 +242,11 @@ const handleReturn = (recordId: string) => {
   border-radius: 24px;
   border: 1px solid rgba(15, 17, 21, 0.05);
   align-items: center;
+}
+
+.profile.not-logged {
+  justify-content: center;
+  text-align: center;
 }
 
 .avatar {

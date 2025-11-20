@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useLibraryStore } from '@/stores/library'
@@ -7,6 +7,20 @@ import { useLibraryStore } from '@/stores/library'
 const route = useRoute()
 const router = useRouter()
 const libraryStore = useLibraryStore()
+
+watch(
+  () => route.params.id,
+  (id) => {
+    if (typeof id === 'string') {
+      libraryStore.fetchBookById(id)
+    }
+  },
+  { immediate: true },
+)
+
+onMounted(() => {
+  libraryStore.fetchBorrowings()
+})
 
 const book = computed(() => libraryStore.getBookById(route.params.id as string))
 const hasBorrowed = computed(() =>
@@ -29,26 +43,36 @@ const statusCopy = computed(() => {
   }
 })
 
-const handleBorrow = () => {
+const handleBorrow = async () => {
   if (!book.value) return
-  const result = libraryStore.borrowBook(book.value.id)
+  const result = await libraryStore.borrowBook(book.value.id)
   feedbackVariant.value = result.success ? 'success' : 'error'
   feedback.value = result.message
 }
 
 const goBack = () => router.push('/')
+
+const authorLine = computed(() =>
+  book.value?.authors?.length ? book.value.authors.join(' / ') : '未知作者',
+)
+
+const coverImage = computed(
+  () =>
+    book.value?.coverImage ||
+    'https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=600&q=80',
+)
 </script>
 
 <template>
   <div v-if="book" class="page">
     <button type="button" class="back" @click="goBack">← 返回图书列表</button>
     <section class="header">
-      <div class="cover" :style="{ backgroundImage: `url(${book.cover})` }" />
+      <div class="cover" :style="{ backgroundImage: `url(${coverImage})` }" />
       <div class="content">
         <p class="category">{{ book.category }}</p>
         <h1>{{ book.title }}</h1>
-        <p class="author">作者 · {{ book.author }}</p>
-        <p class="summary">{{ book.summary }}</p>
+        <p class="author">作者 · {{ authorLine }}</p>
+        <p class="summary">{{ book.description }}</p>
 
         <div class="tags">
           <span v-for="tag in book.tags" :key="tag">{{ tag }}</span>

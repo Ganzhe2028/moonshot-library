@@ -1,14 +1,16 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 
 import BookCard from '@/components/BookCard.vue'
 import { useLibraryStore } from '@/stores/library'
+import { useAuthStore } from '@/stores/auth'
 import type { Book, BorrowingRecord } from '@/types/library'
 
 type StatusFilter = 'all' | 'available' | 'borrowed' | 'reserved'
 type NextDuePayload = { record: BorrowingRecord; book: Book } | null
 
+const authStore = useAuthStore()
 const libraryStore = useLibraryStore()
 
 const searchQuery = ref('')
@@ -23,11 +25,13 @@ const filteredBooks = computed(() => {
   const query = searchQuery.value.trim().toLowerCase()
 
   return libraryStore.books.filter((book) => {
+    const authors = (book.authors ?? []).join(' ').toLowerCase()
+    const isbn = book.isbn?.toLowerCase() ?? ''
     const matchesQuery =
       query.length === 0 ||
       book.title.toLowerCase().includes(query) ||
-      book.author.toLowerCase().includes(query) ||
-      book.isbn.toLowerCase().includes(query) ||
+      authors.includes(query) ||
+      isbn.includes(query) ||
       book.category.toLowerCase().includes(query)
 
     const matchesStatus = statusFilter.value === 'all' || book.status === statusFilter.value
@@ -38,7 +42,7 @@ const filteredBooks = computed(() => {
 
 const spotlightTags = computed(() => {
   const tags = new Set<string>()
-  libraryStore.books.forEach((book) => book.tags.forEach((tag) => tags.add(tag)))
+  libraryStore.books.forEach((book) => (book.tags || []).forEach((tag) => tags.add(tag)))
   return Array.from(tags).slice(0, 6)
 })
 
@@ -65,6 +69,18 @@ const daysUntil = (dateString: string) => {
   const target = new Date(dateString)
   return Math.ceil((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
 }
+
+onMounted(() => {
+  libraryStore.fetchBooks()
+  libraryStore.fetchBorrowings()
+})
+
+watch(
+  () => authStore.user?.id,
+  () => {
+    libraryStore.fetchBorrowings(true)
+  },
+)
 </script>
 
 <template>

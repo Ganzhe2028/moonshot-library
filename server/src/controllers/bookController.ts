@@ -46,9 +46,22 @@ export const validateCreateBook = [
     .trim()
     .isLength({ max: 1000 })
     .withMessage('Description must not exceed 1000 characters'),
+  body('coverImage')
+    .optional()
+    .trim()
+    .isURL()
+    .withMessage('Cover image must be a valid URL'),
+  body('status')
+    .optional()
+    .isIn(['available', 'borrowed', 'reserved', 'maintenance'])
+    .withMessage('Status must be available, borrowed, reserved, or maintenance'),
   body('totalCopies')
     .isInt({ min: 1, max: 100 })
     .withMessage('Total copies must be between 1 and 100'),
+  body('availableCopies')
+    .optional()
+    .isInt({ min: 0, max: 100 })
+    .withMessage('Available copies must be between 0 and 100'),
   body('location')
     .optional()
     .trim()

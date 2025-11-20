@@ -1,6 +1,7 @@
 import { getDatabase } from '../models/database';
 import { createUser, getUserByEmail } from '../models/user';
 import { createBook } from '../models/book';
+import { moonshotBooks } from './moonshotBooks';
 
 const demoAccounts: Array<{
   id: string;
@@ -212,7 +213,9 @@ export const seedDatabase = async (): Promise<void> => {
         }
       ];
 
-      for (const bookData of sampleBooks) {
+      const allBooks = [...sampleBooks, ...moonshotBooks];
+
+      for (const bookData of allBooks) {
         await createBook(bookData);
       }
 
