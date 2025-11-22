@@ -50,6 +50,47 @@ export const useLibraryStore = defineStore('library', {
         this.booksLoading = false
       }
     },
+    async createBook(payload: Omit<Book, 'id' | 'availableCopies'> & { availableCopies?: number }) {
+      this.booksError = ''
+      try {
+        const book = await bookService.createBook(payload)
+        this.books.unshift({ ...book, tags: book.tags ?? [] })
+        return { success: true, message: '已创建新书籍。' }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : '创建书籍失败'
+        this.booksError = message
+        return { success: false, message }
+      }
+    },
+    async updateBook(id: string, payload: Partial<Book>) {
+      this.booksError = ''
+      try {
+        const book = await bookService.updateBook(id, payload)
+        const index = this.books.findIndex((item) => item.id === id)
+        if (index >= 0) {
+          this.books.splice(index, 1, { ...book, tags: book.tags ?? [] })
+        } else {
+          this.books.push({ ...book, tags: book.tags ?? [] })
+        }
+        return { success: true, message: '书籍信息已更新。' }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : '更新书籍失败'
+        this.booksError = message
+        return { success: false, message }
+      }
+    },
+    async deleteBook(id: string) {
+      this.booksError = ''
+      try {
+        await bookService.deleteBook(id)
+        this.books = this.books.filter((book) => book.id !== id)
+        return { success: true, message: '书籍已删除。' }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : '删除书籍失败'
+        this.booksError = message
+        return { success: false, message }
+      }
+    },
     async fetchBookById(id: string) {
       const existing = this.getBookById(id)
       if (existing) return existing

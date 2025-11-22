@@ -5,6 +5,10 @@ import BookDetailPage from '@/pages/BookDetailPage.vue'
 import MyBorrowingsPage from '@/pages/MyBorrowingsPage.vue'
 import LoginPage from '@/pages/LoginPage.vue'
 import RegisterPage from '@/pages/RegisterPage.vue'
+import AdminLayout from '@/pages/admin/AdminLayout.vue'
+import AdminBooksPage from '@/pages/admin/AdminBooksPage.vue'
+import AdminUsersPage from '@/pages/admin/AdminUsersPage.vue'
+import AdminBorrowingsPage from '@/pages/admin/AdminBorrowingsPage.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -35,6 +39,35 @@ const router = createRouter({
       name: 'register',
       component: RegisterPage,
     },
+    {
+      path: '/admin',
+      component: AdminLayout,
+      meta: { requiresAuth: true, requiresRole: ['admin', 'librarian'] },
+      children: [
+        {
+          path: '',
+          redirect: '/admin/books',
+        },
+        {
+          path: 'books',
+          name: 'admin-books',
+          component: AdminBooksPage,
+          meta: { requiresAuth: true, requiresRole: ['admin', 'librarian'] },
+        },
+        {
+          path: 'users',
+          name: 'admin-users',
+          component: AdminUsersPage,
+          meta: { requiresAuth: true, requiresRole: ['admin', 'librarian'] },
+        },
+        {
+          path: 'borrowings',
+          name: 'admin-borrowings',
+          component: AdminBorrowingsPage,
+          meta: { requiresAuth: true, requiresRole: ['admin', 'librarian'] },
+        },
+      ],
+    },
   ],
   scrollBehavior() {
     return { top: 0 }
@@ -48,6 +81,15 @@ router.beforeEach((to, from, next) => {
   if (to.meta?.requiresAuth && !authStore.user) {
     // 如果需要认证且用户未登录，重定向到登录页面
     next('/login')
+  } else if (to.meta?.requiresRole && authStore.user) {
+    const allowedRoles = Array.isArray(to.meta.requiresRole)
+      ? to.meta.requiresRole
+      : [to.meta.requiresRole]
+    if (!allowedRoles.includes(authStore.user.role)) {
+      next('/')
+    } else {
+      next()
+    }
   } else if ((to.name === 'login' || to.name === 'register') && authStore.user) {
     // 如果用户已登录但访问登录/注册页面，重定向到首页
     next('/')
