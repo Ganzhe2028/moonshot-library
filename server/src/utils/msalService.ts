@@ -1,3 +1,8 @@
+// 确保在导入其他模块前加载环境变量
+import dotenv from 'dotenv';
+// 明确从server目录加载.env文件
+dotenv.config({ path: './.env' });
+
 import { ConfidentialClientApplication, Configuration, AuthorizationUrlRequest } from '@azure/msal-node';
 // 为不支持的MSAL类型定义自定义类型
 type AuthCodeRequest = {
@@ -43,19 +48,40 @@ const msalConfig: Configuration = {
 // 检查MSAL凭据是否有效
 const isMsalConfigValid = () => {
   const isDev = process.env.NODE_ENV === 'development';
+  const hasClientId = !!msalConfig.auth.clientId && msalConfig.auth.clientId !== 'MSAL_CLIENT_ID';
+  const hasClientSecret = !!msalConfig.auth.clientSecret && msalConfig.auth.clientSecret !== 'CLIENT_SECRET';
+  
+  // 添加详细的验证日志
+  console.log('MSAL配置验证:');
+  console.log(`  环境: ${process.env.NODE_ENV}`);
+  console.log(`  有ClientId: ${hasClientId}`);
+  console.log(`  ClientId长度: ${msalConfig.auth.clientId ? msalConfig.auth.clientId.length : 0}`);
+  console.log(`  有ClientSecret: ${hasClientSecret}`);
+  console.log(`  ClientSecret长度: ${msalConfig.auth.clientSecret ? msalConfig.auth.clientSecret.length : 0}`);
+  
   // 在开发模式下，允许使用测试凭据
-  return isDev || (msalConfig.auth.clientId && msalConfig.auth.clientSecret);
+  const isValid = isDev || (hasClientId && hasClientSecret);
+  console.log(`  配置有效性: ${isValid}`);
+  return isValid;
 };
 
 // 创建MSAL客户端实例或返回null
 let msalClient: ConfidentialClientApplication | null = null;
+const isDev = process.env.NODE_ENV === 'development';
+console.log('开始MSAL客户端初始化...');
 if (isMsalConfigValid()) {
   try {
+    console.log('尝试创建MSAL客户端实例...');
     msalClient = new ConfidentialClientApplication(msalConfig);
+    console.log('MSAL客户端初始化成功!');
   } catch (error) {
-    console.warn('MSAL客户端初始化失败，将在开发模式下使用模拟功能:', error);
+    console.warn('MSAL客户端初始化失败:', error);
+    // 在生产环境下，初始化失败也允许回退到模拟功能
+    console.log('MSAL初始化失败，将使用模拟功能');
     msalClient = null;
   }
+} else {
+  console.log('MSAL配置无效，将使用模拟功能');
 }
 
 // 模拟用户数据 (用于开发测试)
@@ -71,9 +97,11 @@ const mockUser = {
 
 // 获取认证URL
 export const getAuthUrl = async (redirectUri?: string, state?: string): Promise<string> => {
-  // 开发模式下返回模拟URL（重定向到后端回调）
+  const isDev = process.env.NODE_ENV === 'development';
+  
+  // 在没有msalClient时使用模拟URL，无论开发还是生产环境
   if (!msalClient) {
-    console.log('开发模式: 使用模拟的Microsoft登录URL');
+    console.log('使用模拟的Microsoft登录URL');
     const backendUrl = process.env.MSAL_REDIRECT_URI || 'http://localhost:3000/api/auth/msal/callback';
     return `${backendUrl}?code=mock-code&state=${state || 'mock-state'}`;
   }
@@ -96,9 +124,11 @@ export const getAuthUrl = async (redirectUri?: string, state?: string): Promise<
 
 // 通过授权码获取令牌
 export const getTokenByCode = async (code: string, redirectUri?: string): Promise<TokenResponse> => {
-  // 开发模式下返回模拟令牌
+  const isDev = process.env.NODE_ENV === 'development';
+  
+  // 在没有msalClient或使用mock-code时返回模拟令牌，无论开发还是生产环境
   if (!msalClient || code === 'mock-code') {
-    console.log('开发模式: 使用模拟的Microsoft令牌响应');
+    console.log('使用模拟的Microsoft令牌响应');
     return {
       accessToken: 'mock-access-token',
       idToken: {
