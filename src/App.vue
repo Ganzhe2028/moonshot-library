@@ -129,6 +129,13 @@ onMounted(async () => {
       </div>
 
       <nav class="app-nav" v-if="authStore.user">
+        <RouterLink
+          v-if="authStore.isAdmin || authStore.isLibrarian"
+          :class="{ active: (route.fullPath || '').startsWith('/admin') }"
+          to="/admin"
+        >
+          管理后台
+        </RouterLink>
         <RouterLink :class="{ active: route.name === 'home' }" to="/">首页</RouterLink>
         <RouterLink :class="{ active: route.name === 'borrowings' }" to="/borrowings">
           我的借阅
