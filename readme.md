@@ -125,7 +125,7 @@ moonshot-library/
 | 根目录 | `npm run lint` | 前端 ESLint + Prettier |
 | server/ | `npm run dev` | 启动后端（ts-node-dev 热重载） |
 | server/ | `npm run build && npm start` | 编译并运行后端生产版本 |
-| server/ | `npm run init-db` | 初始化 SQLite 数据 |
+| server/ | `npm run init-db` | 初始化SQLite数据库并创建核心表结构，在数据库为空时自动填充示例图书数据，同时创建三种角色的演示账户（学生、教师、图书管理员） |
 | server/ | `npm run setup-test` | 准备测试数据 |
 | server/ | `npm test` / `npm run test:watch` | 运行 API 测试 |
 | server/ | `npm run lint` | 后端 ESLint 检查 |
@@ -138,6 +138,7 @@ moonshot-library/
 - 🗄️ **数据库**：默认 SQLite 文件位于 `server/data/`，测试脚本会自动创建所需表。  
 - 🔑 **用户角色**：Admin → Librarian → Teacher/Student，权限逐级递减，可在 API 文档中查看每个角色能做什么。  
 - ✅ **测试**：先运行 `npm run setup-test` 填充数据，再执行 `npm test` 验证主要流程。  
+- 🔐 **M365 SSO 登录**：支持使用 Microsoft 365 账户登录，配置说明详见 `M365_AUTH_SETUP.md`
 
 ---
 

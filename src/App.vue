@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, watch } from 'vue'
+import { computed, watch, onMounted, ref } from 'vue';
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 
 import { useAuthStore } from '@/stores/auth'
@@ -9,6 +9,9 @@ const authStore = useAuthStore()
 const libraryStore = useLibraryStore()
 const route = useRoute()
 const router = useRouter()
+
+// 防止重复处理M365登录回调
+const m365CallbackProcessed = ref(false)
 
 const userInitials = computed(() => {
   if (!authStore.user) return ''
@@ -43,6 +46,75 @@ watch(
   },
   { immediate: true },
 )
+
+onMounted(async () => {
+  // 检查是否是后端重定向回来的回调（携带token参数）
+  const urlParams = new URLSearchParams(window.location.search)
+  const token = urlParams.get('token')
+  const refreshToken = urlParams.get('refreshToken')
+  const error = urlParams.get('error')
+  
+  // 处理后端重定向回来的token
+  if (token && refreshToken && !m365CallbackProcessed.value) {
+    try {
+      m365CallbackProcessed.value = true
+      
+      // 保存token和refreshToken
+      localStorage.setItem('token', token)
+      localStorage.setItem('refreshToken', refreshToken)
+      localStorage.setItem('login_method', 'm365')
+      
+      // 获取用户信息
+      try {
+        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api'
+        const response = await fetch(`${apiBaseUrl}/auth/me`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          if (data.success && data.data?.user) {
+            // 保存用户信息到store和localStorage
+            authStore.user = data.data.user
+            localStorage.setItem('auth_user', JSON.stringify(data.data.user))
+          }
+        } else {
+          console.error('获取用户信息失败:', response.statusText)
+        }
+      } catch (apiError) {
+        console.error('获取用户信息失败:', apiError)
+        // 即使获取用户信息失败，也继续流程（token已保存）
+      }
+      
+      // 获取并清除重定向URL
+      const redirectUrl = localStorage.getItem('postLoginRedirect') || '/'
+      localStorage.removeItem('postLoginRedirect')
+      
+      // 清除URL中的查询参数
+      window.history.replaceState({}, document.title, window.location.pathname)
+      
+      // 重定向到目标页面
+      router.push(redirectUrl)
+    } catch (error) {
+      console.error('处理M365登录回调失败:', error)
+      // 出错时重定向到登录页面
+      router.push('/login?error=callback_failed')
+    }
+  } else if (error && !m365CallbackProcessed.value) {
+    // 处理登录错误
+    m365CallbackProcessed.value = true
+    window.history.replaceState({}, document.title, window.location.pathname)
+    router.push(`/login?error=${error}`)
+  } else {
+    // 正常页面加载，检查用户登录状态
+    if (!authStore.user) {
+      authStore.initializeAuth()
+    }
+  }
+})
 </script>
 
 <template>

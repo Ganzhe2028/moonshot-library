@@ -1,593 +1,199 @@
-# Moonshot Library System API Documentation
+# Moonshot Library System API 架构文档
 
 ## 概述
 
-Moonshot Library System 是一个现代化的校园图书馆管理系统，提供完整的图书借阅、用户管理和权限控制功能。
+Moonshot Library System 是一个现代化的校园图书馆管理系统，提供完整的图书借阅、用户管理和权限控制功能。本文档旨在提供 API 架构的高层次概述，帮助开发者理解系统的整体设计和功能模块。
 
-## 基础信息
+## API 架构设计
 
-- **Base URL**: `http://localhost:3000/api`
-- **认证方式**: JWT Bearer Token
-- **数据格式**: JSON
-- **字符编码**: UTF-8
+### 架构原则
 
-## 认证
+- **RESTful API 设计**：遵循 REST 设计规范，使用标准的 HTTP 方法和状态码
+- **分层架构**：控制器、服务层、数据访问层分离
+- **统一响应格式**：所有 API 响应采用一致的格式
+- **认证与授权**：基于 JWT 的认证机制和基于角色的权限控制
 
-所有需要认证的 API 请求都需要在请求头中包含 JWT Token：
+### 技术栈
 
-```
-Authorization: Bearer <your_jwt_token>
-```
+- **后端框架**：Node.js + Express
+- **数据库**：MongoDB
+- **认证**：JWT (JSON Web Token)
+- **文档工具**：Swagger/OpenAPI
 
-## 错误响应格式
+## 主要功能模块
+
+### 1. 认证管理 (`/api/auth/*`)
+
+**功能说明**：处理用户的认证相关操作，包括注册、登录、令牌刷新和登出。
+
+**主要端点**：
+- 用户注册
+- 用户登录
+- 刷新访问令牌
+- 用户登出
+- Microsoft 身份验证 (MSAL)
+
+**访问控制**：
+- 注册和登录：无需认证
+- 令牌刷新和登出：需要有效令牌
+
+### 2. 图书管理 (`/api/books/*`)
+
+**功能说明**：管理图书馆内的图书资源，包括图书的增删改查和分类管理。
+
+**主要端点**：
+- 获取图书列表（支持分页、筛选和搜索）
+- 获取图书详情
+- 创建新图书
+- 更新图书信息
+- 删除图书
+- 获取图书分类列表
+
+**访问控制**：
+- 获取图书列表和详情：公开访问
+- 创建、更新和删除：仅管理员和图书管理员
+
+### 3. 借阅管理 (`/api/borrowings/*`)
+
+**功能说明**：处理图书的借阅、归还和续借等操作，以及借阅记录的管理。
+
+**主要端点**：
+- 创建借阅记录
+- 归还图书
+- 续借图书
+- 获取借阅记录（支持多条件筛选）
+- 获取借阅记录详情
+- 检查逾期图书
+
+**访问控制**：
+- 所有端点：需要认证
+- 管理员和图书管理员可访问所有借阅记录
+- 普通用户仅可访问自己的借阅记录
+
+## 认证与授权
+
+### 认证机制
+
+- **认证方式**：JWT Bearer Token
+- **令牌类型**：访问令牌（短期有效）和刷新令牌（长期有效）
+- **令牌传递**：通过 `Authorization` 请求头传递
+- **多源认证**：支持本地账号和 Microsoft 账号认证
+
+### 角色体系
+
+系统采用基于角色的访问控制 (RBAC)，包含以下角色：
+
+- **管理员 (admin)**：具有系统的完全访问权限
+- **图书管理员 (librarian)**：负责图书管理和借阅操作
+- **教师 (teacher)**：具有普通用户权限，可能有特殊借阅权限
+- **学生 (student)**：普通用户权限
+
+## 错误处理机制
+
+### 统一响应格式
+
+所有 API 响应采用统一的 JSON 格式：
 
 ```json
 {
-  "success": false,
-  "message": "错误信息",
-  "errors": ["可选的详细错误列表"]
+  "success": true|false,
+  "message": "响应消息",
+  "data": { /* 响应数据 */ },
+  "errors": ["详细错误信息列表"]
 }
 ```
 
-## API 端点
+### 常见状态码
 
-### 认证相关
+- **200 OK**：请求成功
+- **201 Created**：资源创建成功
+- **400 Bad Request**：请求参数错误
+- **401 Unauthorized**：未认证或认证失败
+- **403 Forbidden**：权限不足
+- **404 Not Found**：资源不存在
+- **500 Internal Server Error**：服务器内部错误
 
-#### 用户注册
-```http
-POST /api/auth/register
-```
+## 分页与查询
 
-**请求体**:
-```json
-{
-  "username": "string",
-  "email": "string",
-  "password": "string",
-  "name": "string",
-  "role": "admin|librarian|teacher|student"
-}
-```
+### 分页机制
 
-**响应**:
-```json
-{
-  "success": true,
-  "message": "Registration successful",
-  "data": {
-    "user": {
-      "id": "string",
-      "username": "string",
-      "email": "string",
-      "name": "string",
-      "role": "string",
-      "createdAt": "string"
-    },
-    "token": "string",
-    "refreshToken": "string"
-  }
-}
-```
+支持分页的 API 端点使用以下查询参数：
 
-#### 用户登录
-```http
-POST /api/auth/login
-```
+- `limit`：每页返回的记录数（默认 50，最大 100）
+- `offset`：偏移量（默认 0）
 
-**请求体**:
-```json
-{
-  "username": "string",
-  "password": "string"
-}
-```
+### 查询功能
 
-**响应**:
-```json
-{
-  "success": true,
-  "message": "Login successful",
-  "data": {
-    "user": {
-      "id": "string",
-      "username": "string",
-      "email": "string",
-      "name": "string",
-      "role": "string"
-    },
-    "token": "string",
-    "refreshToken": "string"
-  }
-}
-```
+大多数列表查询 API 支持以下功能：
 
-#### 刷新 Token
-```http
-POST /api/auth/refresh
-```
+- 字段筛选
+- 关键词搜索
+- 状态过滤
+- 排序
 
-**请求体**:
-```json
-{
-  "refreshToken": "string"
-}
-```
+## 系统限制
 
-**响应**:
-```json
-{
-  "success": true,
-  "message": "Token refreshed successfully",
-  "data": {
-    "token": "string",
-    "refreshToken": "string"
-  }
-}
-```
+### 限流策略
 
-#### 用户登出
-```http
-POST /api/auth/logout
-```
+- 普通 API：每 IP 每分钟最多 60 次请求
+- 认证相关 API：每 IP 每 15 分钟最多 5 次请求
+- 通用限制：每 IP 每 15 分钟最多 100 次请求
 
-**请求头**:
-```
-Authorization: Bearer <token>
-```
+## 数据模型关系
 
-**响应**:
-```json
-{
-  "success": true,
-  "message": "Logout successful"
-}
-```
+系统包含三个核心数据模型：
 
-### 图书管理
+1. **用户 (User)**：系统用户信息
+2. **图书 (Book)**：图书资源信息
+3. **借阅记录 (BorrowingRecord)**：连接用户和图书的借阅关系
 
-#### 获取图书列表
-```http
-GET /api/books?limit=50&offset=0&category=string&search=string
-```
+## 使用动态 API 文档
 
-**查询参数**:
-- `limit` (可选): 每页数量 (1-100, 默认 50)
-- `offset` (可选): 偏移量 (默认 0)
-- `category` (可选): 图书分类
-- `search` (可选): 搜索关键词
+系统提供交互式的 Swagger UI 文档，可通过以下方式访问：
 
-**响应**:
-```json
-{
-  "success": true,
-  "message": "Books retrieved successfully",
-  "data": {
-    "books": [
-      {
-        "id": "string",
-        "title": "string",
-        "authors": ["string"],
-        "isbn": "string",
-        "publisher": "string",
-        "publishedYear": 2023,
-        "category": "string",
-        "description": "string",
-        "totalCopies": 5,
-        "availableCopies": 3,
-        "location": "string",
-        "tags": ["string"],
-        "createdAt": "string",
-        "updatedAt": "string"
-      }
-    ],
-    "pagination": {
-      "limit": 50,
-      "offset": 0,
-      "total": 100
-    }
-  }
-}
-```
+- **Swagger UI**：启动服务器后访问 `http://localhost:3000/api-docs`
+- **OpenAPI JSON**：访问 `http://localhost:3000/api-docs.json` 获取完整的 OpenAPI 规范
 
-#### 获取图书详情
-```http
-GET /api/books/{id}
-```
+动态文档提供：
+- 实时更新的 API 端点信息
+- 详细的请求参数和响应格式
+- 交互式 API 测试功能
+- 模型定义和引用
 
-**响应**:
-```json
-{
-  "success": true,
-  "message": "Book retrieved successfully",
-  "data": {
-    "book": {
-      "id": "string",
-      "title": "string",
-      "authors": ["string"],
-      "isbn": "string",
-      "publisher": "string",
-      "publishedYear": 2023,
-      "category": "string",
-      "description": "string",
-      "totalCopies": 5,
-      "availableCopies": 3,
-      "location": "string",
-      "tags": ["string"],
-      "createdAt": "string",
-      "updatedAt": "string"
-    }
-  }
-}
-```
+## 开发指南
 
-#### 创建图书
-```http
-POST /api/books
-```
+### 本地开发
 
-**请求头**:
-```
-Authorization: Bearer <token>
-```
+1. 克隆仓库：`git clone [仓库地址]`
+2. 安装依赖：`npm install`
+3. 配置环境变量（参考 `.env.example`）
+4. 启动开发服务器：`npm run dev`
+5. 访问 Swagger UI：`http://localhost:3000/api-docs`
 
-**请求体**:
-```json
-{
-  "title": "string",
-  "authors": ["string"],
-  "isbn": "string",
-  "publisher": "string",
-  "publishedYear": 2023,
-  "category": "string",
-  "description": "string",
-  "totalCopies": 5,
-  "location": "string",
-  "tags": ["string"]
-}
-```
+### API 版本控制
 
-**响应**:
-```json
-{
-  "success": true,
-  "message": "Book created successfully",
-  "data": {
-    "book": {
-      "id": "string",
-      "title": "string",
-      "authors": ["string"],
-      "isbn": "string",
-      "publisher": "string",
-      "publishedYear": 2023,
-      "category": "string",
-      "description": "string",
-      "totalCopies": 5,
-      "availableCopies": 5,
-      "location": "string",
-      "tags": ["string"],
-      "createdAt": "string",
-      "updatedAt": "string"
-    }
-  }
-}
-```
+系统采用 URL 路径版本控制，当前版本为 v1。如需升级 API，将在 URL 中体现新的版本号。
 
-#### 更新图书
-```http
-PUT /api/books/{id}
-```
+### 代码组织
 
-**请求头**:
-```
-Authorization: Bearer <token>
-```
+API 相关代码组织如下：
+- `src/controllers/`：API 控制器，处理请求和响应
+- `src/routes/`：路由定义，映射 URL 到控制器
+- `src/services/`：业务逻辑层
+- `src/models/`：数据模型定义
+- `src/middleware/`：中间件（认证、日志等）
 
-**请求体**: 同创建图书，所有字段可选
+## 贡献指南
 
-**响应**: 同创建图书响应
+如需向项目贡献代码，请遵循以下规范：
 
-#### 删除图书
-```http
-DELETE /api/books/{id}
-```
+1. 为新的 API 端点添加详细的 Swagger 注释
+2. 保持代码风格一致性
+3. 编写单元测试和集成测试
+4. 更新相关文档
 
-**请求头**:
-```
-Authorization: Bearer <token>
-```
+## 结论
 
-**响应**:
-```json
-{
-  "success": true,
-  "message": "Book deleted successfully"
-}
-```
+本架构文档提供了 Moonshot Library System API 的高层次概述。对于具体的 API 调用细节、参数说明和示例，请参考系统提供的动态 Swagger 文档（`http://localhost:3000/api-docs`）。
 
-#### 获取图书分类
-```http
-GET /api/books/categories
-```
-
-**响应**:
-```json
-{
-  "success": true,
-  "message": "Categories retrieved successfully",
-  "data": {
-    "categories": ["string"]
-  }
-}
-```
-
-### 借阅管理
-
-#### 创建借阅记录
-```http
-POST /api/borrowings
-```
-
-**请求头**:
-```
-Authorization: Bearer <token>
-```
-
-**请求体**:
-```json
-{
-  "bookId": "string",
-  "userId": "string",
-  "dueDate": "string" // 可选，默认21天后
-}
-```
-
-**响应**:
-```json
-{
-  "success": true,
-  "message": "Book borrowed successfully",
-  "data": {
-    "borrowingRecord": {
-      "id": "string",
-      "bookId": "string",
-      "userId": "string",
-      "borrowDate": "string",
-      "dueDate": "string",
-      "status": "active",
-      "renewalCount": 0
-    }
-  }
-}
-```
-
-#### 归还图书
-```http
-PUT /api/borrowings/{id}/return
-```
-
-**请求头**:
-```
-Authorization: Bearer <token>
-```
-
-**响应**:
-```json
-{
-  "success": true,
-  "message": "Book returned successfully",
-  "data": {
-    "borrowingRecord": {
-      "id": "string",
-      "bookId": "string",
-      "userId": "string",
-      "borrowDate": "string",
-      "dueDate": "string",
-      "returnDate": "string",
-      "status": "returned",
-      "renewalCount": 0
-    }
-  }
-}
-```
-
-#### 续借图书
-```http
-PUT /api/borrowings/{id}/renew
-```
-
-**请求头**:
-```
-Authorization: Bearer <token>
-```
-
-**响应**:
-```json
-{
-  "success": true,
-  "message": "Book renewed successfully",
-  "data": {
-    "borrowingRecord": {
-      "id": "string",
-      "bookId": "string",
-      "userId": "string",
-      "borrowDate": "string",
-      "dueDate": "string",
-      "status": "active",
-      "renewalCount": 1
-    }
-  }
-}
-```
-
-#### 获取借阅记录
-```http
-GET /api/borrowings?userId=string&bookId=string&status=active|returned|overdue&limit=50&offset=0
-```
-
-**请求头**:
-```
-Authorization: Bearer <token>
-```
-
-**查询参数**:
-- `userId` (可选): 用户ID
-- `bookId` (可选): 图书ID
-- `status` (可选): 状态 (active/returned/overdue)
-- `limit` (可选): 每页数量 (1-100, 默认 50)
-- `offset` (可选): 偏移量 (默认 0)
-
-**响应**:
-```json
-{
-  "success": true,
-  "message": "Borrowing records retrieved successfully",
-  "data": {
-    "records": [
-      {
-        "id": "string",
-        "bookId": "string",
-        "userId": "string",
-        "borrowDate": "string",
-        "dueDate": "string",
-        "returnDate": "string",
-        "status": "active|returned|overdue",
-        "renewalCount": 0,
-        "book": {
-          "id": "string",
-          "title": "string",
-          "authors": ["string"]
-        },
-        "user": {
-          "id": "string",
-          "name": "string",
-          "email": "string"
-        }
-      }
-    ],
-    "pagination": {
-      "limit": 50,
-      "offset": 0,
-      "total": 100
-    }
-  }
-}
-```
-
-#### 获取借阅记录详情
-```http
-GET /api/borrowings/{id}
-```
-
-**请求头**:
-```
-Authorization: Bearer <token>
-```
-
-**响应**: 同获取借阅记录响应中的单个记录格式
-
-#### 检查逾期图书
-```http
-GET /api/borrowings/overdue
-```
-
-**请求头**:
-```
-Authorization: Bearer <token>
-```
-
-**响应**:
-```json
-{
-  "success": true,
-  "message": "Overdue check completed",
-  "data": {
-    "overdueCount": 5,
-    "overdueRecords": [
-      {
-        "id": "string",
-        "bookId": "string",
-        "userId": "string",
-        "borrowDate": "string",
-        "dueDate": "string",
-        "status": "overdue"
-      }
-    ]
-  }
-}
-```
-
-## 状态码说明
-
-- **200 OK**: 请求成功
-- **201 Created**: 资源创建成功
-- **400 Bad Request**: 请求参数错误
-- **401 Unauthorized**: 未认证或认证失败
-- **403 Forbidden**: 权限不足
-- **404 Not Found**: 资源不存在
-- **409 Conflict**: 资源冲突
-- **422 Unprocessable Entity**: 请求体验证失败
-- **429 Too Many Requests**: 请求过于频繁
-- **500 Internal Server Error**: 服务器内部错误
-
-## 分页参数
-
-支持分页的 API 端点：
-- `limit`: 每页返回的记录数 (1-100, 默认 50)
-- `offset`: 偏移量 (默认 0)
-
-## 限流说明
-
-- 普通 API: 每 IP 每分钟最多 60 次请求
-- 认证相关: 每 IP 每 15 分钟最多 5 次请求
-- 通用限制: 每 IP 每 15 分钟最多 100 次请求
-
-## 数据模型
-
-### 用户 (User)
-```typescript
-interface User {
-  id: string;
-  username: string;
-  email: string;
-  name: string;
-  role: 'admin' | 'librarian' | 'teacher' | 'student';
-  createdAt: string;
-  updatedAt: string;
-}
-```
-
-### 图书 (Book)
-```typescript
-interface Book {
-  id: string;
-  title: string;
-  authors: string[];
-  isbn?: string;
-  publisher?: string;
-  publishedYear?: number;
-  category: string;
-  description?: string;
-  totalCopies: number;
-  availableCopies: number;
-  location?: string;
-  tags?: string[];
-  createdAt: string;
-  updatedAt: string;
-}
-```
-
-### 借阅记录 (BorrowingRecord)
-```typescript
-interface BorrowingRecord {
-  id: string;
-  bookId: string;
-  userId: string;
-  borrowDate: string;
-  dueDate: string;
-  returnDate?: string;
-  status: 'active' | 'returned' | 'overdue';
-  renewalCount: number;
-  createdAt: string;
-  updatedAt: string;
-}
-```
+通过静态架构文档与动态 API 文档的结合，开发者可以快速了解系统设计，并获取最新、最准确的 API 使用信息。

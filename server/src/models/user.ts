@@ -20,7 +20,7 @@ export const createUser = async (userData: {
       INSERT INTO users (id, email, password, name, role, grade)
       VALUES (?, ?, ?, ?, ?, ?)
     `;
-    
+
     db.run(sql, [
       userData.id,
       userData.email,
@@ -75,14 +75,25 @@ export const getUserByEmail = async (email: string): Promise<User | null> => {
 
 export const updateUser = async (id: string, updates: Partial<User>): Promise<User> => {
   const db = getDatabase();
-  
-  const allowedFields = ['name', 'grade', 'avatar_color', 'membership'];
+
+  // 扩展允许更新的字段，支持更多从Microsoft Graph获取的信息
+  const allowedFields = ['name', 'grade', 'avatar_color', 'membership', 'email'];
   const fields: string[] = [];
   const values: any[] = [];
 
+  // 处理驼峰命名到下划线命名的转换
+  const fieldMappings: Record<string, string> = {
+    avatarColor: 'avatar_color',
+    createdAt: 'created_at',
+    updatedAt: 'updated_at'
+  };
+
   Object.entries(updates).forEach(([key, value]) => {
-    if (allowedFields.includes(key) && value !== undefined) {
-      fields.push(`${key} = ?`);
+    // 获取数据库字段名
+    const dbField = fieldMappings[key] || key;
+
+    if (allowedFields.includes(dbField) && value !== undefined) {
+      fields.push(`${dbField} = ?`);
       values.push(value);
     }
   });
@@ -158,4 +169,37 @@ const deserializeUser = (row: any): User => {
     createdAt: row.created_at,
     updatedAt: row.updated_at
   };
+};
+
+// 生成随机密码辅助函数
+const generateRandomPassword = (): string => {
+  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+};
+
+// 从Microsoft Graph创建或更新用户
+export const createUserFromMicrosoft = async (microsoftData: {
+  id: string;
+  email: string;
+  name: string;
+  role?: 'student' | 'teacher' | 'librarian';
+  grade?: string;
+}): Promise<User> => {
+  // 首先检查用户是否已存在
+  const existingUser = await getUserByEmail(microsoftData.email);
+  if (existingUser) {
+    // 如果用户存在，更新信息
+    return updateUser(existingUser.id, {
+      name: microsoftData.name,
+      ...(microsoftData.grade && { grade: microsoftData.grade })
+    });
+  }
+
+  // 创建新用户（为M365用户生成随机密码）
+  return createUser({
+    id: microsoftData.id,
+    email: microsoftData.email,
+    password: generateRandomPassword(),
+    name: microsoftData.name,
+    role: microsoftData.role || 'student'
+  });
 };
