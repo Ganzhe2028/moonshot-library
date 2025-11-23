@@ -1,10 +1,12 @@
 import { Request, Response } from 'express';
-import { body, validationResult } from 'express-validator';
+import { body, validationResult, query } from 'express-validator';
 import { validationResult as validationResultType } from 'express-validator';
-import { createUser, getUserByEmail, verifyPassword } from '../models/user';
+import { createUser, getUserByEmail, verifyPassword, getUserById } from '../models/user';
 import { generateToken, generateRefreshToken } from '../utils/auth';
-import { ApiResponse, LoginRequest, RegisterRequest } from '../types';
+import { msalService } from '../utils/msalService';
+import { ApiResponse, LoginRequest, RegisterRequest, AuthRequest } from '../types';
 import { AppError, ValidationError } from '../middleware/errorHandler';
+import crypto from 'crypto';
 
 export const validateLogin = [
   body('email')
@@ -225,4 +227,167 @@ export const logout = async (req: Request, res: Response): Promise<void> => {
   };
 
   res.json(response);
+};
+
+// Microsoft OAuth相关的验证规则
+export const validateMsalAuth = [
+  query('code')
+    .isString()
+    .withMessage('Authorization code is required'),
+  query('state')
+    .isString()
+    .withMessage('State parameter is required')
+];
+
+// 处理Microsoft登录的重定向
+export const msalLogin = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // 生成随机state参数，用于防止CSRF攻击
+    const state = crypto.randomBytes(16).toString('hex');
+    
+    // 保存state到session中，以便稍后验证
+    if (req.session) {
+      req.session.msalState = state;
+    }
+    
+    // 获取环境变量中的重定向URI
+    const redirectUri = process.env.MSAL_REDIRECT_URI || 'http://localhost:3000/api/auth/msal/callback';
+    
+    // 生成Microsoft登录URL
+    const authUrl = await msalService.getAuthUrl(redirectUri, state);
+    
+    const response: ApiResponse = {
+      success: true,
+      message: 'Microsoft login URL generated successfully',
+      data: { authUrl }
+    };
+    
+    res.json(response);
+  } catch (error) {
+    console.error('MSAL login error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to generate Microsoft login URL'
+    });
+  }
+};
+
+// 处理Microsoft OAuth回调
+export const msalCallback = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      const firstError = errors.array()[0];
+      throw new ValidationError(firstError.msg || 'Validation failed');
+    }
+    
+    const { code, state } = req.query;
+    
+    // 验证state参数，防止CSRF攻击
+    if (req.session && req.session.msalState !== state) {
+      throw new AppError('Invalid state parameter', 401);
+    }
+    
+    // 清除session中的state
+    if (req.session) {
+      delete req.session.msalState;
+    }
+    
+    // 获取环境变量中的重定向URI
+    const redirectUri = process.env.MSAL_REDIRECT_URI || 'http://localhost:3000/api/auth/msal/callback';
+    
+    // 处理登录并获取用户信息和令牌
+    const { user, token, refreshToken } = await msalService.handleLogin(code as string, redirectUri);
+    
+    // 重定向到前端页面，携带token信息
+    const frontendRedirectUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const redirectWithTokens = `${frontendRedirectUrl}/auth/callback?token=${token}&refreshToken=${refreshToken}`;
+    
+    res.redirect(redirectWithTokens);
+  } catch (error) {
+    console.error('MSAL callback error:', error);
+    
+    // 重定向到前端错误页面
+    const frontendRedirectUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const errorRedirect = `${frontendRedirectUrl}/login?error=msal_failed`;
+    
+    res.redirect(errorRedirect);
+  }
+};
+
+// 验证Microsoft登录状态（用于前端）
+export const msalVerify = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { token } = req.body;
+    
+    if (!token) {
+      throw new AppError('Token is required', 400);
+    }
+    
+    // 这里可以添加对token的验证逻辑
+    // 由于我们已经在handleLogin中生成了JWT，这里可以简单地返回成功
+    
+    const response: ApiResponse = {
+      success: true,
+      message: 'MSAL login verified successfully'
+    };
+    
+    res.json(response);
+  } catch (error) {
+    if (error instanceof AppError) {
+      res.status(error.statusCode).json({
+        success: false,
+        message: error.message
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  }
+};
+
+// 获取当前用户信息
+export const getCurrentUser = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      throw new AppError('User not found', 401);
+    }
+    
+    const user = await getUserById(req.user.id);
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
+    
+    const response: ApiResponse = {
+      success: true,
+      message: 'User retrieved successfully',
+      data: {
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          grade: user.grade,
+          membership: user.membership,
+          avatarColor: user.avatarColor
+        }
+      }
+    };
+    
+    res.json(response);
+  } catch (error) {
+    if (error instanceof AppError) {
+      res.status(error.statusCode).json({
+        success: false,
+        message: error.message
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  }
 };

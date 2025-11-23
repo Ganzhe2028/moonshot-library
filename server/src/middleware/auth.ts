@@ -20,6 +20,7 @@ export const authenticate = async (
     const user = await getUserById(decoded.id);
 
     if (!user) {
+      console.error(`[Auth] User not found with ID: ${decoded.id}`);
       throw new UnauthorizedError('User not found');
     }
 

@@ -7,6 +7,7 @@ import swaggerUi from 'swagger-ui-express';
 import swaggerJsdoc from 'swagger-jsdoc';
 import dotenv from 'dotenv';
 import path from 'path';
+import session from 'express-session';
 
 import { errorHandler } from './middleware/errorHandler';
 import { notFound } from './middleware/notFound';
@@ -83,9 +84,51 @@ const startServer = async () => {
 
 // 安全中间件
 app.use(helmet());
+
+// CORS 配置 - 支持多个开发端口
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:3000',
+  'http://localhost:8080'
+].filter(Boolean) as string[];
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-  credentials: true
+  origin: (origin, callback) => {
+    // 允许没有 origin 的请求（如移动应用或 Postman）
+    if (!origin) {
+      return callback(null, true);
+    }
+    
+    // 检查 origin 是否在允许列表中
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      // 开发环境下，允许所有 localhost 端口
+      if (process.env.NODE_ENV === 'development' && origin.startsWith('http://localhost:')) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+// 会话中间件配置
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'your-secret-key',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    maxAge: 3600000 // 1小时
+  }
 }));
 
 // 请求限制

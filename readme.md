@@ -138,6 +138,7 @@ moonshot-library/
 - 🗄️ **数据库**：默认 SQLite 文件位于 `server/data/`，测试脚本会自动创建所需表。  
 - 🔑 **用户角色**：Admin → Librarian → Teacher/Student，权限逐级递减，可在 API 文档中查看每个角色能做什么。  
 - ✅ **测试**：先运行 `npm run setup-test` 填充数据，再执行 `npm test` 验证主要流程。  
+- 🔐 **M365 SSO 登录**：支持使用 Microsoft 365 账户登录，配置说明详见 `M365_AUTH_SETUP.md`
 
 ---
 
