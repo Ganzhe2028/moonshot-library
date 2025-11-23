@@ -168,7 +168,12 @@ const handleM365Login = async () => {
     // 注意：这里不会执行到finally，因为页面会重定向
   } catch (err) {
     isLoading.value = false
-    error.value = err instanceof Error ? err.message : 'Microsoft登录失败'
+    // 增强错误处理，当MSAL服务不可用时显示友好提示
+    if (err.response?.status === 503 && err.response?.data?.error === 'MSAL not configured') {
+      error.value = 'Microsoft 365登录服务暂时不可用，请使用其他登录方式'
+    } else {
+      error.value = err instanceof Error ? err.message : 'Microsoft登录失败'
+    }
     console.error('M365 Login error:', err)
   }
 }
