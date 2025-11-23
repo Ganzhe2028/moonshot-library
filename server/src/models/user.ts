@@ -20,7 +20,7 @@ export const createUser = async (userData: {
       INSERT INTO users (id, email, password, name, role, grade)
       VALUES (?, ?, ?, ?, ?, ?)
     `;
-    
+
     db.run(sql, [
       userData.id,
       userData.email,
@@ -75,12 +75,12 @@ export const getUserByEmail = async (email: string): Promise<User | null> => {
 
 export const updateUser = async (id: string, updates: Partial<User>): Promise<User> => {
   const db = getDatabase();
-  
+
   // 扩展允许更新的字段，支持更多从Microsoft Graph获取的信息
   const allowedFields = ['name', 'grade', 'avatar_color', 'membership', 'email'];
   const fields: string[] = [];
   const values: any[] = [];
-  
+
   // 处理驼峰命名到下划线命名的转换
   const fieldMappings: Record<string, string> = {
     avatarColor: 'avatar_color',
@@ -91,7 +91,7 @@ export const updateUser = async (id: string, updates: Partial<User>): Promise<Us
   Object.entries(updates).forEach(([key, value]) => {
     // 获取数据库字段名
     const dbField = fieldMappings[key] || key;
-    
+
     if (allowedFields.includes(dbField) && value !== undefined) {
       fields.push(`${dbField} = ?`);
       values.push(value);
@@ -193,14 +193,13 @@ export const createUserFromMicrosoft = async (microsoftData: {
       ...(microsoftData.grade && { grade: microsoftData.grade })
     });
   }
-  
+
   // 创建新用户（为M365用户生成随机密码）
   return createUser({
     id: microsoftData.id,
     email: microsoftData.email,
     password: generateRandomPassword(),
     name: microsoftData.name,
-    role: microsoftData.role || 'student',
-    grade: microsoftData.grade
+    role: microsoftData.role || 'student'
   });
 };

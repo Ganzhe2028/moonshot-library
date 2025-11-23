@@ -1,4 +1,21 @@
-import { ConfidentialClientApplication, Configuration, AuthCodeRequest, TokenResponse, AuthorizationUrlRequest } from '@azure/msal-node';
+import { ConfidentialClientApplication, Configuration, AuthorizationUrlRequest } from '@azure/msal-node';
+// 为不支持的MSAL类型定义自定义类型
+type AuthCodeRequest = {
+  code: string;
+  scopes: string[];
+  redirectUri: string;
+};
+
+// 为MSAL响应定义兼容的TokenResponse类型
+type TokenResponse = {
+  accessToken: string;
+  idToken: string | {
+    claims: any;
+  };
+  expiresOn: Date;
+  tokenType: string;
+  scopes: string[];
+};
 import { User } from '../types';
 import { createUserFromMicrosoft } from '../models/user';
 import { generateToken, generateRefreshToken } from './auth';
@@ -47,7 +64,7 @@ const mockUser = {
   email: 'test@example.com',
   name: 'Test User',
   microsoftId: '123456',
-  role: 'student',
+  role: 'student' as const, // 使用as const确保类型符合联合类型要求
   grade: '9',
   avatarColor: '#8b5cf6'
 };
@@ -61,19 +78,20 @@ export const getAuthUrl = async (redirectUri?: string, state?: string): Promise<
     return `${backendUrl}?code=mock-code&state=${state || 'mock-state'}`;
   }
   
-  const authCodeUrlParameters: AuthorizationUrlRequest = {
+  // 使用类型断言来处理AuthorizationUrlRequest
+  const authCodeUrlParameters = {
     scopes: (process.env.MSAL_SCOPES || 'user.read,email,profile,openid').split(','),
     redirectUri: redirectUri || process.env.MSAL_REDIRECT_URI || 'http://localhost:3000/api/auth/msal/callback',
-    state: state,
-  };
+    state: state || '',
+  } as AuthorizationUrlRequest;
 
   try {
-    const response = await msalClient.getAuthCodeUrl(authCodeUrlParameters);
-    return response;
-  } catch (error) {
-    console.error('Error generating auth URL:', error);
-    throw new Error('Failed to generate authentication URL');
-  }
+      const authUrl = await msalClient.getAuthCodeUrl(authCodeUrlParameters);
+      return authUrl;
+    } catch (error) {
+      console.error('Error generating auth URL:', error);
+      throw new Error('Failed to generate authentication URL');
+    }
 };
 
 // 通过授权码获取令牌
@@ -105,12 +123,21 @@ export const getTokenByCode = async (code: string, redirectUri?: string): Promis
   };
 
   try {
-    const response = await msalClient.acquireTokenByCode(tokenRequest);
-    return response;
-  } catch (error) {
-    console.error('Error acquiring token by code:', error);
-    throw new Error('Failed to acquire token');
-  }
+      const result = await msalClient.acquireTokenByCode(tokenRequest);
+      // 适配MSAL的AuthenticationResult到我们的TokenResponse类型
+      return {
+        accessToken: result.accessToken,
+        idToken: {
+          claims: result.idTokenClaims || {}
+        },
+        expiresOn: result.expiresOn || new Date(),
+        tokenType: result.tokenType || 'Bearer',
+        scopes: result.scopes || []
+      } as TokenResponse;
+    } catch (error) {
+      console.error('Error acquiring token by code:', error);
+      throw new Error('Failed to acquire token');
+    }
 };
 
 // 处理用户登录并创建/更新本地用户
@@ -120,7 +147,7 @@ export const handleLogin = async (code: string, redirectUri?: string): Promise<{
   
   // 从令牌响应中提取用户信息
   const { idToken } = tokenResponse;
-  const userInfo = idToken?.claims || {};
+  const userInfo = typeof idToken === 'object' && idToken?.claims ? idToken.claims : {};
 
   // 生成唯一用户ID
   const microsoftId = userInfo.sub as string || '123456';
@@ -135,7 +162,7 @@ export const handleLogin = async (code: string, redirectUri?: string): Promise<{
     email: email,
     name: name,
     microsoftId,
-    role: 'student' // 默认角色
+    role: 'student' as const // 默认角色，使用as const确保类型符合联合类型要求
   };
   
   // 确保用户存在于数据库中（如果不存在则创建，如果存在则更新）

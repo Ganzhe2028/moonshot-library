@@ -49,66 +49,28 @@ export const ensureDemoAccounts = async (): Promise<void> => {
 
 export const seedDatabase = async (): Promise<void> => {
   console.log('🌱 Starting database seeding...');
-  
+
   try {
-    // 检查是否已有数据
+    // 检查是否已有图书数据
     const db = getDatabase();
-    const userCount = await new Promise<number>((resolve, reject) => {
-      db.get('SELECT COUNT(*) as count FROM users', [], (err, row: any) => {
+    const bookCount = await new Promise<number>((resolve, reject) => {
+      db.get('SELECT COUNT(*) as count FROM books', [], (err, row: any) => {
         if (err) reject(err);
         else resolve(row.count);
       });
     });
-
-    if (userCount === 0) {
+    console.log(`   • Current book count: ${bookCount}`);
+    if (bookCount == 0) {
       console.log('📊 Database empty, creating initial data set...');
 
-      // 创建默认用户
-      console.log('👥 Creating default users...');
-      
-      // 管理员用户
-      await createUser({
-        id: 'admin-001',
-        email: 'admin@moonshotacademy.cn',
-        password: 'admin123',
-        name: '系统管理员',
-        role: 'librarian'
-      });
-  
-      // 教师用户
-      await createUser({
-        id: 'teacher-001',
-        email: 'teacher@moonshotacademy.cn',
-        password: 'teacher123',
-        name: '张老师',
-        role: 'teacher'
-      });
-  
-      // 学生用户
-      await createUser({
-        id: 'stu-2048',
-        email: 'nova.li@moonshotacademy.cn',
-        password: 'student123',
-        name: 'Nova Li',
-        role: 'student',
-        grade: 'Moonshot Cohort 2025'
-      });
-  
-      await createUser({
-        id: 'stu-2049',
-        email: 'alex.wang@moonshotacademy.cn',
-        password: 'student123',
-        name: 'Alex Wang',
-        role: 'student',
-        grade: 'Moonshot Cohort 2025'
-      });
-  
+      // Note: Default users are no longer created here. Use demoAccounts instead.
+
       // 创建图书数据
       console.log('📚 Creating sample books...');
-      
+
       const sampleBooks = [
         {
-          id: 'bk-systems-thinking',
+          id: 'bk-systems-thinking1',
           title: 'Systems Thinking',
           authors: ['Jamshid Gharajedaghi'],
           isbn: '978-1-118-11928-8',
@@ -121,7 +83,7 @@ export const seedDatabase = async (): Promise<void> => {
           tags: ['systems', 'complexity', 'methodology']
         },
         {
-          id: 'bk-ai-literacy',
+          id: 'bk-ai-literacy1',
           title: 'Artificial Intelligence: A Guide for Thinking Humans',
           authors: ['Melanie Mitchell'],
           isbn: '978-0-374-25783-5',
@@ -134,7 +96,7 @@ export const seedDatabase = async (): Promise<void> => {
           tags: ['AI', 'machine learning', 'technology']
         },
         {
-          id: 'bk-design-thinking',
+          id: 'bk-design-thinking1',
           title: 'Change by Design',
           authors: ['Tim Brown'],
           isbn: '978-0-06-176608-4',
@@ -147,7 +109,7 @@ export const seedDatabase = async (): Promise<void> => {
           tags: ['design thinking', 'innovation', 'creativity']
         },
         {
-          id: 'bk-lean-startup',
+          id: 'bk-lean-startup1',
           title: 'The Lean Startup',
           authors: ['Eric Ries'],
           isbn: '978-0-307-88789-4',
@@ -160,7 +122,7 @@ export const seedDatabase = async (): Promise<void> => {
           tags: ['startup', 'entrepreneurship', 'innovation']
         },
         {
-          id: 'bk-thinking-fast-slow',
+          id: 'bk-thinking-fast-slow1',
           title: 'Thinking, Fast and Slow',
           authors: ['Daniel Kahneman'],
           isbn: '978-0-374-27563-1',
@@ -173,7 +135,7 @@ export const seedDatabase = async (): Promise<void> => {
           tags: ['psychology', 'decision making', 'cognitive science']
         },
         {
-          id: 'bk-innovators-dilemma',
+          id: 'bk-innovators-dilemma1',
           title: "The Innovator's Dilemma",
           authors: ['Clayton M. Christensen'],
           isbn: '978-0-06-206024-2',
@@ -186,7 +148,7 @@ export const seedDatabase = async (): Promise<void> => {
           tags: ['innovation', 'disruption', 'technology']
         },
         {
-          id: 'bk-sapiens',
+          id: 'bk-sapiens1',
           title: 'Sapiens: A Brief History of Humankind',
           authors: ['Yuval Noah Harari'],
           isbn: '978-0-06-231609-7',
@@ -199,7 +161,7 @@ export const seedDatabase = async (): Promise<void> => {
           tags: ['history', 'anthropology', 'evolution']
         },
         {
-          id: 'bk-clean-code',
+          id: 'bk-clean-code1',
           title: 'Clean Code: A Handbook of Agile Software Craftsmanship',
           authors: ['Robert C. Martin'],
           isbn: '978-0-13-235088-4',
@@ -227,7 +189,7 @@ export const seedDatabase = async (): Promise<void> => {
     await ensureDemoAccounts();
 
     console.log('✅ Database seeding completed successfully!');
-    
+
   } catch (error) {
     console.error('❌ Error seeding database:', error);
     throw error;

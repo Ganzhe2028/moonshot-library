@@ -7,7 +7,7 @@ import swaggerUi from 'swagger-ui-express';
 import swaggerJsdoc from 'swagger-jsdoc';
 import dotenv from 'dotenv';
 import path from 'path';
-import session from 'express-session';
+import session, { SessionOptions } from 'express-session';
 
 import { errorHandler } from './middleware/errorHandler';
 import { notFound } from './middleware/notFound';

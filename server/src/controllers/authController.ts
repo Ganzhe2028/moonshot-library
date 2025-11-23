@@ -247,7 +247,7 @@ export const msalLogin = async (req: Request, res: Response): Promise<void> => {
     
     // 保存state到session中，以便稍后验证
     if (req.session) {
-      req.session.msalState = state;
+      (req.session as any).msalState = state;
     }
     
     // 获取环境变量中的重定向URI
@@ -278,19 +278,19 @@ export const msalCallback = async (req: Request, res: Response): Promise<void> =
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       const firstError = errors.array()[0];
-      throw new ValidationError(firstError.msg || 'Validation failed');
+      throw new ValidationError(firstError?.msg || 'Validation failed');
     }
     
     const { code, state } = req.query;
     
     // 验证state参数，防止CSRF攻击
-    if (req.session && req.session.msalState !== state) {
+    if (req.session && typeof (req.session as any).msalState === 'string' && (req.session as any).msalState !== state) {
       throw new AppError('Invalid state parameter', 401);
     }
     
     // 清除session中的state
     if (req.session) {
-      delete req.session.msalState;
+      delete (req.session as any).msalState;
     }
     
     // 获取环境变量中的重定向URI

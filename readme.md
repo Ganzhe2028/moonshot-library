@@ -125,7 +125,7 @@ moonshot-library/
 | 根目录 | `npm run lint` | 前端 ESLint + Prettier |
 | server/ | `npm run dev` | 启动后端（ts-node-dev 热重载） |
 | server/ | `npm run build && npm start` | 编译并运行后端生产版本 |
-| server/ | `npm run init-db` | 初始化 SQLite 数据 |
+| server/ | `npm run init-db` | 初始化SQLite数据库并创建核心表结构，在数据库为空时自动填充示例图书数据，同时创建三种角色的演示账户（学生、教师、图书管理员） |
 | server/ | `npm run setup-test` | 准备测试数据 |
 | server/ | `npm test` / `npm run test:watch` | 运行 API 测试 |
 | server/ | `npm run lint` | 后端 ESLint 检查 |
