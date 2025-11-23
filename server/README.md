@@ -146,12 +146,86 @@ npm run test:watch
 
 ## Database Schema
 
-The system uses SQLite with the following main tables:
+The system uses SQLite with a well-structured relational database. Below are the main tables with their detailed schemas and relationships, reflecting the actual implementation:
 
-- **users**: User accounts and information
-- **books**: Book catalog and details
-- **borrowing_records**: Borrowing history and current loans
-- **reservations**: Book reservation system
+### users Table
+Stores user account information and authentication data
+- `id`: TEXT PRIMARY KEY - Unique user identifier (UUID format)
+- `email`: TEXT NOT NULL UNIQUE - User email address (used for login)
+- `password`: TEXT NOT NULL - Hashed user password (bcrypt)
+- `name`: TEXT NOT NULL - User's full name
+- `role`: TEXT CHECK(role IN ('student', 'teacher', 'librarian')) NOT NULL DEFAULT 'student' - User role
+- `grade`: TEXT - User grade level (for students)
+- `membership`: TEXT CHECK(membership IN ('active', 'suspended')) NOT NULL DEFAULT 'active' - Account status
+- `avatar_color`: TEXT - Color code for user avatar
+- `created_at`: DATETIME DEFAULT CURRENT_TIMESTAMP - Account creation time
+- `updated_at`: DATETIME DEFAULT CURRENT_TIMESTAMP - Last account update time
+
+### books Table
+Contains the complete book catalog information
+- `id`: TEXT PRIMARY KEY - Unique book identifier (UUID format)
+- `title`: TEXT NOT NULL - Book title
+- `authors`: TEXT NOT NULL - Book authors (stored as JSON array)
+- `isbn`: TEXT - International Standard Book Number
+- `publisher`: TEXT - Publisher name
+- `published_year`: INTEGER - Year of publication
+- `category`: TEXT NOT NULL - Book category/genre
+- `description`: TEXT - Book description/summary
+- `cover_image`: TEXT - URL or path to cover image
+- `total_copies`: INTEGER NOT NULL DEFAULT 1 - Total number of copies
+- `available_copies`: INTEGER NOT NULL DEFAULT 1 - Number of available copies
+- `status`: TEXT CHECK(status IN ('available', 'borrowed', 'reserved', 'maintenance')) NOT NULL DEFAULT 'available' - Current status
+- `location`: TEXT - Physical location in library
+- `tags`: TEXT - Book tags (stored as JSON array)
+- `created_at`: DATETIME DEFAULT CURRENT_TIMESTAMP - Record creation time
+- `updated_at`: DATETIME DEFAULT CURRENT_TIMESTAMP - Last update time
+
+### borrowing_records Table
+Tracks all book borrowing activities
+- `id`: TEXT PRIMARY KEY - Unique borrowing record ID (UUID format)
+- `user_id`: TEXT NOT NULL - Foreign key referencing users.id
+- `book_id`: TEXT NOT NULL - Foreign key referencing books.id
+- `borrow_date`: DATE NOT NULL - Date when book was borrowed
+- `due_date`: DATE NOT NULL - Date when book is due to be returned
+- `return_date`: DATE - Actual return date (NULL if still borrowed)
+- `status`: TEXT CHECK(status IN ('active', 'returned', 'overdue')) NOT NULL DEFAULT 'active' - Current status
+- `renewals`: INTEGER NOT NULL DEFAULT 0 - Number of times renewed
+- `created_at`: DATETIME DEFAULT CURRENT_TIMESTAMP - Record creation time
+- `updated_at`: DATETIME DEFAULT CURRENT_TIMESTAMP - Last update time
+- FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+- FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE
+
+### reservations Table
+Manages book reservation requests
+- `id`: TEXT PRIMARY KEY - Unique reservation ID (UUID format)
+- `user_id`: TEXT NOT NULL - Foreign key referencing users.id
+- `book_id`: TEXT NOT NULL - Foreign key referencing books.id
+- `reservation_date`: DATE NOT NULL - When reservation was made
+- `expiry_date`: DATE NOT NULL - When reservation expires
+- `status`: TEXT CHECK(status IN ('active', 'fulfilled', 'cancelled', 'expired')) NOT NULL DEFAULT 'active' - Current status
+- `created_at`: DATETIME DEFAULT CURRENT_TIMESTAMP - Record creation time
+- `updated_at`: DATETIME DEFAULT CURRENT_TIMESTAMP - Last update time
+- FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+- FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE
+
+### Database Relationships
+- **One-to-Many**: A user can have multiple borrowing records and reservations
+- **One-to-Many**: A book can be borrowed multiple times and have multiple reservations
+- **Many-to-One**: Each borrowing record and reservation belongs to exactly one user and one book
+- **Cascade Deletion**: When a user or book is deleted, related borrowing records and reservations are automatically deleted
+
+### Database Optimization
+- **UUID Primary Keys**: All tables use TEXT UUIDs for primary keys instead of auto-incrementing integers
+- **Indexes**: Comprehensive indexing on frequently queried fields:
+  - users(email)
+  - books(category, status)
+  - borrowing_records(user_id, book_id, status)
+  - reservations(user_id, book_id, status)
+- **Check Constraints**: Field-level validation using CHECK constraints
+- **Default Values**: Sensible defaults for timestamps and counts
+- **Triggers**: Automatic timestamp updates via database triggers
+- **Foreign Key Constraints**: Enforced referential integrity with cascade deletion options
+- **Date Types**: Uses appropriate DATE vs DATETIME types for different temporal fields
 
 ## Development
 
@@ -172,19 +246,24 @@ The system uses SQLite with the following main tables:
 ```
 server/
 ├── src/
+│   ├── config/          # Configuration files (including Swagger)
 │   ├── controllers/     # Request handlers
 │   ├── middleware/      # Express middleware
-│   ├── models/           # Database models
-│   ├── routes/           # API routes
-│   ├── scripts/          # Utility scripts
-│   ├── types/            # TypeScript type definitions
-│   ├── utils/            # Utility functions
-│   └── server.ts         # Main server file
-├── data/                 # Database files
-├── .env.example          # Environment variables template
-├── package.json
-├── tsconfig.json         # TypeScript configuration
-└── README.md
+│   ├── models/          # Database models
+│   ├── routes/          # API routes
+│   ├── scripts/         # Utility scripts
+│   ├── types/           # TypeScript type definitions
+│   ├── utils/           # Utility functions
+│   └── server.ts        # Main server file
+├── database/            # Database initialization and migrations
+├── docs/                # Documentation files
+│   └── swagger.json     # Swagger API specification
+├── .env.example         # Environment variables template
+├── .eslintrc.js         # ESLint configuration
+├── API_DOCUMENTATION.md # API architecture overview
+├── package.json         # Project dependencies
+├── tsconfig.json        # TypeScript configuration
+└── README.md            # Project documentation
 ```
 
 ## Security Features
