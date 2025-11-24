@@ -35,7 +35,10 @@ const coverImageUrl = computed(
   <RouterLink :to="`/books/${book.id}`" class="card">
     <div class="cover" :style="{ backgroundImage: `url(${coverImageUrl})` }" />
     <div class="info">
-      <p class="category">{{ book.category }}</p>
+      <div class="category-status-container">
+        <p class="category">{{ book.category }}</p>
+        <span class="status" :class="statusLabel?.className">{{ statusLabel?.text }}</span>
+      </div>
       <h3>{{ book.title }}</h3>
       <p class="author">{{ authorLine }}</p>
 
@@ -43,11 +46,44 @@ const coverImageUrl = computed(
         <span v-for="tag in book.tags" :key="tag">{{ tag }}</span>
       </div>
     </div>
-    <span class="status" :class="statusLabel?.className">{{ statusLabel?.text }}</span>
   </RouterLink>
 </template>
 
 <style scoped>
+.category-status-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 0.5rem;
+}
+
+.status {
+  font-size: 0.8rem;
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  font-weight: 600;
+  z-index: 10;
+}
+
+.status.available {
+  background: rgba(16, 185, 129, 0.2);
+  color: #047857;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.status.borrowed {
+  background: rgba(248, 113, 113, 0.2);
+  color: #b91c1c;
+  border: 1px solid rgba(248, 113, 113, 0.3);
+}
+
+.status.reserved {
+  background: rgba(251, 191, 36, 0.2);
+  color: #92400e;
+  border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
 .card {
   position: relative;
   display: flex;
@@ -104,30 +140,5 @@ const coverImageUrl = computed(
   padding: 0.2rem 0.6rem;
   border-radius: 999px;
   font-size: 0.75rem;
-}
-
-.status {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  font-size: 0.75rem;
-  padding: 0.2rem 0.8rem;
-  border-radius: 999px;
-  font-weight: 600;
-}
-
-.status.available {
-  background: rgba(16, 185, 129, 0.12);
-  color: #047857;
-}
-
-.status.borrowed {
-  background: rgba(248, 113, 113, 0.14);
-  color: #b91c1c;
-}
-
-.status.reserved {
-  background: rgba(251, 191, 36, 0.18);
-  color: #92400e;
 }
 </style>
