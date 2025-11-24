@@ -35,6 +35,11 @@ coverage
 # Vitest
 __screenshots__/
 
+# Environment files
+.env
+.env.*
+!.env.example
+
 # backend
 /server/.env
 /server/database/library.db
