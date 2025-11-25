@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
+import * as XLSX from 'xlsx'
 
 import { useLibraryStore } from '@/stores/library'
-import type { BookStatus } from '@/types/library'
+import type { BookImportResult, BookStatus } from '@/types/library'
 
 const libraryStore = useLibraryStore()
 
@@ -10,6 +11,11 @@ const editingId = ref<string | null>(null)
 const message = ref('')
 const messageVariant = ref<'success' | 'error'>('success')
 const showForm = ref(false)
+const importResult = ref<BookImportResult | null>(null)
+const importError = ref('')
+const importLoading = ref(false)
+const importFileName = ref('')
+const fileInputRef = ref<HTMLInputElement | null>(null)
 
 const form = reactive({
   title: '',
@@ -145,6 +151,83 @@ const statusBadge = (status: BookStatus) => {
 
 const reload = () => libraryStore.fetchBooks(true)
 
+const triggerFilePicker = () => fileInputRef.value?.click()
+
+const downloadTemplate = () => {
+  const headers = [
+    'Title',
+    'Authors',
+    'Category',
+    'TotalCopies',
+    'AvailableCopies',
+    'Status',
+    'Tags',
+    'ISBN',
+    'Publisher',
+    'PublishedYear',
+    'Location',
+    'Description',
+  ]
+  const sample = [
+    '人工智能导论',
+    '张三，李四',
+    '计算机科学',
+    '5',
+    '5',
+    'available',
+    'AI，教材',
+    '9787111123456',
+    '机械工业出版社',
+    `${new Date().getFullYear()}`,
+    'A区-101',
+    '经典的AI入门读物',
+  ]
+  const worksheet = XLSX.utils.aoa_to_sheet([headers, sample])
+  const workbook = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(workbook, worksheet, '模板')
+  const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' })
+  const blob = new Blob([excelBuffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  })
+
+  const link = document.createElement('a')
+  link.href = URL.createObjectURL(blob)
+  link.download = 'books-import-template.xlsx'
+  link.click()
+  URL.revokeObjectURL(link.href)
+}
+
+const importFile = async (file: File) => {
+  importLoading.value = true
+  importError.value = ''
+  importResult.value = null
+  importFileName.value = file.name
+  message.value = ''
+
+  const result = await libraryStore.importBooks(file)
+  importLoading.value = false
+
+  messageVariant.value = result.success ? 'success' : 'error'
+  message.value = result.message
+
+  if (result.success && result.result) {
+    importResult.value = result.result
+  } else {
+    importError.value = result.message
+  }
+}
+
+const handleFileChange = async (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (file) {
+    await importFile(file)
+  }
+  if (target) {
+    target.value = ''
+  }
+}
+
 onMounted(() => {
   libraryStore.fetchBooks()
 })
@@ -161,6 +244,45 @@ onMounted(() => {
         <div class="actions">
           <button type="button" class="ghost" @click="reload">刷新</button>
           <button type="button" class="primary" @click="startCreate">新建书籍</button>
+        </div>
+      </div>
+
+      <div class="import-strip">
+        <div>
+          <p class="eyebrow">批量导入</p>
+          <p class="hint">
+            下载 Excel 模板填写后上传，一次导入多本书（支持 .xlsx/.xls，兼容 CSV）。
+            字段支持：标题、作者、分类、总册数、可用册数、状态、标签、ISBN、出版社、出版年份、位置、简介。
+          </p>
+          <div class="import-actions">
+            <button type="button" class="ghost" @click="downloadTemplate">下载模板</button>
+            <button type="button" class="primary" :disabled="importLoading" @click="triggerFilePicker">
+              {{ importLoading ? '正在导入...' : '上传文件' }}
+            </button>
+            <input
+              ref="fileInputRef"
+              type="file"
+              accept=".xlsx,.xls"
+              class="sr-only"
+              @change="handleFileChange"
+            />
+          </div>
+          <p v-if="importFileName" class="hint file-name">已选择：{{ importFileName }}</p>
+          <p v-if="importError" class="alert error">{{ importError }}</p>
+          <div v-if="importResult" class="import-result alert success">
+            <p>
+              导入成功 {{ importResult.imported }} 条，
+              失败 {{ importResult.failed }} 条 / 共 {{ importResult.total }} 条。
+            </p>
+            <ul v-if="importResult.errors.length" class="error-list">
+              <li v-for="error in importResult.errors.slice(0, 3)" :key="error.row">
+                第 {{ error.row }} 行：{{ error.message }}
+              </li>
+              <li v-if="importResult.errors.length > 3">
+                其余 {{ importResult.errors.length - 3 }} 条错误请检查文件。
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
 
@@ -465,6 +587,47 @@ select {
 .alert.error {
   background: rgba(239, 68, 68, 0.12);
   color: #b91c1c;
+}
+
+.import-strip {
+  margin-bottom: 0.8rem;
+  padding: 0.75rem;
+  border: 1px dashed rgba(67, 56, 202, 0.3);
+  border-radius: 12px;
+  background: rgba(67, 56, 202, 0.05);
+}
+
+.import-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+  flex-wrap: wrap;
+}
+
+.file-name {
+  margin: 0.2rem 0 0;
+}
+
+.import-result {
+  margin-top: 0.5rem;
+}
+
+.error-list {
+  margin: 0.35rem 0 0;
+  padding-left: 1.2rem;
+  color: #92400e;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .hint {

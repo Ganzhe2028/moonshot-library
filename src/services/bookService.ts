@@ -1,11 +1,11 @@
-import type { Book } from '@/types/library'
+import type { Book, BookImportResult } from '@/types/library'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api'
 
 class BookService {
-  private getHeaders(includeAuth = false): Record<string, string> {
+  private getHeaders(includeAuth = false, contentType: string | null = 'application/json'): Record<string, string> {
     const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
+      ...(contentType ? { 'Content-Type': contentType } : {}),
     }
     if (includeAuth) {
       const token = localStorage.getItem('token')
@@ -65,6 +65,18 @@ class BookService {
       method: 'DELETE',
       headers: this.getHeaders(true),
     })
+  }
+
+  async importBooks(file: File): Promise<BookImportResult> {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const data = await this.request<BookImportResult>('/books/import', {
+      method: 'POST',
+      headers: this.getHeaders(true, null),
+      body: formData,
+    })
+    return data
   }
 }
 

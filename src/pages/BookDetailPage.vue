@@ -82,16 +82,10 @@ const coverImage = computed(
           <button
             type="button"
             class="primary"
-            :disabled="book.status !== 'available'"
+            :disabled="hasBorrowed || book.status !== 'available'"
             @click="handleBorrow"
           >
-            {{
-              book.status === 'available'
-                ? hasBorrowed
-                  ? '已在借阅列表中'
-                  : '立即借阅'
-                : '暂不可借'
-            }}
+            {{ hasBorrowed ? '已借阅' : book.status === 'available' ? '立即借阅' : '暂不可借' }}
           </button>
           <button type="button" class="secondary" @click="router.push('/borrowings')">
             查看我的借阅

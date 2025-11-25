@@ -17,6 +17,19 @@ export interface Book {
   tags: string[]
 }
 
+export interface BookImportError {
+  row: number
+  message: string
+}
+
+export interface BookImportResult {
+  imported: number
+  failed: number
+  total: number
+  errors: BookImportError[]
+  books: Book[]
+}
+
 export type BorrowingStatus = 'active' | 'returned' | 'overdue'
 
 export interface BorrowingRecord {

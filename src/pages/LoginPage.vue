@@ -63,13 +63,13 @@
       </button>
 
       <div class="test-accounts">
-        <h4>测试账号（点击自动填充）</h4>
+        <h4>测试账号（一键登录）</h4>
         <button
           v-for="account in testAccounts"
           :key="account.email"
           type="button"
           class="test-account"
-          @click="fillWithTestAccount(account)"
+          @click="loginWithTestAccount(account)"
           :disabled="isLoading"
         >
           <strong>{{ account.label }}</strong><br>
@@ -122,16 +122,14 @@ const testAccounts = [
   }
 ]
 
-const handleLogin = async () => {
+const loginWithCredentials = async (email: string, password: string) => {
   isLoading.value = true
   error.value = ''
 
   try {
-    const success = await authStore.login(loginForm.email, loginForm.password)
-    
+    const success = await authStore.login(email, password)
     if (success) {
-      // 登录成功，跳转到之前想访问的页面或首页
-      const redirect = route.query.redirect as string || '/'
+      const redirect = (route.query.redirect as string) || '/'
       router.push(redirect)
     } else {
       error.value = authStore.error || '登录失败'
@@ -144,10 +142,14 @@ const handleLogin = async () => {
   }
 }
 
-const fillWithTestAccount = (account: { email: string; password: string }) => {
+const handleLogin = async () => {
+  await loginWithCredentials(loginForm.email, loginForm.password)
+}
+
+const loginWithTestAccount = async (account: { email: string; password: string }) => {
   loginForm.email = account.email
   loginForm.password = account.password
-  error.value = ''
+  await loginWithCredentials(account.email, account.password)
 }
 
 // 处理M365 SSO登录（使用后端重定向模式）
