@@ -1,6 +1,6 @@
-# Moonshot Library 系统 Linux Docker 部署文档
+# Moonshot Library 系统 Docker 部署文档
 
-> 注意：本文档已根据最新的部署脚本和实践经验进行了优化。
+> 注意：本文档已根据最新的部署脚本和实践经验进行了优化，包含 Linux 和 macOS 环境的部署指南。
 
 ## 目录
 
@@ -14,16 +14,42 @@
 
 ## 环境要求
 
-- Linux 系统 (推荐 Ubuntu 20.04 LTS 或 CentOS 7/8)
+### 通用要求
 - 至少 2GB RAM（推荐 4GB 及以上）
 - 至少 10GB 磁盘空间（建议 20GB 及以上，预留数据库增长空间）
 - 网络连接（用于拉取镜像）
-- root 或 sudo 权限
 - Git（用于获取项目代码，可选）
+
+### Linux 特定要求
+- Linux 系统 (推荐 Ubuntu 20.04 LTS 或 CentOS 7/8)
+- root 或 sudo 权限
+
+### macOS 特定要求
+- macOS 11.0 (Big Sur) 或更高版本
+- 用户账户权限（无需管理员权限运行容器）
 
 ## Docker 和 Docker Compose 安装
 
 > 注意：建议使用 Docker 20.10+ 和 Docker Compose 1.29.2+ 版本以确保最佳兼容性。
+
+### macOS 系统（推荐使用 Docker Desktop）
+
+macOS 环境下，最简单的方法是安装 Docker Desktop for Mac，它已经包含了 Docker Compose：
+
+1. 访问 [Docker Desktop 官网](https://www.docker.com/products/docker-desktop) 下载 macOS 版本安装包
+2. 双击下载的 `.dmg` 文件并按照安装向导完成安装
+3. 启动 Docker Desktop 应用
+4. 打开终端，验证安装是否成功：
+
+```bash
+# 验证 Docker 安装
+docker --version
+
+# 验证 Docker Compose 安装
+docker-compose --version
+```
+
+> 提示：在 macOS 上安装完成后，Docker 服务会自动启动，无需额外配置。
 
 ### Ubuntu 系统
 
@@ -157,7 +183,27 @@ EOF
 
 ## 部署步骤
 
+部署脚本 `deploy-docker.sh` 已经针对不同操作系统进行了优化，可以在 Linux 和 macOS 上使用相同的方式执行。
+
 ### 使用部署脚本（推荐）
+
+#### macOS 简化部署流程
+
+对于 macOS 用户，部署过程特别简单，只需两个主要步骤即可完成：
+
+1. **安装 Docker Desktop**：
+   - 从 [Docker Desktop 官网](https://www.docker.com/products/docker-desktop) 下载并安装
+   - 安装完成后启动 Docker Desktop 应用
+
+2. **执行部署脚本**：
+   ```bash
+   # 在项目目录中运行部署脚本
+   ./deploy-docker.sh
+   ```
+
+> 提示：macOS 用户不需要手动安装 Docker Compose，Docker Desktop 已经包含了它。也不需要配置复杂的权限，使用普通用户账户即可运行容器。
+
+#### Linux 部署流程（原有内容）
 
 项目提供了自动化部署脚本，简化了部署过程：
 
@@ -408,6 +454,8 @@ docker-compose logs
 
 ## 安全建议
 
+### 通用安全建议
+
 1. 定期更新 Docker 和 Docker Compose 到最新版本
 2. 使用强密码保护 JWT 密钥（部署脚本会自动生成强密钥）
 3. 在生产环境中配置 HTTPS（使用 Let's Encrypt 或其他 SSL 证书）
@@ -422,7 +470,24 @@ docker-compose logs
    docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image moonshot-library-frontend
    ```
 
-## 性能优化建议
+### 性能优化建议
+
+### macOS 特定优化
+
+在 macOS 上运行 Docker 时，可以通过以下方式优化性能：
+
+1. 为 Docker Desktop 分配足够的资源：
+   - 打开 Docker Desktop 偏好设置
+   - 进入 Resources 选项卡
+   - 调整 CPU 和内存分配（推荐至少 4GB RAM）
+
+2. 启用 VirtioFS（macOS 12.5+）：
+   - 在 Resources > File Sharing 中启用 VirtioFS 以提高文件系统性能
+
+3. 限制文件共享范围：
+   - 只共享必要的目录，避免共享整个主目录
+
+### 通用性能优化
 
 1. 为 Docker 分配足够的资源（至少 2GB RAM 和 10GB 磁盘空间）
 2. 使用合适的基础镜像（项目已使用 node:20-alpine 优化镜像大小）
