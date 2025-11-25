@@ -43,3 +43,4 @@ __screenshots__/
 # backend
 /server/.env
 /server/database/library.db
+/server/database/backups/library_db_backup_20251125_142801.db
