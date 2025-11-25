@@ -12,7 +12,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   // 计算属性
   const isAuthenticated = computed(() => !!user.value)
-  const userRole = computed(() => user.value?.role)
+  const userRole = computed(() => user.value?.role || '')
   const isAdmin = computed(() => user.value?.role === 'admin')
   const isLibrarian = computed(() => user.value?.role === 'librarian')
   const isTeacher = computed(() => user.value?.role === 'teacher')
@@ -45,7 +45,7 @@ export const useAuthStore = defineStore('auth', () => {
       user.value = response.data.user
       loginMethod.value = 'local'
       localStorage.setItem('auth_user', JSON.stringify(response.data.user))
-      return { success: true, redirectUrl: response.data.redirectUrl }
+      return { success: true, redirectUrl: undefined } // login方法不返回redirectUrl
     } catch (err) {
       error.value = err instanceof Error ? err.message : '登录失败'
       return { success: false }
@@ -71,14 +71,16 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   // 处理M365重定向登录
-  async function handleM365Redirect(url: string): Promise<{success: boolean, redirectUrl?: string}> {
+  async function handleM365Redirect(): Promise<{success: boolean, redirectUrl?: string}> {
     isLoading.value = true
     error.value = null
     
     try {
-      const result = await authService.handleM365Redirect(url)
+      const result = await authService.handleM365Redirect()
       if (result && result.user) {
-        user.value = result.user
+        // 将object类型安全地转换为AuthUser接口
+        const userData = result.user ? (result.user as unknown as AuthUser) : null
+        user.value = userData
         loginMethod.value = 'm365'
         localStorage.setItem('auth_user', JSON.stringify(result.user))
         localStorage.setItem('login_method', 'm365')

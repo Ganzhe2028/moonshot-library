@@ -1,0 +1,104 @@
+# Moonshot Library Docker Compose Configuration
+# 支持开发和生产环境的统一配置文件
+
+networks:
+  moonshot-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  backend-db:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: ./server/database
+
+  # 添加node_modules卷以加速构建和缓存
+  backend-node-modules:
+  frontend-node-modules:
+
+services:
+  # Backend service
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+      args:
+        - NODE_IMAGE=${NODE_IMAGE:-node:20-alpine}
+        - NPM_REGISTRY=https://registry.npmmirror.com
+        # 代理设置仅在需要时通过环境变量提供
+        - HTTP_PROXY=${HTTP_PROXY:-}
+        - HTTPS_PROXY=${HTTPS_PROXY:-}
+    image: moonshot-library-backend:latest
+    container_name: moonshot-library-backend
+    volumes:
+      - backend-db:/app/database
+      # Linux环境下确保正确的权限
+      - ./server/database:/app/database:rw
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - PORT=3000
+      - DB_PATH=/app/database/library.db
+      - JWT_SECRET=${JWT_SECRET:-moonshot_library_secret_key}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - ALLOWED_DOMAINS=${ALLOWED_DOMAINS:-}
+      # 确保Express正确处理代理头
+      - TRUST_PROXY=1
+    networks:
+      moonshot-network:
+        ipv4_address: 172.20.0.2
+    restart: unless-stopped
+    healthcheck:
+      # 根据环境使用不同的健康检查路径
+      test: ["CMD", "wget", "--spider", "http://localhost:3000${HEALTH_CHECK_PATH:-/health}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Frontend service - 使用Dockerfile构建
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - NODE_IMAGE=${NODE_IMAGE:-node:20-alpine}
+        - NGINX_IMAGE=nginx:alpine
+        - NPM_REGISTRY=https://registry.npmmirror.com
+        # 代理设置仅在需要时通过环境变量提供
+        - HTTP_PROXY=${HTTP_PROXY:-}
+        - HTTPS_PROXY=${HTTPS_PROXY:-}
+    image: moonshot-library-frontend:latest
+    container_name: moonshot-library-frontend
+    ports:
+      - "80:80"
+    networks:
+      moonshot-network:
+        ipv4_address: 172.20.0.3
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    # Linux环境下的优化设置
+    sysctls:
+      net.core.somaxconn: '4096'
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "http://localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+# 使用方法:
+# 开发环境: docker-compose up -d
+# 生产环境: NODE_ENV=production NODE_IMAGE=node:20-alpine JWT_SECRET=your_secure_key LOG_LEVEL=warn HEALTH_CHECK_PATH=/health docker-compose up -d
+# 或使用 .env 文件设置环境变量
