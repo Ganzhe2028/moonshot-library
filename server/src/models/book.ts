@@ -79,6 +79,21 @@ export const getBookById = async (id: string): Promise<Book | null> => {
   })
 }
 
+export const getBookByISBN = async (isbn: string): Promise<Book | null> => {
+  const db = getDatabase()
+
+  return new Promise((resolve, reject) => {
+    const sql = 'SELECT * FROM books WHERE isbn = ? LIMIT 1'
+    db.get(sql, [isbn], (err, row) => {
+      if (err) {
+        reject(err)
+      } else {
+        resolve(row ? deserializeBook(row) : null)
+      }
+    })
+  })
+}
+
 export const getAllBooks = async (
   limit: number = 50,
   offset: number = 0,

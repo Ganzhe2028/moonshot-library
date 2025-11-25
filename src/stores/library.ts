@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { useAuthStore } from './auth'
 
-import type { Book, BorrowingRecord } from '@/types/library'
+import type { Book, BookImportResult, BorrowingRecord } from '@/types/library'
 import { bookService } from '@/services/bookService'
 import { borrowingService } from '@/services/borrowingService'
 
@@ -87,6 +87,22 @@ export const useLibraryStore = defineStore('library', {
         return { success: true, message: '书籍已删除。' }
       } catch (err) {
         const message = err instanceof Error ? err.message : '删除书籍失败'
+        this.booksError = message
+        return { success: false, message }
+      }
+    },
+    async importBooks(file: File): Promise<{ success: boolean; message: string; result?: BookImportResult }> {
+      this.booksError = ''
+      try {
+        const result = await bookService.importBooks(file)
+        await this.fetchBooks(true)
+        return {
+          success: true,
+          message: `已导入 ${result.imported} 条记录，失败 ${result.failed} 条。`,
+          result,
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : '批量导入失败'
         this.booksError = message
         return { success: false, message }
       }

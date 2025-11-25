@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useAdminStore } from '@/stores/admin'
 import { useLibraryStore } from '@/stores/library'
@@ -7,6 +8,7 @@ import type { BorrowingStatus } from '@/types/library'
 
 const adminStore = useAdminStore()
 const libraryStore = useLibraryStore()
+const { t } = useI18n()
 
 const statusFilter = ref<'all' | BorrowingStatus>('all')
 
@@ -23,11 +25,11 @@ const borrowingRows = computed(() =>
 const statusBadge = (status: BorrowingStatus) => {
   switch (status) {
     case 'active':
-      return { text: '借阅中', className: 'blue' }
+      return { text: t('admin.borrowings.status.active'), className: 'blue' }
     case 'returned':
-      return { text: '已归还', className: 'green' }
+      return { text: t('admin.borrowings.status.returned'), className: 'green' }
     case 'overdue':
-      return { text: '逾期', className: 'red' }
+      return { text: t('admin.borrowings.status.overdue'), className: 'red' }
     default:
       return { text: status, className: 'gray' }
   }
@@ -49,29 +51,29 @@ onMounted(() => {
   <section class="panel">
     <div class="panel-head">
       <div>
-        <p class="eyebrow">借阅</p>
-        <h2>借阅记录</h2>
+        <p class="eyebrow">{{ t('admin.borrowings.title') }}</p>
+        <h2>{{ t('admin.borrowings.title') }}</h2>
       </div>
       <div class="actions">
         <select v-model="statusFilter">
-          <option value="all">全部状态</option>
-          <option value="active">借阅中</option>
-          <option value="returned">已归还</option>
-          <option value="overdue">逾期</option>
+          <option value="all">{{ t('admin.users.filterAll') }}</option>
+          <option value="active">{{ t('borrowings.currentTab') }}</option>
+          <option value="returned">{{ t('borrowings.return') }}</option>
+          <option value="overdue">{{ t('admin.borrowings.overdue') || 'Overdue' }}</option>
         </select>
-        <button type="button" class="ghost" @click="reload">刷新</button>
+        <button type="button" class="ghost" @click="reload">{{ t('admin.users.refresh') }}</button>
       </div>
     </div>
 
-    <div v-if="adminStore.borrowingsLoading" class="hint">正在加载借阅记录...</div>
+    <div v-if="adminStore.borrowingsLoading" class="hint">{{ t('admin.borrowings.loading') }}</div>
     <p v-else-if="adminStore.borrowingsError" class="alert error">{{ adminStore.borrowingsError }}</p>
     <div v-else class="table">
       <div class="table-head">
-        <span>书籍</span>
-        <span>借阅人</span>
-        <span>借阅时间</span>
-        <span>到期时间</span>
-        <span>状态</span>
+        <span>{{ t('admin.borrowings.columns.book') }}</span>
+        <span>{{ t('admin.borrowings.columns.user') }}</span>
+        <span>{{ t('admin.borrowings.columns.borrowDate') }}</span>
+        <span>{{ t('admin.borrowings.columns.dueDate') }}</span>
+        <span>{{ t('admin.borrowings.columns.status') }}</span>
       </div>
       <div v-for="item in borrowingRows" :key="item.record.id" class="table-row">
         <span>{{ item.bookTitle }}</span>
@@ -82,7 +84,7 @@ onMounted(() => {
           {{ statusBadge(item.record.status).text }}
         </span>
       </div>
-      <p v-if="!borrowingRows.length" class="hint">暂无借阅数据。</p>
+      <p v-if="!borrowingRows.length" class="hint">{{ t('admin.borrowings.empty') }}</p>
     </div>
   </section>
 </template>

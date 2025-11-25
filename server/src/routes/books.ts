@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import {
   getBooks,
   getBook,
@@ -9,11 +9,42 @@ import {
   validateCreateBook,
   validateUpdateBook,
   validateBookId,
-  validateBookQuery
+  validateBookQuery,
+  importBooksHandler
 } from '../controllers/bookController';
 import { authenticate, authorize } from '../middleware/auth';
+import multer from 'multer';
 
 const router = Router();
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const allowedTypes = [
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-excel',
+      'text/csv'
+    ];
+    if (allowedTypes.includes(file.mimetype) || /\.(xlsx?|csv)$/i.test(file.originalname)) {
+      cb(null, true);
+    } else {
+      cb(new Error('仅支持上传Excel文件（xlsx/xls，兼容CSV）'));
+    }
+  }
+});
+
+const importUploadMiddleware = (req: Request, res: Response, next: NextFunction): void => {
+  upload.single('file')(req, res, (err: any) => {
+    if (err) {
+      res.status(400).json({
+        success: false,
+        message: err.message || '文件上传失败'
+      });
+      return;
+    }
+    next();
+  });
+};
 
 /**
  * @swagger
@@ -147,6 +178,71 @@ router.get('/', validateBookQuery, getBooks);
  *         description: 服务器错误
  */
 router.get('/categories', getBookCategoriesHandler);
+
+/**
+ * @swagger
+ * /books/import:
+ *   post:
+ *     summary: 批量导入图书
+ *     description: 通过上传 Excel 文件批量导入图书记录（推荐使用下载的模板，兼容 CSV；需要管理员或图书管理员权限）
+ *     tags: [Books]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *                 description: Excel 文件（.xlsx/.xls，兼容 CSV）
+ *     responses:
+ *       201:
+ *         description: 导入完成
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     imported:
+ *                       type: integer
+ *                     failed:
+ *                       type: integer
+ *                     total:
+ *                       type: integer
+ *                     errors:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           row:
+ *                             type: integer
+ *                           message:
+ *                             type: string
+ *       400:
+ *         description: 上传或数据校验失败
+ *       401:
+ *         description: 未认证
+ *       403:
+ *         description: 权限不足
+ */
+router.post(
+  '/import',
+  authenticate,
+  authorize(['admin', 'librarian']),
+  importUploadMiddleware,
+  importBooksHandler
+);
 
 /**
  * @swagger

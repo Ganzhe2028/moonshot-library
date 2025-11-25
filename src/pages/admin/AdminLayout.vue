@@ -1,13 +1,19 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { RouterLink, RouterView, useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
 const route = useRoute()
+const { t } = useI18n()
 
 const tabs = computed(() => [
-  { label: '图书管理', path: '/admin/books', active: route.path.startsWith('/admin/books') },
-  { label: '用户列表', path: '/admin/users', active: route.path.startsWith('/admin/users') },
-  { label: '借阅记录', path: '/admin/borrowings', active: route.path.startsWith('/admin/borrowings') },
+  { label: t('admin.layout.books'), path: '/admin/books', active: route.path.startsWith('/admin/books') },
+  { label: t('admin.layout.users'), path: '/admin/users', active: route.path.startsWith('/admin/users') },
+  {
+    label: t('admin.layout.borrowings'),
+    path: '/admin/borrowings',
+    active: route.path.startsWith('/admin/borrowings'),
+  },
 ])
 </script>
 
@@ -15,11 +21,11 @@ const tabs = computed(() => [
   <div class="admin-shell">
     <header class="admin-header">
       <div>
-        <p class="eyebrow">运营后台</p>
+        <p class="eyebrow">{{ t('admin.layout.title') }}</p>
         <h1>Moonshot Library Admin</h1>
-        <p class="subtitle">快速管理馆藏、用户与借阅状态。</p>
+        <p class="subtitle">{{ t('admin.layout.subtitle') }}</p>
       </div>
-      <RouterLink to="/" class="back-home">← 返回用户端</RouterLink>
+      <RouterLink to="/" class="back-home">← {{ t('common.home') }}</RouterLink>
     </header>
 
     <nav class="admin-nav">

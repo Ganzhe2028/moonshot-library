@@ -1,15 +1,23 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
+import * as XLSX from 'xlsx'
+import { useI18n } from 'vue-i18n'
 
 import { useLibraryStore } from '@/stores/library'
-import type { BookStatus } from '@/types/library'
+import type { BookImportResult, BookStatus } from '@/types/library'
 
 const libraryStore = useLibraryStore()
+const { t } = useI18n()
 
 const editingId = ref<string | null>(null)
 const message = ref('')
 const messageVariant = ref<'success' | 'error'>('success')
 const showForm = ref(false)
+const importResult = ref<BookImportResult | null>(null)
+const importError = ref('')
+const importLoading = ref(false)
+const importFileName = ref('')
+const fileInputRef = ref<HTMLInputElement | null>(null)
 
 const form = reactive({
   title: '',
@@ -27,10 +35,10 @@ const form = reactive({
 })
 
 const statusOptions: { value: BookStatus; label: string }[] = [
-  { value: 'available', label: '可借阅' },
-  { value: 'borrowed', label: '借出中' },
-  { value: 'reserved', label: '已预约' },
-  { value: 'maintenance', label: '维护中' },
+  { value: 'available', label: t('admin.books.status.available') },
+  { value: 'borrowed', label: t('admin.books.status.borrowed') },
+  { value: 'reserved', label: t('admin.books.status.reserved') },
+  { value: 'maintenance', label: t('admin.books.status.maintenance') },
 ]
 
 const books = computed(() => libraryStore.books)
@@ -103,7 +111,7 @@ const handleSubmit = async () => {
 
   if (!payload.title || !payload.authors.length || !payload.category) {
     messageVariant.value = 'error'
-    message.value = '请填写标题、作者和分类。'
+    message.value = t('admin.books.form.required')
     return
   }
 
@@ -121,7 +129,7 @@ const handleSubmit = async () => {
 }
 
 const handleDelete = async (bookId: string) => {
-  const confirmed = window.confirm('确认删除该书籍？删除后不可恢复。')
+  const confirmed = window.confirm(t('admin.books.confirmDelete'))
   if (!confirmed) return
   const result = await libraryStore.deleteBook(bookId)
   messageVariant.value = result.success ? 'success' : 'error'
@@ -131,19 +139,96 @@ const handleDelete = async (bookId: string) => {
 const statusBadge = (status: BookStatus) => {
   switch (status) {
     case 'available':
-      return { text: '可借阅', className: 'green' }
+      return { text: t('admin.books.status.available'), className: 'green' }
     case 'borrowed':
-      return { text: '借出中', className: 'amber' }
+      return { text: t('admin.books.status.borrowed'), className: 'amber' }
     case 'reserved':
-      return { text: '已预约', className: 'orange' }
+      return { text: t('admin.books.status.reserved'), className: 'orange' }
     case 'maintenance':
-      return { text: '维护中', className: 'gray' }
+      return { text: t('admin.books.status.maintenance'), className: 'gray' }
     default:
       return { text: status, className: '' }
   }
 }
 
 const reload = () => libraryStore.fetchBooks(true)
+
+const triggerFilePicker = () => fileInputRef.value?.click()
+
+const downloadTemplate = () => {
+  const headers = [
+    'Title',
+    'Authors',
+    'Category',
+    'TotalCopies',
+    'AvailableCopies',
+    'Status',
+    'Tags',
+    'ISBN',
+    'Publisher',
+    'PublishedYear',
+    'Location',
+    'Description',
+  ]
+  const sample = [
+    '人工智能导论',
+    '张三，李四',
+    '计算机科学',
+    '5',
+    '5',
+    'available',
+    'AI，教材',
+    '9787111123456',
+    '机械工业出版社',
+    `${new Date().getFullYear()}`,
+    'A区-101',
+    '经典的AI入门读物',
+  ]
+  const worksheet = XLSX.utils.aoa_to_sheet([headers, sample])
+  const workbook = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(workbook, worksheet, '模板')
+  const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' })
+  const blob = new Blob([excelBuffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  })
+
+  const link = document.createElement('a')
+  link.href = URL.createObjectURL(blob)
+  link.download = 'books-import-template.xlsx'
+  link.click()
+  URL.revokeObjectURL(link.href)
+}
+
+const importFile = async (file: File) => {
+  importLoading.value = true
+  importError.value = ''
+  importResult.value = null
+  importFileName.value = file.name
+  message.value = ''
+
+  const result = await libraryStore.importBooks(file)
+  importLoading.value = false
+
+  messageVariant.value = result.success ? 'success' : 'error'
+  message.value = result.message
+
+  if (result.success && result.result) {
+    importResult.value = result.result
+  } else {
+    importError.value = result.message
+  }
+}
+
+const handleFileChange = async (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (file) {
+    await importFile(file)
+  }
+  if (target) {
+    target.value = ''
+  }
+}
 
 onMounted(() => {
   libraryStore.fetchBooks()
@@ -155,23 +240,70 @@ onMounted(() => {
     <section class="panel">
       <div class="panel-head">
         <div>
-          <p class="eyebrow">图书</p>
-          <h2>馆藏列表</h2>
+          <p class="eyebrow">{{ t('admin.books.listTitle') }}</p>
+          <h2>{{ t('admin.books.listTitle') }}</h2>
         </div>
         <div class="actions">
-          <button type="button" class="ghost" @click="reload">刷新</button>
-          <button type="button" class="primary" @click="startCreate">新建书籍</button>
+          <button type="button" class="ghost" @click="reload">{{ t('admin.books.refresh') }}</button>
+          <button type="button" class="primary" @click="startCreate">{{ t('admin.books.create') }}</button>
         </div>
       </div>
 
-      <div v-if="libraryStore.booksLoading" class="hint">正在加载图书数据...</div>
+      <div class="import-strip">
+        <div>
+          <p class="eyebrow">{{ t('admin.books.import.title') }}</p>
+          <p class="hint">
+            {{ t('admin.books.import.hint') }}
+          </p>
+          <div class="import-actions">
+            <button type="button" class="ghost" @click="downloadTemplate">
+              {{ t('admin.books.import.download') }}
+            </button>
+            <button type="button" class="primary" :disabled="importLoading" @click="triggerFilePicker">
+              {{ importLoading ? t('admin.books.import.uploading') : t('admin.books.import.upload') }}
+            </button>
+            <input
+              ref="fileInputRef"
+              type="file"
+              accept=".xlsx,.xls"
+              class="sr-only"
+              @change="handleFileChange"
+            />
+          </div>
+          <p v-if="importFileName" class="hint file-name">
+            {{ t('admin.books.import.selected', { name: importFileName }) }}
+          </p>
+          <p v-if="importError" class="alert error">{{ importError }}</p>
+          <div v-if="importResult" class="import-result alert success">
+            <p>
+              {{
+                t('admin.books.import.result', {
+                  imported: importResult.imported,
+                  failed: importResult.failed,
+                  total: importResult.total,
+                })
+              }}
+            </p>
+            <ul v-if="importResult.errors.length" class="error-list">
+              <li v-for="error in importResult.errors.slice(0, 3)" :key="error.row">
+                {{ error.row }} : {{ error.message }}
+              </li>
+              <li v-if="importResult.errors.length > 3">
+                {{ t('admin.books.import.moreErrors', { count: importResult.errors.length - 3 }) }}
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div v-if="libraryStore.booksLoading" class="hint">{{ t('admin.books.loading') || '...' }}</div>
       <div v-else class="table">
         <div class="table-head">
-          <span>标题</span>
-          <span>分类</span>
-          <span>库存</span>
-          <span>状态</span>
-          <span class="actions-col">操作</span>
+          <span>{{ t('admin.books.table.title') }}</span>
+          <span>{{ t('admin.books.table.category') }}</span>
+          <span>{{ t('admin.books.table.stock') }}</span>
+          <span>{{ t('admin.books.table.status') }}</span>
+          <span class="actions-col">{{ t('admin.books.table.actions') }}</span>
         </div>
         <div v-for="book in books" :key="book.id" class="table-row">
           <div>
@@ -184,50 +316,50 @@ onMounted(() => {
             {{ statusBadge(book.status).text }}
           </span>
           <div class="actions">
-            <button type="button" class="ghost" @click="startEdit(book.id)">编辑</button>
-            <button type="button" class="ghost danger" @click="handleDelete(book.id)">删除</button>
+            <button type="button" class="ghost" @click="startEdit(book.id)">{{ t('admin.books.edit') }}</button>
+            <button type="button" class="ghost danger" @click="handleDelete(book.id)">{{ t('admin.books.delete') }}</button>
           </div>
         </div>
-        <p v-if="!books.length" class="hint">还没有数据，请新建书籍。</p>
+        <p v-if="!books.length" class="hint">{{ t('admin.books.table.empty') }}</p>
       </div>
     </section>
 
     <section class="panel form-panel" v-if="showForm">
       <div class="panel-head">
         <div>
-          <p class="eyebrow">表单</p>
-          <h2>{{ editingId ? '编辑书籍' : '新建书籍' }}</h2>
+          <p class="eyebrow">{{ t('admin.books.formTitleCreate') }}</p>
+          <h2>{{ editingId ? t('admin.books.formTitleEdit') : t('admin.books.formTitleCreate') }}</h2>
         </div>
-        <button type="button" class="ghost" @click="showForm = false">关闭</button>
+        <button type="button" class="ghost" @click="showForm = false">{{ t('admin.books.closeForm') }}</button>
       </div>
 
       <form class="form" @submit.prevent="handleSubmit">
         <label>
-          标题
-          <input v-model="form.title" type="text" placeholder="书名" required />
+          {{ t('admin.books.form.title') }}
+          <input v-model="form.title" type="text" :placeholder="t('admin.books.form.title')" required />
         </label>
         <label>
-          作者（用逗号分隔）
-          <input v-model="form.authors" type="text" placeholder="作者1, 作者2" required />
+          {{ t('admin.books.form.authors') }}
+          <input v-model="form.authors" type="text" :placeholder="t('admin.books.form.authors')" required />
         </label>
         <label>
-          分类
-          <input v-model="form.category" type="text" placeholder="如：计算机科学" required />
+          {{ t('admin.books.form.category') }}
+          <input v-model="form.category" type="text" :placeholder="t('admin.books.form.category')" required />
         </label>
 
         <div class="two-cols">
           <label>
-            总册数
+            {{ t('admin.books.form.total') }}
             <input v-model.number="form.totalCopies" type="number" min="1" />
           </label>
           <label>
-            可用册数
+            {{ t('admin.books.form.available') }}
             <input v-model.number="form.availableCopies" type="number" min="0" />
           </label>
         </div>
 
         <label>
-          状态
+          {{ t('admin.books.form.status') }}
           <select v-model="form.status">
             <option v-for="option in statusOptions" :key="option.value" :value="option.value">
               {{ option.label }}
@@ -236,8 +368,8 @@ onMounted(() => {
         </label>
 
         <label>
-          标签（逗号分隔）
-          <input v-model="form.tags" type="text" placeholder="AI, 教材, 工具书" />
+          {{ t('admin.books.form.tags') }}
+          <input v-model="form.tags" type="text" :placeholder="t('admin.books.form.tags')" />
         </label>
 
         <div class="two-cols">
@@ -246,29 +378,29 @@ onMounted(() => {
             <input v-model="form.isbn" type="text" />
           </label>
           <label>
-            出版社
+            {{ t('admin.books.form.publisher') }}
             <input v-model="form.publisher" type="text" />
           </label>
         </div>
 
         <div class="two-cols">
           <label>
-            出版年份
+            {{ t('admin.books.form.year') }}
             <input v-model="form.publishedYear" type="number" min="1900" max="2100" />
           </label>
           <label>
-            馆藏位置
+            {{ t('admin.books.form.location') }}
             <input v-model="form.location" type="text" placeholder="A区-101" />
           </label>
         </div>
 
         <label>
-          简介
-          <textarea v-model="form.description" rows="3" placeholder="简要介绍" />
+          {{ t('admin.books.form.desc') }}
+          <textarea v-model="form.description" rows="3" :placeholder="t('admin.books.form.desc')" />
         </label>
 
         <button type="submit" class="primary">
-          {{ editingId ? '保存修改' : '创建书籍' }}
+          {{ editingId ? t('admin.books.form.submitUpdate') : t('admin.books.form.submitCreate') }}
         </button>
       </form>
 
@@ -465,6 +597,47 @@ select {
 .alert.error {
   background: rgba(239, 68, 68, 0.12);
   color: #b91c1c;
+}
+
+.import-strip {
+  margin-bottom: 0.8rem;
+  padding: 0.75rem;
+  border: 1px dashed rgba(67, 56, 202, 0.3);
+  border-radius: 12px;
+  background: rgba(67, 56, 202, 0.05);
+}
+
+.import-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+  flex-wrap: wrap;
+}
+
+.file-name {
+  margin: 0.2rem 0 0;
+}
+
+.import-result {
+  margin-top: 0.5rem;
+}
+
+.error-list {
+  margin: 0.35rem 0 0;
+  padding-left: 1.2rem;
+  color: #92400e;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .hint {

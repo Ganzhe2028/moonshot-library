@@ -2,42 +2,42 @@
   <div class="auth-container">
     <div class="auth-card">
       <div class="auth-header">
-        <h1>注册</h1>
-        <p>加入 Moonshot Library</p>
+        <h1>{{ t('auth.registerTitle') }}</h1>
+        <p>{{ t('auth.registerSubtitle') }}</p>
       </div>
 
       <form @submit.prevent="handleRegister" class="auth-form">
         <div class="form-group">
-          <label for="name">姓名</label>
+          <label for="name">{{ t('auth.name') }}</label>
           <input
             id="name"
             v-model="registerForm.name"
             type="text"
-            placeholder="请输入姓名"
+            :placeholder="t('auth.name')"
             required
             :disabled="isLoading"
           />
         </div>
 
         <div class="form-group">
-          <label for="email">邮箱</label>
+          <label for="email">{{ t('auth.email') }}</label>
           <input
             id="email"
             v-model="registerForm.email"
             type="email"
-            placeholder="请输入邮箱"
+            :placeholder="t('auth.email')"
             required
             :disabled="isLoading"
           />
         </div>
 
         <div class="form-group">
-          <label for="password">密码</label>
+          <label for="password">{{ t('auth.password') }}</label>
           <input
             id="password"
             v-model="registerForm.password"
             type="password"
-            placeholder="请输入密码（至少6位）"
+            :placeholder="t('auth.password')"
             required
             minlength="6"
             :disabled="isLoading"
@@ -45,27 +45,27 @@
         </div>
 
         <div class="form-group">
-          <label for="role">角色</label>
+          <label for="role">{{ t('auth.role') }}</label>
           <select
             id="role"
             v-model="registerForm.role"
             required
             :disabled="isLoading"
           >
-            <option value="">请选择角色</option>
-            <option value="student">学生</option>
-            <option value="teacher">教师</option>
-            <option value="librarian">图书管理员</option>
+            <option value="">{{ t('auth.selectRole') }}</option>
+            <option value="student">{{ t('auth.student') }}</option>
+            <option value="teacher">{{ t('auth.teacher') }}</option>
+            <option value="librarian">{{ t('auth.librarian') }}</option>
           </select>
         </div>
 
         <div class="form-group" v-if="registerForm.role === 'student'">
-          <label for="grade">年级</label>
+          <label for="grade">{{ t('auth.grade') }}</label>
           <input
             id="grade"
             v-model="registerForm.grade"
             type="text"
-            placeholder="请输入年级（如：2025届）"
+            :placeholder="t('auth.gradePlaceholder')"
             :disabled="isLoading"
           />
         </div>
@@ -75,13 +75,13 @@
         </div>
 
         <button type="submit" class="submit-button" :disabled="isLoading">
-          {{ isLoading ? '注册中...' : '注册' }}
+          {{ isLoading ? t('auth.registering') : t('auth.register') }}
         </button>
       </form>
 
       <div class="auth-footer">
-        <p>已有账号？</p>
-        <router-link to="/login" class="link-button">立即登录</router-link>
+        <p>{{ t('auth.hasAccount') }}</p>
+        <router-link to="/login" class="link-button">{{ t('auth.loginNow') }}</router-link>
       </div>
     </div>
   </div>
@@ -90,11 +90,13 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 import type { RegisterRequest } from '@/types/library'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const { t } = useI18n()
 
 const registerForm = reactive<RegisterRequest>({
   name: '',
