@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
 import type { Book } from '@/types/library'
 
@@ -8,12 +9,14 @@ const props = defineProps<{
   book: Book
 }>()
 
+const { t } = useI18n()
+
 const statusLabel = computed(() => {
   const map: Record<string, { text: string; className: string }> = {
-    available: { text: '可借阅', className: 'available' },
-    borrowed: { text: '已借出', className: 'borrowed' },
-    reserved: { text: '已预约', className: 'reserved' },
-    maintenance: { text: '维护中', className: 'reserved' },
+    available: { text: t('bookCard.status.available'), className: 'available' },
+    borrowed: { text: t('bookCard.status.borrowed'), className: 'borrowed' },
+    reserved: { text: t('bookCard.status.reserved'), className: 'reserved' },
+    maintenance: { text: t('bookCard.status.maintenance'), className: 'reserved' },
   }
 
   return map[props.book.status]

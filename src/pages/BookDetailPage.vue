@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
 import { useLibraryStore } from '@/stores/library'
 
 const route = useRoute()
 const router = useRouter()
 const libraryStore = useLibraryStore()
+const { t } = useI18n()
 
 watch(
   () => route.params.id,
@@ -33,13 +35,15 @@ const feedbackVariant = ref<'success' | 'error'>('success')
 const statusCopy = computed(() => {
   switch (book.value?.status) {
     case 'available':
-      return { label: '可借阅', description: '当前无预约，可以立即借阅。' }
+      return { label: t('bookDetail.available.label'), desc: t('bookDetail.available.desc') }
     case 'borrowed':
-      return { label: '借出中', description: '请稍后再试，或关注我的借阅。' }
+      return { label: t('bookDetail.borrowed.label'), desc: t('bookDetail.borrowed.desc') }
     case 'reserved':
-      return { label: '已预约', description: '该书已被预约，等待归还。' }
+      return { label: t('bookDetail.reserved.label'), desc: t('bookDetail.reserved.desc') }
+    case 'maintenance':
+      return { label: t('bookDetail.maintenance.label'), desc: t('bookDetail.maintenance.desc') }
     default:
-      return { label: '--', description: '' }
+      return { label: '--', desc: '' }
   }
 })
 
@@ -53,7 +57,7 @@ const handleBorrow = async () => {
 const goBack = () => router.push('/')
 
 const authorLine = computed(() =>
-  book.value?.authors?.length ? book.value.authors.join(' / ') : '未知作者',
+  book.value?.authors?.length ? book.value.authors.join(' / ') : t('empty.noData'),
 )
 
 const coverImage = computed(
@@ -65,13 +69,13 @@ const coverImage = computed(
 
 <template>
   <div v-if="book" class="page">
-    <button type="button" class="back" @click="goBack">← 返回图书列表</button>
+    <button type="button" class="back" @click="goBack">← {{ t('bookDetail.back') }}</button>
     <section class="header">
       <div class="cover" :style="{ backgroundImage: `url(${coverImage})` }" />
       <div class="content">
         <p class="category">{{ book.category }}</p>
         <h1>{{ book.title }}</h1>
-        <p class="author">作者 · {{ authorLine }}</p>
+        <p class="author">{{ t('bookDetail.info') }} · {{ authorLine }}</p>
         <p class="summary">{{ book.description }}</p>
 
         <div class="tags">
@@ -85,10 +89,16 @@ const coverImage = computed(
             :disabled="hasBorrowed || book.status !== 'available'"
             @click="handleBorrow"
           >
-            {{ hasBorrowed ? '已借阅' : book.status === 'available' ? '立即借阅' : '暂不可借' }}
+            {{
+              hasBorrowed
+                ? t('bookDetail.alreadyBorrowed')
+                : book.status === 'available'
+                  ? t('bookDetail.borrowNow')
+                  : t('bookDetail.unavailable')
+            }}
           </button>
           <button type="button" class="secondary" @click="router.push('/borrowings')">
-            查看我的借阅
+            {{ t('bookDetail.viewBorrowings') }}
           </button>
         </div>
 
@@ -98,45 +108,43 @@ const coverImage = computed(
 
     <section class="details">
       <div class="card">
-        <p class="card-title">图书信息</p>
+        <p class="card-title">{{ t('bookDetail.info') }}</p>
         <dl>
           <div>
-            <dt>ISBN</dt>
+            <dt>{{ t('bookDetail.isbn') }}</dt>
             <dd>{{ book.isbn }}</dd>
           </div>
           <div>
-            <dt>分类号</dt>
+            <dt>{{ t('bookDetail.category') }}</dt>
             <dd>{{ book.category }}</dd>
           </div>
           <div>
-            <dt>馆内位置</dt>
+            <dt>{{ t('bookDetail.location') }}</dt>
             <dd>{{ book.location }}</dd>
           </div>
           <div>
-            <dt>当前状态</dt>
+            <dt>{{ t('bookDetail.currentStatus') }}</dt>
             <dd>{{ statusCopy.label }}</dd>
           </div>
         </dl>
       </div>
 
       <div class="card">
-        <p class="card-title">借阅提示</p>
+        <p class="card-title">{{ t('bookDetail.borrowTips') }}</p>
         <p class="card-body">
-          {{ statusCopy.description }}
-          <span v-if="hasBorrowed"> 你已借阅该书，可在「我的借阅」中查看状态。 </span>
+          {{ statusCopy.desc }}
+          <span v-if="hasBorrowed"> {{ t('bookDetail.borrowedHint') }} </span>
         </p>
         <ul class="card-list">
-          <li>默认借阅周期 21 天，可续借 2 次。</li>
-          <li>到期前 3 天将发送提醒。</li>
-          <li>请保持图书完好，按时归还。</li>
+          <li v-for="tip in t('bookDetail.tips')" :key="tip">{{ tip }}</li>
         </ul>
       </div>
     </section>
   </div>
 
   <div v-else class="missing">
-    <p>未找到对应图书，可能已被移除。</p>
-    <button type="button" @click="goBack">返回首页</button>
+    <p>{{ t('bookDetail.missing') }}</p>
+    <button type="button" @click="goBack">{{ t('bookDetail.missingBack') }}</button>
   </div>
 </template>
 

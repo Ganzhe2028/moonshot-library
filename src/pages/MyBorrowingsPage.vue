@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useAuthStore } from '@/stores/auth'
 import { useLibraryStore } from '@/stores/library'
@@ -7,6 +8,7 @@ import type { BorrowingRecord } from '@/types/library'
 
 const authStore = useAuthStore()
 const libraryStore = useLibraryStore()
+const { t, locale } = useI18n()
 
 const currentUser = computed(() => authStore.user)
 const isLoggedIn = computed(() => !!currentUser.value)
@@ -29,19 +31,19 @@ const historyRecords = computed(() =>
 
 const summaryCards = computed(() => [
   {
-    label: '当前借阅',
+    label: t('borrowings.currentTab'),
     value: libraryStore.activeBorrowings.length,
-    hint: '正在倒计时的书籍',
+    hint: t('borrowings.current'),
   },
   {
-    label: '可借图书',
+    label: t('home.filterAvailable'),
     value: libraryStore.books.filter((book) => book.status === 'available').length,
-    hint: '馆内可用库存',
+    hint: t('home.available'),
   },
   {
-    label: '历史借阅',
+    label: t('borrowings.historyTab'),
     value: libraryStore.borrowingHistory.length,
-    hint: '已经完成的阅读',
+    hint: t('borrowings.noHistory'),
   },
 ])
 
@@ -61,7 +63,10 @@ const avatarStyle = computed(() => ({
 
 const formatDate = (dateString?: string) =>
   dateString
-    ? new Date(dateString).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })
+    ? new Date(dateString).toLocaleDateString(locale.value === 'en' ? 'en-US' : 'zh-CN', {
+        month: 'short',
+        day: 'numeric',
+      })
     : '--'
 
 const daysUntil = (dateString: string) => {
@@ -72,10 +77,10 @@ const daysUntil = (dateString: string) => {
 
 const dueLabel = (dateString: string) => {
   const diff = daysUntil(dateString)
-  if (diff < 0) return `已逾期 ${Math.abs(diff)} 天`
-  if (diff === 0) return '今天到期'
-  if (diff <= 3) return `即将到期 · ${diff} 天`
-  return `剩余 ${diff} 天`
+  if (diff < 0) return `${t('admin.borrowings.overdue')} · ${Math.abs(diff)}`
+  if (diff === 0) return t('borrowings.dueDate')
+  if (diff <= 3) return `${t('borrowings.dueDate')} · ${diff}`
+  return t('home.remainingDays', { days: diff })
 }
 
 const formatAuthors = (authors?: string[]) => (authors?.length ? authors.join(' / ') : '--')
@@ -83,7 +88,7 @@ const formatAuthors = (authors?: string[]) => (authors?.length ? authors.join(' 
 const requireAuth = () => {
   if (!authStore.user) {
     actionVariant.value = 'error'
-    actionMessage.value = '请登录后使用借阅功能。'
+    actionMessage.value = t('borrowings.loginHint')
     return false
   }
   return true
@@ -123,7 +128,7 @@ watch(
         {{ userInitials }}
       </div>
       <div>
-        <p class="eyebrow">账号信息</p>
+        <p class="eyebrow">{{ t('common.borrowings') }}</p>
         <h1>{{ currentUser!.name }}</h1>
         <p class="meta">
           {{ currentUser!.email }}
@@ -134,9 +139,9 @@ watch(
     </section>
     <section v-else class="profile not-logged">
       <div>
-        <p class="eyebrow">尚未登录</p>
-        <h1>请登录后查看借阅信息</h1>
-        <router-link class="primary" to="/login">前往登录</router-link>
+        <p class="eyebrow">{{ t('borrowings.loginHintTitle') }}</p>
+        <h1>{{ t('borrowings.loginHint') }}</h1>
+        <router-link class="primary" to="/login">{{ t('auth.login') }}</router-link>
       </div>
     </section>
 
@@ -153,8 +158,8 @@ watch(
     <section class="borrowings" v-if="isLoggedIn">
       <div class="section-header">
         <div>
-          <p class="eyebrow">借阅中</p>
-          <h2>当前借阅状态</h2>
+          <p class="eyebrow">{{ t('borrowings.currentTab') }}</p>
+          <h2>{{ t('borrowings.current') }}</h2>
         </div>
       </div>
 
@@ -168,36 +173,38 @@ watch(
           </div>
           <p class="book-author">{{ formatAuthors(item.book?.authors) }}</p>
           <p class="book-meta">
-            借阅时间：{{ formatDate(item.record.borrowDate) }} · 到期：
+            {{ t('buttons.borrow') }}：{{ formatDate(item.record.borrowDate) }} · {{ t('borrowings.dueDate') }}：
             {{ formatDate(item.record.dueDate) }}
           </p>
           <div class="actions">
             <button type="button" class="secondary" @click="handleReturn(item.record.id)">
-              标记已归还
+              {{ t('borrowings.return') }}
             </button>
             <button type="button" class="primary" @click="handleRenew(item.record.id)">
-              续借 14 天
+              {{ t('borrowings.renew') }}
             </button>
           </div>
-          <p class="renewals">已续借 {{ item.record.renewals }} / 2 次</p>
+          <p class="renewals">
+            {{ t('borrowings.renewTip') }} ({{ item.record.renewals }} / 2)
+          </p>
         </article>
       </div>
       <div v-else class="empty-state">
-        <p>当前没有借阅中的图书。快去探索新的馆藏吧！</p>
+        <p>{{ t('borrowings.noActive') }}</p>
       </div>
     </section>
     <section v-else class="borrowings">
       <div class="empty-state">
-        <p>登录后可以查看和管理你的借阅记录。</p>
-        <router-link class="primary" to="/login">立即登录</router-link>
+        <p>{{ t('borrowings.loginHint') }}</p>
+        <router-link class="primary" to="/login">{{ t('auth.login') }}</router-link>
       </div>
     </section>
 
     <section class="history" v-if="isLoggedIn">
       <div class="section-header">
         <div>
-          <p class="eyebrow">借阅历史</p>
-          <h2>我读过的书</h2>
+          <p class="eyebrow">{{ t('borrowings.historyTab') }}</p>
+          <h2>{{ t('borrowings.historyTab') }}</h2>
         </div>
       </div>
 
@@ -210,17 +217,17 @@ watch(
           <p class="book-meta">
             {{ formatDate(item.record.borrowDate) }} — {{ formatDate(item.record.returnDate) }}
           </p>
-          <span class="status-pill">已完成</span>
+          <span class="status-pill">{{ t('buttons.borrowed') }}</span>
         </article>
       </div>
       <div v-else class="empty-state">
-        <p>借阅历史暂为空。</p>
+        <p>{{ t('borrowings.noHistory') }}</p>
       </div>
     </section>
     <section v-else class="history">
       <div class="empty-state">
-        <p>登录后可以查看你曾经借阅的图书。</p>
-        <router-link class="primary" to="/login">前往登录</router-link>
+        <p>{{ t('borrowings.loginHint') }}</p>
+        <router-link class="primary" to="/login">{{ t('auth.login') }}</router-link>
       </div>
     </section>
   </div>

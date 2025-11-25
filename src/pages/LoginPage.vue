@@ -2,30 +2,30 @@
   <div class="auth-container">
     <div class="auth-card">
       <div class="auth-header">
-        <h1>登录</h1>
-        <p>欢迎来到 Moonshot Library</p>
+        <h1>{{ t('auth.loginTitle') }}</h1>
+        <p>{{ t('auth.loginSubtitle') }}</p>
       </div>
 
       <form @submit.prevent="handleLogin" class="auth-form">
         <div class="form-group">
-          <label for="email">邮箱</label>
+          <label for="email">{{ t('auth.email') }}</label>
           <input
             id="email"
             v-model="loginForm.email"
             type="email"
-            placeholder="请输入邮箱"
+            :placeholder="t('auth.email')"
             required
             :disabled="isLoading"
           />
         </div>
 
         <div class="form-group">
-          <label for="password">密码</label>
+          <label for="password">{{ t('auth.password') }}</label>
           <input
             id="password"
             v-model="loginForm.password"
             type="password"
-            placeholder="请输入密码"
+            :placeholder="t('auth.password')"
             required
             :disabled="isLoading"
           />
@@ -36,14 +36,14 @@
         </div>
 
         <button type="submit" class="submit-button" :disabled="isLoading">
-          {{ isLoading ? '登录中...' : '登录' }}
+          {{ isLoading ? t('auth.loggingIn') : t('auth.login') }}
         </button>
       </form>
 
       <!-- 分隔线 -->
       <div class="divider">
         <div class="divider-line"></div>
-        <span class="divider-text">或</span>
+        <span class="divider-text">{{ t('auth.divider') }}</span>
         <div class="divider-line"></div>
       </div>
 
@@ -59,11 +59,11 @@
           <path d="M13.7623 13.3344C13.7623 14.3936 14.3046 15.3269 15.1827 15.7796V17.5451C13.4324 16.8289 12.2798 15.0771 12.2798 13.015V11.4368C12.2798 10.3776 12.8176 9.44424 13.6956 9.00502C12.8176 8.55228 12.2798 7.61895 12.2798 6.55973V4.98155C13.5418 5.49677 14.5417 6.46003 14.898 7.69024C15.7819 7.24233 16.3297 6.30491 16.3297 5.24194V3.01042H18.6677V5.24194C18.6677 7.94097 16.692 10.1975 13.7623 10.962V12.3343C13.7623 13.3344 13.7623 13.3344 13.7623 13.3344Z" fill="#00A4EF"/>
           <path d="M12.2788 13.015C12.2788 15.0771 13.4314 16.8289 15.1817 17.5451V15.7796C14.3036 15.3269 13.7613 14.3936 13.7613 13.3344V11.9566C14.6329 11.4988 15.1757 10.5655 15.1757 9.50628C15.1757 7.44864 14.0231 5.70203 12.2788 4.98155V6.55973C12.2788 7.61895 11.741 8.55228 10.8581 9.00502C11.7406 9.44424 12.2788 10.3776 12.2788 11.4368V13.015Z" fill="#FFB900"/>
         </svg>
-        <span>{{ isLoading ? '通过Microsoft登录中...' : '通过Microsoft登录' }}</span>
+        <span>{{ isLoading ? t('auth.m365Logging') : t('auth.m365') }}</span>
       </button>
 
       <div class="test-accounts">
-        <h4>测试账号（一键登录）</h4>
+        <h4>{{ t('auth.testAccounts') }}</h4>
         <button
           v-for="account in testAccounts"
           :key="account.email"
@@ -72,14 +72,14 @@
           @click="loginWithTestAccount(account)"
           :disabled="isLoading"
         >
-          <strong>{{ account.label }}</strong><br>
+          <strong>{{ t(account.labelKey) }}</strong><br>
           {{ account.email }} / {{ account.password }}
         </button>
       </div>
 
       <div class="auth-footer">
-        <p>还没有账号？</p>
-        <router-link to="/register" class="link-button">立即注册</router-link>
+        <p>{{ t('auth.registerPrompt') }}</p>
+        <router-link to="/register" class="link-button">{{ t('auth.registerLink') }}</router-link>
       </div>
 
 
@@ -90,12 +90,14 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 import { authService } from '@/services/authService'
 
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
+const { t } = useI18n()
 
 const loginForm = reactive({
   email: '',
@@ -106,17 +108,17 @@ const isLoading = ref(false)
 const error = ref('')
 const testAccounts = [
   {
-    label: '学生账号',
+    labelKey: 'auth.student',
     email: 'student@example.com',
     password: 'password123'
   },
   {
-    label: '教师账号',
+    labelKey: 'auth.teacher',
     email: 'teacher@example.com',
     password: 'password123'
   },
   {
-    label: '管理员账号',
+    labelKey: 'auth.librarian',
     email: 'librarian@example.com',
     password: 'password123'
   }

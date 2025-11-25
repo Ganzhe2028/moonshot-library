@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
 import BookCard from '@/components/BookCard.vue'
 import { useLibraryStore } from '@/stores/library'
@@ -12,6 +13,7 @@ type NextDuePayload = { record: BorrowingRecord; book: Book } | null
 
 const authStore = useAuthStore()
 const libraryStore = useLibraryStore()
+const { t, locale } = useI18n()
 
 const searchQuery = ref('')
 const statusFilter = ref<StatusFilter>('all')
@@ -59,7 +61,7 @@ const nextDue = computed<NextDuePayload>(() => {
 })
 
 const formatDate = (dateString: string) =>
-  new Date(dateString).toLocaleDateString('zh-CN', {
+  new Date(dateString).toLocaleDateString(locale.value === 'en' ? 'en-US' : 'zh-CN', {
     month: 'short',
     day: 'numeric',
   })
@@ -86,10 +88,10 @@ watch(
 <template>
   <div class="page">
     <section class="hero">
-      <p class="eyebrow">Moonshot Library System</p>
-      <h1>开启你的下一次阅读冒险</h1>
+      <p class="eyebrow">{{ t('home.eyebrow') }}</p>
+      <h1>{{ t('home.title') }}</h1>
       <p class="subtitle">
-        搜索图书、查看库存状态，并追踪你的借阅旅程。我们会为你保留每一次灵感。
+        {{ t('home.subtitle') }}
       </p>
 
       <div class="search-card">
@@ -97,39 +99,39 @@ watch(
           <input
             v-model="searchQuery"
             type="search"
-            placeholder="搜索书名、作者、ISBN 或分类号"
+            :placeholder="t('home.searchPlaceholder')"
           />
-          <button type="button">搜索</button>
+          <button type="button">{{ t('home.search') }}</button>
         </div>
 
         <div class="search-meta">
           <div>
-            <p class="meta-eyebrow">馆藏总量</p>
+            <p class="meta-eyebrow">{{ t('home.total') }}</p>
             <p class="meta-value">{{ libraryStore.books.length }}</p>
           </div>
           <div>
-            <p class="meta-eyebrow">今日可借</p>
+            <p class="meta-eyebrow">{{ t('home.available') }}</p>
             <p class="meta-value">{{ availableCount }}</p>
           </div>
-          <RouterLink class="link" to="/borrowings">查看我的借阅 →</RouterLink>
+          <RouterLink class="link" to="/borrowings">{{ t('home.viewBorrowings') }}</RouterLink>
         </div>
       </div>
     </section>
 
     <section class="status-panel" v-if="nextDue">
-      <div class="status-badge">下一本到期</div>
+      <div class="status-badge">{{ t('home.nextDue') }}</div>
       <div>
         <p class="status-title">{{ nextDue!.book.title }}</p>
         <p class="status-meta">
-          {{ formatDate(nextDue!.record.dueDate) }} · 剩余
-          <strong>{{ daysUntil(nextDue!.record.dueDate) }} 天</strong>
+          {{ formatDate(nextDue!.record.dueDate) }} ·
+          <strong>{{ t('home.remainingDays', { days: daysUntil(nextDue!.record.dueDate) }) }}</strong>
         </p>
       </div>
-      <RouterLink class="status-action" to="/borrowings">管理借阅</RouterLink>
+      <RouterLink class="status-action" to="/borrowings">{{ t('home.manageBorrowings') }}</RouterLink>
     </section>
 
     <section class="filters">
-      <p>快速筛选</p>
+      <p>{{ t('home.quickFilter') }}</p>
       <div class="chips">
         <button
           v-for="filter in filters"
@@ -140,12 +142,12 @@ watch(
         >
           {{
             filter === 'all'
-              ? '全部'
+              ? t('home.filterAll')
               : filter === 'available'
-                ? '可借阅'
+                ? t('home.filterAvailable')
                 : filter === 'borrowed'
-                  ? '借出中'
-                  : '已预约'
+                  ? t('home.filterBorrowed')
+                  : t('home.filterReserved')
           }}
         </button>
       </div>
@@ -154,12 +156,12 @@ watch(
     <section class="book-grid">
       <BookCard v-for="book in filteredBooks" :key="book.id" :book="book" />
       <div v-if="filteredBooks.length === 0" class="empty-state">
-        <p>没有找到对应的图书，可以尝试换个关键词。</p>
+        <p>{{ t('home.empty') }}</p>
       </div>
     </section>
 
     <section class="tags" v-if="spotlightTags.length">
-      <p class="tags-title">热门主题</p>
+      <p class="tags-title">{{ t('home.hotTags') }}</p>
       <div class="tag-grid">
         <span v-for="tag in spotlightTags" :key="tag">{{ tag }}</span>
       </div>

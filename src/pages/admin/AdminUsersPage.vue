@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useAdminStore } from '@/stores/admin'
 
 const adminStore = useAdminStore()
+const { t } = useI18n()
 
 const roleFilter = ref<'all' | 'student' | 'teacher' | 'librarian' | 'admin'>('all')
 
@@ -15,11 +17,11 @@ const users = computed(() => {
 const membershipBadge = (status?: string) => {
   switch (status) {
     case 'active':
-      return { text: '正常', className: 'green' }
+      return { text: t('admin.users.membershipActive'), className: 'green' }
     case 'suspended':
-      return { text: '暂停', className: 'red' }
+      return { text: t('admin.users.membershipSuspended'), className: 'red' }
     default:
-      return { text: status || '未知', className: 'gray' }
+      return { text: status || t('empty.noData'), className: 'gray' }
   }
 }
 
@@ -34,29 +36,29 @@ onMounted(() => {
   <section class="panel">
     <div class="panel-head">
       <div>
-        <p class="eyebrow">用户</p>
-        <h2>用户列表</h2>
+        <p class="eyebrow">{{ t('admin.users.title') }}</p>
+        <h2>{{ t('admin.users.title') }}</h2>
       </div>
       <div class="actions">
         <select v-model="roleFilter">
-          <option value="all">全部角色</option>
-          <option value="student">学生</option>
-          <option value="teacher">教师</option>
-          <option value="librarian">图书管理员</option>
-          <option value="admin">管理员</option>
+          <option value="all">{{ t('admin.users.filterAll') }}</option>
+          <option value="student">{{ t('auth.student') }}</option>
+          <option value="teacher">{{ t('auth.teacher') }}</option>
+          <option value="librarian">{{ t('auth.librarian') }}</option>
+          <option value="admin">Admin</option>
         </select>
-        <button type="button" class="ghost" @click="reload">刷新</button>
+        <button type="button" class="ghost" @click="reload">{{ t('admin.users.refresh') }}</button>
       </div>
     </div>
 
-    <div v-if="adminStore.usersLoading" class="hint">正在加载用户列表...</div>
+    <div v-if="adminStore.usersLoading" class="hint">{{ t('admin.users.loading') }}</div>
     <p v-else-if="adminStore.usersError" class="alert error">{{ adminStore.usersError }}</p>
     <div v-else class="table">
       <div class="table-head">
-        <span>姓名 / 邮箱</span>
-        <span>角色</span>
-        <span>会员状态</span>
-        <span>年级</span>
+        <span>{{ t('auth.name') }} / {{ t('auth.email') }}</span>
+        <span>{{ t('auth.role') }}</span>
+        <span>{{ t('admin.users.membership') }}</span>
+        <span>{{ t('auth.grade') }}</span>
       </div>
       <div v-for="user in users" :key="user.id" class="table-row">
         <div>
@@ -69,7 +71,7 @@ onMounted(() => {
         </span>
         <span>{{ user.grade || '--' }}</span>
       </div>
-      <p v-if="!users.length" class="hint">暂无用户数据。</p>
+      <p v-if="!users.length" class="hint">{{ t('empty.noData') }}</p>
     </div>
   </section>
 </template>

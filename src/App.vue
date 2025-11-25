@@ -1,14 +1,17 @@
 <script setup lang="ts">
 import { computed, watch, onMounted, ref } from 'vue';
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
 import { useAuthStore } from '@/stores/auth'
 import { useLibraryStore } from '@/stores/library'
+import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
 
 const authStore = useAuthStore()
 const libraryStore = useLibraryStore()
 const route = useRoute()
 const router = useRouter()
+const { t } = useI18n()
 
 // 防止重复处理M365登录回调
 const m365CallbackProcessed = ref(false)
@@ -21,14 +24,15 @@ const userInitials = computed(() => {
 
 const pageTitle = computed(() => {
   const titles: Record<string, string> = {
-    home: 'Moonshot Library',
-    'book-detail': 'Book Detail',
-    borrowings: 'My Borrowings',
-    login: 'Login',
-    register: 'Register',
+    home: t('common.brand'),
+    'book-detail': t('bookDetail.info'),
+    borrowings: t('borrowings.title'),
+    login: t('auth.loginTitle'),
+    register: t('auth.registerTitle'),
+    admin: t('admin.layout.title'),
   }
   const matched = titles[route.name as string]
-  return matched ?? 'Moonshot Library'
+  return matched ?? t('common.brand')
 })
 
 const currentYear = new Date().getFullYear()
@@ -134,25 +138,29 @@ onMounted(async () => {
           :class="{ active: (route.fullPath || '').startsWith('/admin') }"
           to="/admin"
         >
-          管理后台
+          {{ t('common.admin') }}
         </RouterLink>
-        <RouterLink :class="{ active: route.name === 'home' }" to="/">首页</RouterLink>
+        <RouterLink :class="{ active: route.name === 'home' }" to="/">
+          {{ t('common.home') }}
+        </RouterLink>
         <RouterLink :class="{ active: route.name === 'borrowings' }" to="/borrowings">
-          我的借阅
+          {{ t('common.borrowings') }}
         </RouterLink>
       </nav>
+
+      <LanguageSwitcher />
 
       <div class="auth-section">
         <template v-if="authStore.user">
           <div class="user-pill" :style="{ backgroundColor: authStore.user.avatarColor || '#8b5cf6' }">
             {{ userInitials }}
           </div>
-          <button @click="handleLogout" class="logout-button">登出</button>
+          <button @click="handleLogout" class="logout-button">{{ t('common.logout') }}</button>
         </template>
         <template v-else>
           <div class="auth-links">
-            <RouterLink to="/login" :class="{ active: route.name === 'login' }">登录</RouterLink>
-            <RouterLink to="/register" :class="{ active: route.name === 'register' }">注册</RouterLink>
+            <RouterLink to="/login" :class="{ active: route.name === 'login' }">{{ t('common.login') }}</RouterLink>
+            <RouterLink to="/register" :class="{ active: route.name === 'register' }">{{ t('common.register') }}</RouterLink>
           </div>
         </template>
       </div>
@@ -163,8 +171,8 @@ onMounted(async () => {
     </main>
 
     <footer class="app-footer">
-      <p>Moonshot Library System · {{ currentYear }}</p>
-      <p>保持每一次阅读的好奇心 📖</p>
+      <p>{{ t('common.footer', { year: currentYear }) }}</p>
+      <p>{{ t('common.tagline') }}</p>
     </footer>
   </div>
 </template>
