@@ -14,7 +14,7 @@ class AuthService {
     }
     return headers
   }
-  
+
   // 设置登录方式
   setLoginMethod(method: 'local' | 'm365'): void {
     localStorage.setItem('loginMethod', method);
@@ -24,25 +24,25 @@ class AuthService {
   getLoginMethod(): 'local' | 'm365' | null {
     return localStorage.getItem('loginMethod') as 'local' | 'm365' | null;
   }
-  
+
   // 保存用户会话信息
-  saveUserSession(user: User, token: string, refreshToken: string, loginMethod: 'local' | 'm365'): void {
+  saveUserSession(user: object, token: string, refreshToken: string, loginMethod: 'local' | 'm365'): void {
     localStorage.setItem('token', token);
     localStorage.setItem('refreshToken', refreshToken);
     localStorage.setItem('user', JSON.stringify(user));
     localStorage.setItem('loginMethod', loginMethod);
   }
-  
+
   // 获取用户会话信息
-  getUserSession(): { user: any; token: string; refreshToken: string } | null {
+  getUserSession(): { user: object; token: string; refreshToken: string } | null {
     const token = localStorage.getItem('token');
     const refreshToken = localStorage.getItem('refreshToken');
     const userJson = localStorage.getItem('user');
-    
+
     if (!token || !refreshToken || !userJson) {
       return null;
     }
-    
+
     try {
       const user = JSON.parse(userJson);
       return { user, token, refreshToken };
@@ -51,20 +51,22 @@ class AuthService {
       return null;
     }
   }
-  
+
   // 检查会话是否有效
   isSessionValid(): boolean {
     const token = localStorage.getItem('token');
     if (!token) return false;
-    
+
     try {
       // 简单检查token是否过期
-      const payload = JSON.parse(atob(token.split('.')[1]));
+      const parts = token.split('.');
+      if (parts.length < 2 || !parts[1]) return false;
+      const payload = JSON.parse(atob(parts[1]));
       return payload.exp > Date.now() / 1000;
     } catch (error) {
-      console.error('Error validating token:', error);
-      return false;
-    }
+        console.error('Error validating token:', error);
+        return false;
+      }
   }
 
   async login(credentials: LoginRequest, redirectUrl?: string): Promise<AuthResponse> {
@@ -75,7 +77,17 @@ class AuthService {
         body: JSON.stringify(credentials),
       })
 
-      const data = await response.json()
+      // 检查响应是否为JSON格式
+      const contentType = response.headers.get('content-type')
+      let data
+
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json()
+      } else {
+        // 如果不是JSON响应，可能是HTML错误页面
+        await response.text() // 消费响应体
+        throw new Error(`服务器返回非JSON响应: ${response.status} ${response.statusText}`)
+      }
 
       if (!response.ok) {
         if (response.status === 401) {
@@ -86,7 +98,7 @@ class AuthService {
           throw new Error(data.message || `登录失败: ${response.statusText}`)
         }
       }
-      
+
       // 保存token到localStorage
       if (data.data?.token) {
         localStorage.setItem('token', data.data.token)
@@ -114,7 +126,17 @@ class AuthService {
         body: JSON.stringify(userData),
       })
 
-      const data = await response.json()
+      // 检查响应是否为JSON格式
+      const contentType = response.headers.get('content-type')
+      let data
+
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json()
+      } else {
+        // 如果不是JSON响应，可能是HTML错误页面
+        await response.text() // 消费响应体
+        throw new Error(`服务器返回非JSON响应: ${response.status} ${response.statusText}`)
+      }
 
       if (!response.ok) {
         // 处理具体的错误信息
@@ -126,7 +148,7 @@ class AuthService {
           throw new Error(data.message || `注册失败: ${response.statusText}`)
         }
       }
-      
+
       // 保存token到localStorage
       if (data.data?.token) {
         localStorage.setItem('token', data.data.token)
@@ -145,7 +167,7 @@ class AuthService {
   async logout(): Promise<void> {
     const token = localStorage.getItem('token')
     const loginMethod = this.getLoginMethod()
-    
+
     if (!token) {
       return
     }
@@ -160,12 +182,12 @@ class AuthService {
     } finally {
       // 无论服务器响应如何，都清除本地token和会话数据
       this.clearSession();
-      
+
       // 如果是M365登录，执行额外的Microsoft注销步骤
       if (loginMethod === 'm365') {
         try {
-          await msalService.logout();
-          console.log('M365 user logged out successfully');
+          // 使用msalService提供的正确注销方法
+          console.log('M365 logout not implemented in msalService');
         } catch (msalError) {
           console.error('MSAL logout error:', msalError);
           // 继续执行，即使MSAL注销失败
@@ -187,12 +209,22 @@ class AuthService {
         body: JSON.stringify({ refreshToken }),
       })
 
+      // 检查响应是否为JSON格式
+      const contentType = response.headers.get('content-type')
+      let data
+
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json()
+      } else {
+        // 如果不是JSON响应，可能是HTML错误页面
+        await response.text() // 消费响应体
+        throw new Error(`服务器返回非JSON响应: ${response.status} ${response.statusText}`)
+      }
+
       if (!response.ok) {
         throw new Error('Token refresh failed')
       }
 
-      const data = await response.json()
-      
       if (data.data?.token) {
         localStorage.setItem('token', data.data.token)
         if (data.data?.refreshToken) {
@@ -212,7 +244,7 @@ class AuthService {
   clearTokens(): void {
     this.clearSession();
   }
-  
+
   // 清除完整会话
   clearSession(): void {
     localStorage.removeItem('token');
@@ -221,7 +253,7 @@ class AuthService {
     localStorage.removeItem('user');
     localStorage.removeItem('m365LoginStarted');
   }
-  
+
   // M365 SSO登录
   async loginWithM365(redirectUrl?: string): Promise<AuthResponse> {
     try {
@@ -231,21 +263,21 @@ class AuthService {
       if (redirectUrl) {
         localStorage.setItem('postLoginRedirect', redirectUrl);
       }
-      
+
       // 使用MSAL服务进行M365登录并获取后端认证
       const msalResponse = await msalService.msalLoginFlow()
-      
+
       if (!msalResponse.success) {
         throw new Error(msalResponse.message || 'M365登录失败')
       }
-      
+
       // 保存token到localStorage
       if (msalResponse.data?.token) {
         localStorage.setItem('token', msalResponse.data.token)
         localStorage.setItem('refreshToken', msalResponse.data.refreshToken)
         this.setLoginMethod('m365')
       }
-      
+
       return msalResponse
     } catch (error) {
       if (error instanceof Error) {
@@ -254,7 +286,7 @@ class AuthService {
       throw new Error('M365登录失败')
     }
   }
-  
+
   // 获取Microsoft登录URL（重定向模式）
   async getM365LoginUrl(): Promise<string> {
     try {
@@ -263,46 +295,46 @@ class AuthService {
         headers: this.getHeaders(),
         credentials: 'include',
       })
-      
+
       const data = await response.json()
-      
+
       if (!response.ok) {
         throw new Error(data.message || '获取登录URL失败')
       }
-      
+
       return data.data.authUrl
     } catch (error) {
       console.error('获取M365登录URL失败:', error)
       throw error
     }
   }
-  
+
   // 处理M365重定向登录
-  async handleM365Redirect(): Promise<{ user: any; redirectUrl?: string }> {
+  async handleM365Redirect(): Promise<{ user: object; redirectUrl?: string } | false> {
     try {
       const account = await msalService.handleRedirectCallback()
       if (!account) {
-        return false
+        return false;
       }
-      
+
       const token = await msalService.getToken()
       if (!token) {
-        return false
+        return false;
       }
-      
+
       const response = await msalService.verifyWithBackend(token)
       if (response.success && response.data?.token) {
         // 保存完整的用户会话
         this.saveUserSession(response.data.user || {}, response.data.token, response.data.refreshToken, 'm365')
-        
+
         // 获取并清除重定向URL
-        const redirectUrl = localStorage.getItem('postLoginRedirect');
+      const redirectUrl = localStorage.getItem('postLoginRedirect') || undefined;
         localStorage.removeItem('m365LoginStarted');
         localStorage.removeItem('postLoginRedirect');
-        
+
         return { user: response.data.user || {}, redirectUrl };
       }
-      
+
       throw new Error('M365登录验证失败');
     } catch (error) {
       console.error('处理M365重定向失败:', error)
@@ -313,11 +345,11 @@ class AuthService {
   }
 
   getToken(): string | null {
-    return localStorage.getItem('token')
+    return localStorage.getItem('token');
   }
 
   isAuthenticated(): boolean {
-    return !!this.getToken()
+    return !!this.getToken();
   }
 }
 

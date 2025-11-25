@@ -54,13 +54,13 @@ export const seedDatabase = async (): Promise<void> => {
     // 检查是否已有图书数据
     const db = getDatabase();
     const bookCount = await new Promise<number>((resolve, reject) => {
-      db.get('SELECT COUNT(*) as count FROM books', [], (err, row: any) => {
+      db.get('SELECT COUNT(*) as count FROM books', [], (err, row: { count: number }) => {
         if (err) reject(err);
         else resolve(row.count);
       });
     });
     console.log(`   • Current book count: ${bookCount}`);
-    if (bookCount == 0) {
+    if (bookCount === 0) {
       console.log('📊 Database empty, creating initial data set...');
 
       // Note: Default users are no longer created here. Use demoAccounts instead.
@@ -77,7 +77,8 @@ export const seedDatabase = async (): Promise<void> => {
           publisher: 'Wiley',
           publishedYear: 2011,
           category: 'Systems Science',
-          description: 'A comprehensive guide to systems thinking methodology and its applications in complex problem solving.',
+          description: 'A comprehensive guide to systems thinking methodology and its applications in ' +
+            'complex problem solving.',
           totalCopies: 3,
           location: 'A-01-03',
           tags: ['systems', 'complexity', 'methodology']
@@ -116,7 +117,8 @@ export const seedDatabase = async (): Promise<void> => {
           publisher: 'Crown Business',
           publishedYear: 2011,
           category: 'Business',
-          description: 'How today\'s entrepreneurs use continuous innovation to create radically successful businesses.',
+          description: 'How today\'s entrepreneurs use continuous innovation to create ' +
+            'radically successful businesses.',
           totalCopies: 6,
           location: 'D-03-01',
           tags: ['startup', 'entrepreneurship', 'innovation']
@@ -178,7 +180,12 @@ export const seedDatabase = async (): Promise<void> => {
       const allBooks = [...sampleBooks, ...moonshotBooks];
 
       for (const bookData of allBooks) {
-        await createBook(bookData);
+        try {
+          await createBook(bookData);
+        } catch (bookError) {
+          console.error(`Failed to create book "${bookData.title}":`, bookError);
+          // 继续尝试创建其他书籍，而不是因为一本失败就中断整个过程
+        }
       }
 
       console.log('✅ Base data created');

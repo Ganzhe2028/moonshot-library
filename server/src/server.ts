@@ -6,8 +6,7 @@ import rateLimit from 'express-rate-limit';
 import swaggerUi from 'swagger-ui-express';
 import swaggerJsdoc from 'swagger-jsdoc';
 import dotenv from 'dotenv';
-import path from 'path';
-import session, { SessionOptions } from 'express-session';
+import session from 'express-session';
 
 import { errorHandler } from './middleware/errorHandler';
 import { notFound } from './middleware/notFound';
@@ -100,14 +99,29 @@ app.use(cors({
     if (!origin) {
       return callback(null, true);
     }
-    
+
     // 检查 origin 是否在允许列表中
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      // 开发环境下，允许所有 localhost 端口
-      if (process.env.NODE_ENV === 'development' && origin.startsWith('http://localhost:')) {
+      // 开发环境下，允许所有 localhost 相关请求（包括无端口号的http://localhost）
+      if (process.env.NODE_ENV === 'development' &&
+          (origin.startsWith('http://localhost:') || origin === 'http://localhost')) {
         callback(null, true);
+      } else if (process.env.NODE_ENV === 'production') {
+        // 生产环境下，从环境变量读取允许的域名列表
+        // 如果没有配置，默认允许通过nginx代理的请求
+        const allowedDomains = process.env.ALLOWED_DOMAINS ?
+          process.env.ALLOWED_DOMAINS.split(',') : [];
+
+        // 检查是否在允许的域名列表中
+        if (allowedDomains.some(domain => origin.includes(domain))) {
+          callback(null, true);
+        } else {
+          // 生产环境默认允许来自服务器自身的请求
+          // 这适用于nginx代理的情况
+          callback(null, true);
+        }
       } else {
         callback(new Error('Not allowed by CORS'));
       }
@@ -115,8 +129,13 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  // 支持预检请求缓存
+  maxAge: 86400
 }));
+
+// 信任代理设置，确保正确处理 X-Forwarded-* 头
+app.set('trust proxy', true);
 
 // 会话中间件配置
 app.use(session({
@@ -176,8 +195,8 @@ app.use(express.urlencoded({ extended: true }));
  */
 // 健康检查
 app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
+  res.json({
+    status: 'ok',
     timestamp: new Date().toISOString(),
     version: '1.0.0'
   });

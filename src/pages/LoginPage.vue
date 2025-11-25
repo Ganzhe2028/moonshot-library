@@ -169,7 +169,11 @@ const handleM365Login = async () => {
   } catch (err) {
     isLoading.value = false
     // 增强错误处理，当MSAL服务不可用时显示友好提示
-    if (err.response?.status === 503 && err.response?.data?.error === 'MSAL not configured') {
+    if (typeof err === 'object' && err !== null && 'response' in err && 
+        typeof err.response === 'object' && err.response !== null && 
+        'status' in err.response && err.response.status === 503 &&
+        'data' in err.response && typeof err.response.data === 'object' && err.response.data !== null &&
+        'error' in err.response.data && err.response.data.error === 'MSAL not configured') {
       error.value = 'Microsoft 365登录服务暂时不可用，请使用其他登录方式'
     } else {
       error.value = err instanceof Error ? err.message : 'Microsoft登录失败'
