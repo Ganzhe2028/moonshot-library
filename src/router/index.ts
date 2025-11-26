@@ -5,7 +5,6 @@ import BookDetailPage from '@/pages/BookDetailPage.vue'
 import MyBorrowingsPage from '@/pages/MyBorrowingsPage.vue'
 import LoginPage from '@/pages/LoginPage.vue'
 import RegisterPage from '@/pages/RegisterPage.vue'
-import AuthCallbackPage from '@/pages/AuthCallbackPage.vue'
 import AdminLayout from '@/pages/admin/AdminLayout.vue'
 import AdminBooksPage from '@/pages/admin/AdminBooksPage.vue'
 import AdminUsersPage from '@/pages/admin/AdminUsersPage.vue'
@@ -27,12 +26,6 @@ const router = createRouter({
     {
       path: '/borrowings',
       name: 'borrowings',
-      component: MyBorrowingsPage,
-      meta: { requiresAuth: true },
-    },
-    {
-      path: '/login',
-      name: 'login',
       component: LoginPage,
     },
     {
@@ -59,11 +52,7 @@ const router = createRouter({
           path: 'books',
           name: 'admin-books',
           component: AdminBooksPage,
-          meta: { requiresAuth: true, requiresRole: ['admin', 'librarian'] },
-        },
-        {
-          path: 'users',
-          name: 'admin-users',
+    // 其他情况正常导航
           component: AdminUsersPage,
           meta: { requiresAuth: true, requiresRole: ['admin', 'librarian'] },
         },

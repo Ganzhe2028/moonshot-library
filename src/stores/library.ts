@@ -12,8 +12,6 @@ interface LibraryState {
   borrowings: BorrowingRecord[]
   borrowingsLoading: boolean
   borrowingsError: string
-}
-
 export const useLibraryStore = defineStore('library', {
   state: (): LibraryState => ({
     books: [],
@@ -24,8 +22,6 @@ export const useLibraryStore = defineStore('library', {
     borrowingsError: '',
   }),
   getters: {
-    getBookById: (state) => (id: string) => state.books.find((book) => book.id === id),
-    activeBorrowings: (state): BorrowingRecord[] =>
       state.borrowings.filter((record) => record.status === 'active'),
     borrowingHistory: (state): BorrowingRecord[] =>
       state.borrowings.filter((record) => record.status !== 'active'),
@@ -54,17 +50,6 @@ export const useLibraryStore = defineStore('library', {
       this.booksError = ''
       try {
         const book = await bookService.createBook(payload)
-        this.books.unshift({ ...book, tags: book.tags ?? [] })
-        return { success: true, message: '已创建新书籍。' }
-      } catch (err) {
-        const message = err instanceof Error ? err.message : '创建书籍失败'
-        this.booksError = message
-        return { success: false, message }
-      }
-    },
-    async updateBook(id: string, payload: Partial<Book>) {
-      this.booksError = ''
-      try {
         const book = await bookService.updateBook(id, payload)
         const index = this.books.findIndex((item) => item.id === id)
         if (index >= 0) {
@@ -166,36 +151,6 @@ export const useLibraryStore = defineStore('library', {
           return { success: false, message: '你已经借阅了这本书。' }
         }
 
-        await borrowingService.borrowBook(bookId)
-        await Promise.all([this.fetchBorrowings(true), this.fetchBooks(true)])
-        return { success: true, message: '借阅成功，祝你阅读愉快！' }
-      } catch (err) {
-        return {
-          success: false,
-          message: err instanceof Error ? err.message : '借阅失败，请稍后再试。',
-        }
-      }
-    },
-    async returnBook(recordId: string) {
-      const authStore = useAuthStore()
-      if (!authStore.user) {
-        return { success: false, message: '请先登录后再归还图书。' }
-      }
-
-      try {
-        await borrowingService.returnBook(recordId)
-        await Promise.all([this.fetchBorrowings(true), this.fetchBooks(true)])
-        return { success: true, message: '已归还图书。' }
-      } catch (err) {
-        return {
-          success: false,
-          message: err instanceof Error ? err.message : '归还失败，请稍后再试。',
-        }
-      }
-    },
-    async renewBorrowing(recordId: string) {
-      const authStore = useAuthStore()
-      if (!authStore.user) {
         return { success: false, message: '请先登录后再续借图书。' }
       }
 
