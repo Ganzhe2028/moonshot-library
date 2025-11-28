@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 // 明确从server目录加载.env文件
 dotenv.config({ path: './.env' });
 
-import { ConfidentialClientApplication, Configuration, AuthorizationUrlRequest } from '@azure/msal-node';
+import { AuthorizationUrlRequest, ConfidentialClientApplication, Configuration } from '@azure/msal-node';
 // 为不支持的MSAL类型定义自定义类型
 type AuthCodeRequest = {
   code: string;
@@ -15,7 +15,7 @@ type AuthCodeRequest = {
 type TokenResponse = {
   accessToken: string;
   idToken: string | {
-    claims: any;
+    claims: Record<string, unknown>;
   };
   expiresOn: Date;
   tokenType: string;
@@ -23,34 +23,33 @@ type TokenResponse = {
 };
 import { User } from '../types';
 import { createUserFromMicrosoft } from '../models/user';
-import { generateToken, generateRefreshToken } from './auth';
+import { generateRefreshToken, generateToken } from './auth';
 
 // 创建MSAL配置
 const msalConfig: Configuration = {
   auth: {
     clientId: process.env.MSAL_CLIENT_ID || '',
     clientSecret: process.env.MSAL_CLIENT_SECRET || '',
-    authority: process.env.MSAL_AUTHORITY || 'https://login.microsoftonline.com/common',
+    authority: process.env.MSAL_AUTHORITY || 'https://login.microsoftonline.com/common'
   },
   system: {
     loggerOptions: {
-      loggerCallback: (level: any, message: any, containsPii: any) => {
+      loggerCallback: (level: number, message: string, containsPii: boolean) => {
         if (!containsPii) {
           console.log(message);
         }
       },
       piiLoggingEnabled: false,
-      logLevel: 3,
-    },
+    logLevel: 3
+  },
   },
 };
 
 // 检查MSAL凭据是否有效
 const isMsalConfigValid = () => {
-  const isDev = process.env.NODE_ENV === 'development';
   const hasClientId = !!msalConfig.auth.clientId && msalConfig.auth.clientId !== 'MSAL_CLIENT_ID';
   const hasClientSecret = !!msalConfig.auth.clientSecret && msalConfig.auth.clientSecret !== 'CLIENT_SECRET';
-  
+
   // 添加详细的验证日志
   console.log('MSAL配置验证:');
   console.log(`  环境: ${process.env.NODE_ENV}`);
@@ -58,7 +57,7 @@ const isMsalConfigValid = () => {
   console.log(`  ClientId长度: ${msalConfig.auth.clientId ? msalConfig.auth.clientId.length : 0}`);
   console.log(`  有ClientSecret: ${hasClientSecret}`);
   console.log(`  ClientSecret长度: ${msalConfig.auth.clientSecret ? msalConfig.auth.clientSecret.length : 0}`);
-  
+
   // 在开发模式下，允许使用测试凭据
   const isValid = isDev || (hasClientId && hasClientSecret);
   console.log(`  配置有效性: ${isValid}`);
@@ -84,48 +83,37 @@ if (isMsalConfigValid()) {
   console.log('MSAL配置无效，将使用模拟功能');
 }
 
-// 模拟用户数据 (用于开发测试)
-const mockUser = {
-  id: 'microsoft_123456',
-  email: 'test@example.com',
-  name: 'Test User',
-  microsoftId: '123456',
-  role: 'student' as const, // 使用as const确保类型符合联合类型要求
-  grade: '9',
-  avatarColor: '#8b5cf6'
-};
+// 验证MSAL凭据有效性的辅助函数
 
 // 获取认证URL
 export const getAuthUrl = async (redirectUri?: string, state?: string): Promise<string> => {
-  const isDev = process.env.NODE_ENV === 'development';
-  
+
   // 在没有msalClient时使用模拟URL，无论开发还是生产环境
   if (!msalClient) {
     console.log('使用模拟的Microsoft登录URL');
     const backendUrl = process.env.MSAL_REDIRECT_URI || 'http://localhost:3000/api/auth/msal/callback';
     return `${backendUrl}?code=mock-code&state=${state || 'mock-state'}`;
   }
-  
+
   // 使用类型断言来处理AuthorizationUrlRequest
   const authCodeUrlParameters = {
     scopes: (process.env.MSAL_SCOPES || 'user.read,email,profile,openid').split(','),
     redirectUri: redirectUri || process.env.MSAL_REDIRECT_URI || 'http://localhost:3000/api/auth/msal/callback',
-    state: state || '',
+    state: state || ''
   } as AuthorizationUrlRequest;
 
   try {
-      const authUrl = await msalClient.getAuthCodeUrl(authCodeUrlParameters);
-      return authUrl;
-    } catch (error) {
-      console.error('Error generating auth URL:', error);
-      throw new Error('Failed to generate authentication URL');
-    }
+    const authUrl = await msalClient.getAuthCodeUrl(authCodeUrlParameters);
+    return authUrl;
+  } catch (error) {
+    console.error('Error generating auth URL:', error);
+    throw new Error('Failed to generate authentication URL');
+  }
 };
 
 // 通过授权码获取令牌
 export const getTokenByCode = async (code: string, redirectUri?: string): Promise<TokenResponse> => {
-  const isDev = process.env.NODE_ENV === 'development';
-  
+
   // 在没有msalClient或使用mock-code时返回模拟令牌，无论开发还是生产环境
   if (!msalClient || code === 'mock-code') {
     console.log('使用模拟的Microsoft令牌响应');
@@ -137,15 +125,15 @@ export const getTokenByCode = async (code: string, redirectUri?: string): Promis
           email: 'test@example.com',
           name: 'Test User',
           preferred_username: 'test@example.com',
-          given_name: 'Test',
-        },
-      } as any,
+          given_name: 'Test'
+        }
+      },
       expiresOn: new Date(Date.now() + 3600000),
       tokenType: 'Bearer',
-      scopes: ['user.read', 'email', 'profile', 'openid'],
+      scopes: ['user.read', 'email', 'profile', 'openid']
     };
   }
-  
+
   const tokenRequest: AuthCodeRequest = {
     code,
     scopes: (process.env.MSAL_SCOPES || 'user.read,email,profile,openid').split(','),
@@ -153,28 +141,28 @@ export const getTokenByCode = async (code: string, redirectUri?: string): Promis
   };
 
   try {
-      const result = await msalClient.acquireTokenByCode(tokenRequest);
-      // 适配MSAL的AuthenticationResult到我们的TokenResponse类型
-      return {
-        accessToken: result.accessToken,
-        idToken: {
-          claims: result.idTokenClaims || {}
-        },
-        expiresOn: result.expiresOn || new Date(),
-        tokenType: result.tokenType || 'Bearer',
-        scopes: result.scopes || []
-      } as TokenResponse;
-    } catch (error) {
-      console.error('Error acquiring token by code:', error);
-      throw new Error('Failed to acquire token');
-    }
+    const result = await msalClient.acquireTokenByCode(tokenRequest);
+    // 适配MSAL的AuthenticationResult到我们的TokenResponse类型
+    return {
+      accessToken: result.accessToken,
+      idToken: {
+        claims: result.idTokenClaims || {}
+      },
+      expiresOn: result.expiresOn || new Date(),
+      tokenType: result.tokenType || 'Bearer',
+      scopes: result.scopes || []
+    } as TokenResponse;
+  } catch (error) {
+    console.error('Error acquiring token by code:', error);
+    throw new Error('Failed to acquire token');
+  }
 };
 
 // 处理用户登录并创建/更新本地用户
 export const handleLogin = async (code: string, redirectUri?: string): Promise<{ user: User; token: string; refreshToken: string }> => {
   // 获取令牌
   const tokenResponse = await getTokenByCode(code, redirectUri);
-  
+
   // 从令牌响应中提取用户信息
   const { idToken } = tokenResponse;
   const userInfo = typeof idToken === 'object' && idToken?.claims ? idToken.claims : {};
@@ -184,7 +172,7 @@ export const handleLogin = async (code: string, redirectUri?: string): Promise<{
   const userId = `microsoft_${microsoftId}`;
   const email = userInfo.email as string || userInfo.preferred_username as string || 'test@example.com';
   const name = userInfo.name as string || 'Microsoft User';
-  
+
   // 使用专用的Microsoft用户创建函数处理用户同步
   // 在开发模式下，如果是模拟令牌，也确保用户被创建到数据库
   const microsoftData = {
@@ -194,7 +182,7 @@ export const handleLogin = async (code: string, redirectUri?: string): Promise<{
     microsoftId,
     role: 'student' as const // 默认角色，使用as const确保类型符合联合类型要求
   };
-  
+
   // 确保用户存在于数据库中（如果不存在则创建，如果存在则更新）
   const user = await createUserFromMicrosoft(microsoftData);
   console.log('Microsoft user synchronized successfully:', {
@@ -203,11 +191,11 @@ export const handleLogin = async (code: string, redirectUri?: string): Promise<{
     name: user.name,
     role: user.role
   });
-  
+
   // 生成JWT令牌和刷新令牌
   const token = generateToken(user);
   const refreshToken = generateRefreshToken(user);
-  
+
   return { user, token, refreshToken };
 };
 
