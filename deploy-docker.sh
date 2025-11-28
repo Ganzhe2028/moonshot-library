@@ -25,13 +25,23 @@ require_cmd() {
 
 check_prereqs() {
   require_cmd docker
-  if ! command -v docker-compose >/dev/null 2>&1 && ! command -v docker compose >/dev/null 2>&1; then
-    err "Docker Compose 未安装，请先安装。"
-    exit 1
+  # 首先检查是否安装了docker-compose命令
+  if command -v docker-compose >/dev/null 2>&1; then
+    COMPOSE_BIN="docker-compose"
+    log "使用 docker-compose 命令"
+    return
   fi
-  if command -v docker compose >/dev/null 2>&1; then
+  
+  # 然后尝试检查docker compose子命令
+  if docker compose version >/dev/null 2>&1; then
     COMPOSE_BIN="docker compose"
+    log "使用 docker compose 子命令"
+    return
   fi
+  
+  # 如果都不可用，提示错误
+  err "Docker Compose 未安装或不可用，请先安装。"
+  exit 1
 }
 
 ensure_env() {
@@ -81,7 +91,12 @@ create_database_directory() {
 stop_services() {
   if [ -f "docker-compose.yml" ]; then
     warn "停止现有服务（如果存在）..."
-    $COMPOSE_BIN down ${CLEAN_VOLUMES:+-v} --remove-orphans || true
+    # 移除--remove-orphans标志，使用更基本的down命令
+    $COMPOSE_BIN down ${CLEAN_VOLUMES:+-v} || true
+    # 额外删除可能存在的孤立容器
+    if command -v docker >/dev/null 2>&1; then
+      docker rm $(docker ps -aq -f "label=com.docker.compose.project=$PROJECT_NAME" -f "status=exited") 2>/dev/null || true
+    fi
   fi
 }
 
@@ -95,8 +110,16 @@ deploy_services() {
   export ALLOWED_DOMAINS=${ALLOWED_DOMAINS:-}
   export TRUST_PROXY=${TRUST_PROXY:-1}
   export COMPOSE_HTTP_TIMEOUT=${COMPOSE_HTTP_TIMEOUT:-1200}
-
-  $COMPOSE_BIN up --build -d
+  
+  # 先尝试使用build命令单独构建镜像
+  if $COMPOSE_BIN build; then
+    log "镜像构建成功"
+  else
+    warn "直接构建镜像失败，尝试使用up命令（不带--build）"
+  fi
+  
+  # 使用up命令启动服务，不使用--build标志
+  $COMPOSE_BIN up -d
 
   log "✅ 构建/启动指令已下发，等待健康检查..."
 }
