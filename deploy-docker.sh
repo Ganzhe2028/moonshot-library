@@ -111,15 +111,8 @@ deploy_services() {
   export TRUST_PROXY=${TRUST_PROXY:-1}
   export COMPOSE_HTTP_TIMEOUT=${COMPOSE_HTTP_TIMEOUT:-1200}
   
-  # 先尝试使用build命令单独构建镜像
-  if $COMPOSE_BIN build; then
-    log "镜像构建成功"
-  else
-    warn "直接构建镜像失败，尝试使用up命令（不带--build）"
-  fi
-  
-  # 使用up命令启动服务，不使用--build标志
-  $COMPOSE_BIN up -d
+  # 构建并启动服务，总是重新构建镜像
+  $COMPOSE_BIN up -d --build
 
   log "✅ 构建/启动指令已下发，等待健康检查..."
 }
