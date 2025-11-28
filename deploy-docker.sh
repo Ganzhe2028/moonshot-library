@@ -25,13 +25,23 @@ require_cmd() {
 
 check_prereqs() {
   require_cmd docker
-  if ! command -v docker-compose >/dev/null 2>&1 && ! command -v docker compose >/dev/null 2>&1; then
-    err "Docker Compose 未安装，请先安装。"
-    exit 1
+  # 首先检查是否安装了docker-compose命令
+  if command -v docker-compose >/dev/null 2>&1; then
+    COMPOSE_BIN="docker-compose"
+    log "使用 docker-compose 命令"
+    return
   fi
-  if command -v docker compose >/dev/null 2>&1; then
+  
+  # 然后尝试检查docker compose子命令
+  if docker compose version >/dev/null 2>&1; then
     COMPOSE_BIN="docker compose"
+    log "使用 docker compose 子命令"
+    return
   fi
+  
+  # 如果都不可用，提示错误
+  err "Docker Compose 未安装或不可用，请先安装。"
+  exit 1
 }
 
 ensure_env() {
