@@ -35,8 +35,7 @@ services:
     image: moonshot-library-backend:latest
     container_name: moonshot-library-backend
     volumes:
-      - backend-db:/app/database
-      # Linux环境下确保正确的权限
+      # 只使用一个挂载点，确保数据库数据持久化
       - ./server/database:/app/database:rw
     ports:
       - "3000:3000"
