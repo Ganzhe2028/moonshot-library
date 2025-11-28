@@ -23,8 +23,113 @@ require_cmd() {
   command -v "$1" >/dev/null 2>&1 || { err "缺少命令: $1"; exit 1; }
 }
 
+# 检查端口是否被占用
+check_port() {
+  local port=$1
+  local service=$2
+  
+  # 使用lsof检查端口
+  if command -v lsof >/dev/null 2>&1; then
+    if lsof -i ":${port}" -sTCP:LISTEN >/dev/null 2>&1; then
+      err "端口 ${port} 已被占用（${service}），请先释放该端口或修改配置。"
+      return 1
+    fi
+    return 0
+  fi
+  
+  # 使用netstat检查端口
+  if command -v netstat >/dev/null 2>&1; then
+    if netstat -tuln | grep -q ":${port} " >/dev/null 2>&1; then
+      err "端口 ${port} 已被占用（${service}），请先释放该端口或修改配置。"
+      return 1
+    fi
+    return 0
+  fi
+  
+  # 使用ss检查端口
+  if command -v ss >/dev/null 2>&1; then
+    if ss -tuln | grep -q ":${port} " >/dev/null 2>&1; then
+      err "端口 ${port} 已被占用（${service}），请先释放该端口或修改配置。"
+      return 1
+    fi
+    return 0
+  fi
+  
+  # 如果没有可用的端口检查命令，跳过检查
+  warn "无法检查端口 ${port}，缺少lsof/netstat/ss命令"
+  return 0
+}
+
+# 检查Docker服务状态
+check_docker_status() {
+  if ! docker info >/dev/null 2>&1; then
+    err "Docker服务未运行或无法访问，请先启动Docker服务。"
+    return 1
+  fi
+  return 0
+}
+
+# 检查网络连接
+check_network() {
+  if ! ping -c 1 -W 5 registry.docker.com >/dev/null 2>&1; then
+    warn "无法连接到Docker Hub，可能会影响镜像拉取速度"
+  fi
+  return 0
+}
+
+# 检查磁盘空间
+check_disk_space() {
+  local required_space=10 # GB
+  local available_space=$(df -BG . | tail -1 | awk '{print $4}' | sed 's/G//')
+  
+  if [ -z "$available_space" ] || [ "$available_space" -lt "$required_space" ]; then
+    warn "可用磁盘空间不足（需要${required_space}GB，可用${available_space}GB），可能会导致构建失败"
+  fi
+  return 0
+}
+
+# 检查内存
+check_memory() {
+  local required_memory=2 # GB
+  local available_memory=$(free -g | grep Mem | awk '{print $7}')
+  
+  if [ -z "$available_memory" ] || [ "$available_memory" -lt "$required_memory" ]; then
+    warn "可用内存不足（需要${required_memory}GB，可用${available_memory}GB），可能会导致构建失败"
+  fi
+  return 0
+}
+
+# 检查用户权限
+check_docker_permission() {
+  if ! docker ps >/dev/null 2>&1; then
+    err "当前用户没有Docker权限，请使用sudo或将用户添加到docker组。"
+    return 1
+  fi
+  return 0
+}
+
 check_prereqs() {
   require_cmd docker
+  
+  # 检查Docker服务状态
+  check_docker_status || exit 1
+  
+  # 检查用户权限
+  check_docker_permission || exit 1
+  
+  # 检查端口占用
+  check_port 3000 "后端服务" || exit 1
+  check_port 80 "前端服务" || exit 1
+  
+  # 检查网络连接
+  check_network
+  
+  # 检查磁盘空间
+  check_disk_space
+  
+  # 检查内存
+  check_memory
+  
   # 首先检查是否安装了docker-compose命令
   if command -v docker-compose >/dev/null 2>&1; then
     COMPOSE_BIN="docker-compose"
@@ -88,16 +193,71 @@ create_database_directory() {
   chmod -R 755 ./server/database
 }
 
+# 清理构建缓存
+clean_build_cache() {
+  warn "清理Docker构建缓存..."
+  docker builder prune -f --filter "until=24h" 2>/dev/null || true
+  docker image prune -f --filter "dangling=true" 2>/dev/null || true
+  return 0
+}
+
+# 清理日志
+clean_logs() {
+  warn "清理Docker日志..."
+  docker container prune -f 2>/dev/null || true
+  return 0
+}
+
+# 停止并清理服务
 stop_services() {
   if [ -f "docker-compose.yml" ]; then
     warn "停止现有服务（如果存在）..."
-    # 移除--remove-orphans标志，使用更基本的down命令
-    $COMPOSE_BIN down ${CLEAN_VOLUMES:+-v} || true
+    
+    # 停止所有相关容器
+    $COMPOSE_BIN down ${CLEAN_VOLUMES:+-v} --remove-orphans || true
+    
     # 额外删除可能存在的孤立容器
     if command -v docker >/dev/null 2>&1; then
-      docker rm $(docker ps -aq -f "label=com.docker.compose.project=$PROJECT_NAME" -f "status=exited") 2>/dev/null || true
+      # 删除所有与项目相关的容器
+      docker rm $(docker ps -aq -f "label=com.docker.compose.project=$PROJECT_NAME") 2>/dev/null || true
+      
+      # 删除所有与项目相关的网络
+      docker network rm $(docker network ls -q -f "name=$PROJECT_NAME") 2>/dev/null || true
+      
+      # 删除所有与项目相关的卷（如果需要）
+      if $CLEAN_VOLUMES; then
+        docker volume rm $(docker volume ls -q -f "name=$PROJECT_NAME") 2>/dev/null || true
+      fi
     fi
+    
+    # 清理构建缓存
+    clean_build_cache
+    
+    # 清理日志
+    clean_logs
   fi
+}
+
+# 等待服务健康
+wait_for_health() {
+  local service=$1
+  local max_retries=${2:-10}
+  local delay=${3:-5}
+  local retry=0
+  
+  while [ $retry -lt $max_retries ]; do
+    local status=$(docker inspect --format='{{.State.Health.Status}}' "$service" 2>/dev/null || echo "unknown")
+    if [ "$status" = "healthy" ]; then
+      return 0
+    fi
+    
+    retry=$((retry + 1))
+    warn "服务 $service 健康检查中... (${retry}/${max_retries}) - 当前状态: $status"
+    sleep $delay
+  done
+  
+  err "服务 $service 健康检查失败，当前状态: $status"
+  return 1
 }
 
 deploy_services() {
@@ -110,29 +270,92 @@ deploy_services() {
   export ALLOWED_DOMAINS=${ALLOWED_DOMAINS:-}
   export TRUST_PROXY=${TRUST_PROXY:-1}
   export COMPOSE_HTTP_TIMEOUT=${COMPOSE_HTTP_TIMEOUT:-1200}
+  export DOCKER_BUILDKIT=1 # 启用BuildKit加速构建
   
   # 构建并启动服务，总是重新构建镜像
-  $COMPOSE_BIN up -d --build
+  local max_retries=3
+  local retry=0
+  local success=false
+  
+  while [ $retry -lt $max_retries ]; do
+    retry=$((retry + 1))
+    warn "构建尝试 ${retry}/${max_retries}..."
+    
+    if $COMPOSE_BIN up -d --build --timeout 300; then
+      success=true
+      break
+    else
+      warn "构建失败，${max_retries - retry}次重试机会"
+      if [ $retry -lt $max_retries ]; then
+        warn "清理失败的构建..."
+        $COMPOSE_BIN down -v --remove-orphans || true
+        sleep 10
+      fi
+    fi
+  done
+  
+  if ! $success; then
+    err "构建失败，已尝试${max_retries}次"
+    exit 1
+  fi
 
   log "✅ 构建/启动指令已下发，等待健康检查..."
 }
 
 check_services() {
   warn "等待服务启动并检查状态..."
-  sleep 20
-  log "服务状态："
-  $COMPOSE_BIN ps
-
+  
   local backend="${PROJECT_NAME}-backend"
   local frontend="${PROJECT_NAME}-frontend"
-
-  local backend_healthy
-  backend_healthy=$(docker inspect --format='{{.State.Health.Status}}' "$backend" 2>/dev/null || echo "unknown")
-  local frontend_healthy
-  frontend_healthy=$(docker inspect --format='{{.State.Health.Status}}' "$frontend" 2>/dev/null || echo "unknown")
-
+  
+  # 显示服务状态
+  log "服务状态："
+  $COMPOSE_BIN ps
+  
+  # 等待后端服务健康
+  if wait_for_health "$backend" 15 5; then
+    log "✅ 后端服务健康检查通过"
+  else
+    warn "⚠️  后端服务健康检查失败，可能需要手动检查"
+  fi
+  
+  # 等待前端服务健康
+  if wait_for_health "$frontend" 15 5; then
+    log "✅ 前端服务健康检查通过"
+  else
+    warn "⚠️  前端服务健康检查失败，可能需要手动检查"
+  fi
+  
+  # 显示最终状态
+  log "最终服务状态："
+  $COMPOSE_BIN ps
+  
+  local backend_healthy=$(docker inspect --format='{{.State.Health.Status}}' "$backend" 2>/dev/null || echo "unknown")
+  local frontend_healthy=$(docker inspect --format='{{.State.Health.Status}}' "$frontend" 2>/dev/null || echo "unknown")
+  
   echo "后端服务状态: $backend_healthy"
   echo "前端服务状态: $frontend_healthy"
+  
+  # 测试服务访问
+  if command -v curl >/dev/null 2>&1; then
+    log "测试服务访问..."
+    
+    # 测试后端健康检查
+    local backend_response=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/health 2>/dev/null || echo "000")
+    if [ "$backend_response" = "200" ]; then
+      log "✅ 后端健康检查访问成功"
+    else
+      warn "⚠️  后端健康检查访问失败，状态码: $backend_response"
+    fi
+    
+    # 测试前端访问
+    local frontend_response=$(curl -s -o /dev/null -w "%{http_code}" http://localhost 2>/dev/null || echo "000")
+    if [ "$frontend_response" = "200" ]; then
+      log "✅ 前端访问成功"
+    else
+      warn "⚠️  前端访问失败，状态码: $frontend_response"
+    fi
+  fi
 }
 
 show_summary() {
