@@ -1,4 +1,4 @@
-// @ts-ignore
+// @ts-expect-error - 忽略axios导入的类型检查问题
 import axios from 'axios';
 
 const API_BASE_URL = 'http://localhost:3000/api';
@@ -7,8 +7,8 @@ interface TestResult {
   name: string;
   passed: boolean;
   message: string;
-  response?: any;
-  error?: any;
+  response?: Record<string, unknown>;
+  error?: Record<string, unknown>;
 }
 
 class APITester {
@@ -16,10 +16,10 @@ class APITester {
   private refreshToken: string = '';
   private testResults: TestResult[] = [];
 
-  private async makeRequest(method: string, endpoint: string, data?: any, auth: boolean = true) {
-    const config: any = {
-      method,
-      url: `${API_BASE_URL}${endpoint}`,
+  private async makeRequest(method: string, endpoint: string, data?: Record<string, unknown>, auth: boolean = true) {
+    const config: Record<string, unknown> = {
+      method: method,
+      url: API_BASE_URL + endpoint,
       headers: {
         'Content-Type': 'application/json'
       }
@@ -45,13 +45,13 @@ class APITester {
     }
   }
 
-  private addTestResult(name: string, passed: boolean, message: string, response?: any, error?: any) {
+  private addTestResult(name: string, passed: boolean, message: string, response?: Record<string, unknown>, error?: Record<string, unknown>) {
     this.testResults.push({
-      name,
-      passed,
-      message,
-      response,
-      error
+      name: name,
+      passed: passed,
+      message: message,
+      response: response,
+      error: error
     });
   }
 
@@ -153,10 +153,10 @@ class APITester {
     );
 
     if (createResult.success && createResult.data.success) {
-      const bookId = createResult.data.data.book.id;
+      const bookId = String(createResult.data.data.book.id);
 
       // 测试获取图书详情
-      const detailResult = await this.makeRequest('GET', `/books/${bookId}`);
+      const detailResult = await this.makeRequest('GET', '/books/' + bookId);
       this.addTestResult(
         'Get Book Detail',
         detailResult.success && detailResult.data.success,
@@ -167,7 +167,7 @@ class APITester {
 
       // 测试更新图书
       const updateData = { title: 'Updated Test Book' };
-      const updateResult = await this.makeRequest('PUT', `/books/${bookId}`, updateData);
+      const updateResult = await this.makeRequest('PUT', '/books/' + bookId, updateData);
       this.addTestResult(
         'Update Book',
         updateResult.success && updateResult.data.success,
@@ -177,7 +177,7 @@ class APITester {
       );
 
       // 测试删除图书
-      const deleteResult = await this.makeRequest('DELETE', `/books/${bookId}`);
+      const deleteResult = await this.makeRequest('DELETE', '/books/' + bookId);
       this.addTestResult(
         'Delete Book',
         deleteResult.success && deleteResult.data.success,
@@ -201,9 +201,9 @@ class APITester {
     };
 
     const createBookResult = await this.makeRequest('POST', '/books', testBook);
-    
+
     if (createBookResult.success && createBookResult.data.success) {
-      const bookId = createBookResult.data.data.book.id;
+      const bookId = String(createBookResult.data.data.book.id);
 
       // 创建借阅记录
       const borrowingData = {
@@ -221,10 +221,10 @@ class APITester {
       );
 
       if (createBorrowingResult.success && createBorrowingResult.data.success) {
-        const borrowingId = createBorrowingResult.data.data.borrowingRecord.id;
+        const borrowingId = String(createBorrowingResult.data.data.borrowingRecord.id);
 
         // 获取借阅记录
-        const getBorrowingResult = await this.makeRequest('GET', `/borrowings/${borrowingId}`);
+        const getBorrowingResult = await this.makeRequest('GET', '/borrowings/' + borrowingId);
         this.addTestResult(
           'Get Borrowing Record',
           getBorrowingResult.success && getBorrowingResult.data.success,
@@ -234,7 +234,7 @@ class APITester {
         );
 
         // 续借图书
-        const renewResult = await this.makeRequest('PUT', `/borrowings/${borrowingId}/renew`);
+        const renewResult = await this.makeRequest('PUT', '/borrowings/' + borrowingId + '/renew');
         this.addTestResult(
           'Renew Borrowing',
           renewResult.success && renewResult.data.success,
@@ -244,7 +244,7 @@ class APITester {
         );
 
         // 归还图书
-        const returnResult = await this.makeRequest('PUT', `/borrowings/${borrowingId}/return`);
+        const returnResult = await this.makeRequest('PUT', '/borrowings/' + borrowingId + '/return');
         this.addTestResult(
           'Return Book',
           returnResult.success && returnResult.data.success,
@@ -255,7 +255,7 @@ class APITester {
       }
 
       // 清理：删除测试图书
-      await this.makeRequest('DELETE', `/books/${bookId}`);
+      await this.makeRequest('DELETE', '/books/' + bookId);
     }
   }
 
@@ -273,7 +273,6 @@ class APITester {
     );
 
     // 测试无效 Token
-    const invalidToken = 'invalid_token_123';
     const invalidAuthResult = await this.makeRequest('GET', '/books', null, true);
     this.addTestResult(
       'Invalid Token',
@@ -342,8 +341,8 @@ class APITester {
     console.log('\n📊 Test Results Summary:');
     console.log('='.repeat(50));
 
-    const passed = this.testResults.filter(r => r.passed).length;
-    const failed = this.testResults.filter(r => !r.passed).length;
+    const passed = this.testResults.filter((r) => r.passed).length;
+    const failed = this.testResults.filter((r) => !r.passed).length;
     const total = this.testResults.length;
 
     this.testResults.forEach((result, index) => {

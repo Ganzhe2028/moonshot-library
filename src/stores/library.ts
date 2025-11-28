@@ -1,9 +1,10 @@
 import { defineStore } from 'pinia'
 import { useAuthStore } from './auth'
 
-import type { Book, BookImportResult, BorrowingRecord } from '@/types/library'
+import type { Book, BookImportResult, BorrowingRecord, Rating, Comment } from '@/types/library'
 import { bookService } from '@/services/bookService'
 import { borrowingService } from '@/services/borrowingService'
+import { ratingService } from '@/services/ratingService'
 
 interface LibraryState {
   books: Book[]
@@ -12,6 +13,12 @@ interface LibraryState {
   borrowings: BorrowingRecord[]
   borrowingsLoading: boolean
   borrowingsError: string
+  ratings: Rating[]
+  comments: Comment[]
+  ratingsLoading: boolean
+  commentsLoading: boolean
+  ratingError: string
+  commentError: string
 }
 
 export const useLibraryStore = defineStore('library', {
@@ -22,6 +29,12 @@ export const useLibraryStore = defineStore('library', {
     borrowings: [],
     borrowingsLoading: false,
     borrowingsError: '',
+    ratings: [],
+    comments: [],
+    ratingsLoading: false,
+    commentsLoading: false,
+    ratingError: '',
+    commentError: '',
   }),
   getters: {
     getBookById: (state) => (id: string) => state.books.find((book) => book.id === id),
@@ -53,7 +66,12 @@ export const useLibraryStore = defineStore('library', {
     async createBook(payload: Omit<Book, 'id' | 'availableCopies'> & { availableCopies?: number }) {
       this.booksError = ''
       try {
-        const book = await bookService.createBook(payload)
+        // 确保availableCopies有默认值
+        const bookPayload = {
+          ...payload,
+          availableCopies: payload.availableCopies ?? 1
+        }
+        const book = await bookService.createBook(bookPayload)
         this.books.unshift({ ...book, tags: book.tags ?? [] })
         return { success: true, message: '已创建新书籍。' }
       } catch (err) {
@@ -183,9 +201,42 @@ export const useLibraryStore = defineStore('library', {
       }
 
       try {
+        // 获取借阅记录，以便获取书籍信息
+        const borrowing = this.borrowings.find(record => record.id === recordId)
+        if (borrowing) {
+          const book = this.books.find(b => b.id === borrowing.bookId)
+          const bookWordCount = book?.word_count || 0
+
+          // 归还书籍
+          await borrowingService.returnBook(recordId)
+          await this.fetchBorrowings(true)
+
+          // 如果书籍有字数信息，累加到用户的总阅读字数
+          if (bookWordCount > 0 && authStore.user) {
+            // 创建新的用户对象以避免直接修改可能为undefined的属性
+            const updatedUser = {
+              ...authStore.user,
+              total_words_read: (authStore.user.total_words_read || 0) + bookWordCount
+            }
+
+            // 这里可以添加API调用来更新服务器上的用户总阅读字数
+            // await userService.updateUserReadingStats(updatedUser.id, updatedUser.total_words_read)
+            // 直接设置用户数据
+            authStore.user = updatedUser as typeof authStore.user
+          }
+
+          return {
+            success: true,
+            message: bookWordCount > 0
+              ? `图书归还成功，已累计阅读${bookWordCount}字！`
+              : '图书归还成功。'
+          }
+        }
+
+        // 如果找不到借阅记录，仍然执行归还操作
         await borrowingService.returnBook(recordId)
-        await Promise.all([this.fetchBorrowings(true), this.fetchBooks(true)])
-        return { success: true, message: '已归还图书。' }
+        await this.fetchBorrowings(true)
+        return { success: true, message: '图书归还成功。' }
       } catch (err) {
         return {
           success: false,
@@ -209,6 +260,155 @@ export const useLibraryStore = defineStore('library', {
           message: err instanceof Error ? err.message : '续借失败，请稍后再试。',
         }
       }
+    },
+
+    // 评分相关操作
+    async fetchBookRatings(bookId: string) {
+      this.ratingsLoading = true
+      this.ratingError = ''
+      try {
+        const result = await ratingService.getBookRatings(bookId)
+        const ratings = result?.ratings || []
+        const averageRating = result?.averageRating || 0
+        const ratingCount = result?.ratingCount || 0
+
+        this.ratings = ratings
+
+        // 更新书籍的评分信息
+        const bookIndex = this.books.findIndex(book => book.id === bookId)
+        if (bookIndex >= 0 && this.books[bookIndex]) {
+          const updatedBook = {
+            ...this.books[bookIndex],
+            averageRating,
+            ratingCount
+          }
+          // 避免直接修改数组元素
+          const updatedBooks = [...this.books]
+          updatedBooks[bookIndex] = updatedBook
+          this.books = updatedBooks
+        }
+
+        return { ratings, averageRating, ratingCount }
+      } catch (err) {
+        this.ratingError = err instanceof Error ? err.message : '无法加载评分数据'
+        console.error('加载评分失败:', err)
+        return { ratings: [], averageRating: 0, ratingCount: 0 }
+      } finally {
+        this.ratingsLoading = false
+      }
+    },
+
+    async submitRating(bookId: string, rating: number) {
+      const authStore = useAuthStore()
+      if (!authStore.user) {
+        return { success: false, message: '请先登录后再评分。' }
+      }
+
+      this.ratingError = ''
+      try {
+        const newRating = await ratingService.submitRating(bookId, rating)
+
+        // 更新本地评分数据
+        const existingIndex = this.ratings.findIndex(
+          r => r.bookId === bookId && r.userId === authStore.user!.id
+        )
+
+        if (existingIndex >= 0) {
+          this.ratings[existingIndex] = newRating
+        } else {
+          this.ratings.push(newRating)
+        }
+
+        // 重新获取并更新书籍评分信息
+        await this.fetchBookRatings(bookId)
+
+        return { success: true, message: '评分成功！' }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : '评分失败'
+        this.ratingError = message
+        console.error('提交评分失败:', err)
+        return { success: false, message }
+      }
+    },
+
+    async getUserBookRating(bookId: string) {
+      const authStore = useAuthStore()
+      if (!authStore.user) {
+        return null
+      }
+
+      try {
+        const rating = await ratingService.getUserBookRating(bookId, authStore.user.id)
+        return rating
+      } catch (err) {
+        console.error('获取用户评分失败:', err)
+        return null
+      }
+    },
+
+    // 评论相关操作
+    async fetchBookComments(bookId: string) {
+      this.commentsLoading = true
+      this.commentError = ''
+      try {
+        const comments = await ratingService.getBookComments(bookId)
+        // 只更新指定书籍的评论
+        this.comments = this.comments.filter(c => c.bookId !== bookId).concat(comments)
+        return comments
+      } catch (err) {
+        this.commentError = err instanceof Error ? err.message : '无法加载评论数据'
+        console.error('加载评论失败:', err)
+        return []
+      } finally {
+        this.commentsLoading = false
+      }
+    },
+
+    async submitComment(bookId: string, content: string) {
+      const authStore = useAuthStore()
+      if (!authStore.user) {
+        return { success: false, message: '请先登录后再发表评论。' }
+      }
+
+      this.commentError = ''
+      try {
+        const newComment = await ratingService.submitComment(bookId, content)
+
+        // 更新本地评论数据
+        this.comments.unshift(newComment)
+
+        return { success: true, message: '评论发表成功！', comment: newComment }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : '评论失败'
+        this.commentError = message
+        console.error('提交评论失败:', err)
+        return { success: false, message }
+      }
+    },
+
+    async deleteComment(commentId: string) {
+      const authStore = useAuthStore()
+      if (!authStore.user) {
+        return { success: false, message: '请先登录后再删除评论。' }
+      }
+
+      try {
+        await ratingService.deleteComment(commentId)
+
+        // 从本地数据中删除评论
+        this.comments = this.comments.filter(comment => comment.id !== commentId)
+
+        return { success: true, message: '评论已删除。' }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : '删除评论失败'
+        console.error('删除评论失败:', err)
+        return { success: false, message }
+      }
+    },
+
+    // 获取书籍的评论列表
+    getBookComments(bookId: string): Comment[] {
+      return this.comments.filter(comment => comment.bookId === bookId)
     },
   },
 })

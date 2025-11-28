@@ -26,6 +26,8 @@ import { createUserFromMicrosoft } from '../models/user';
 import { generateRefreshToken, generateToken } from './auth';
 
 // 创建MSAL配置
+const isDev = process.env.NODE_ENV === 'development';
+
 const msalConfig: Configuration = {
   auth: {
     clientId: process.env.MSAL_CLIENT_ID || '',
@@ -40,8 +42,8 @@ const msalConfig: Configuration = {
         }
       },
       piiLoggingEnabled: false,
-    logLevel: 3
-  },
+      logLevel: 3
+    }
   },
 };
 
@@ -66,16 +68,21 @@ const isMsalConfigValid = () => {
 
 // 创建MSAL客户端实例或返回null
 let msalClient: ConfidentialClientApplication | null = null;
-const isDev = process.env.NODE_ENV === 'development';
 console.log('开始MSAL客户端初始化...');
 if (isMsalConfigValid()) {
   try {
     console.log('尝试创建MSAL客户端实例...');
-    msalClient = new ConfidentialClientApplication(msalConfig);
-    console.log('MSAL客户端初始化成功!');
+    // 在开发模式下或凭据为空时，不创建真实的MSAL客户端
+    if (isDev || !msalConfig.auth.clientId || !msalConfig.auth.clientSecret) {
+      console.log('开发模式或凭据不完整，将使用模拟功能');
+      msalClient = null;
+    } else {
+      msalClient = new ConfidentialClientApplication(msalConfig);
+      console.log('MSAL客户端初始化成功!');
+    }
   } catch (error) {
     console.warn('MSAL客户端初始化失败:', error);
-    // 在生产环境下，初始化失败也允许回退到模拟功能
+    // 初始化失败时回退到模拟功能
     console.log('MSAL初始化失败，将使用模拟功能');
     msalClient = null;
   }
@@ -137,7 +144,7 @@ export const getTokenByCode = async (code: string, redirectUri?: string): Promis
   const tokenRequest: AuthCodeRequest = {
     code,
     scopes: (process.env.MSAL_SCOPES || 'user.read,email,profile,openid').split(','),
-    redirectUri: redirectUri || process.env.MSAL_REDIRECT_URI || 'http://localhost:3000/api/auth/msal/callback',
+    redirectUri: redirectUri || process.env.MSAL_REDIRECT_URI || 'http://localhost:3000/api/auth/msal/callback'
   };
 
   try {
@@ -177,8 +184,8 @@ export const handleLogin = async (code: string, redirectUri?: string): Promise<{
   // 在开发模式下，如果是模拟令牌，也确保用户被创建到数据库
   const microsoftData = {
     id: userId,
-    email: email,
-    name: name,
+    email,
+    name,
     microsoftId,
     role: 'student' as const // 默认角色，使用as const确保类型符合联合类型要求
   };

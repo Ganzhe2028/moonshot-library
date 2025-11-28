@@ -45,6 +45,11 @@ const summaryCards = computed(() => [
     value: libraryStore.borrowingHistory.length,
     hint: t('borrowings.noHistory'),
   },
+  {
+    label: '总阅读字数',
+    value: currentUser.value?.total_words_read || 0,
+    hint: '累计阅读',
+  },
 ])
 
 const userInitials = computed(() => {
@@ -84,6 +89,14 @@ const dueLabel = (dateString: string) => {
 }
 
 const formatAuthors = (authors?: string[]) => (authors?.length ? authors.join(' / ') : '--')
+
+const formatWordCount = (count?: number): string => {
+  if (!count) return '0'
+  if (count >= 10000) {
+    return (count / 10000).toFixed(1) + '万'
+  }
+  return count.toString()
+}
 
 const requireAuth = () => {
   if (!authStore.user) {
@@ -217,6 +230,7 @@ watch(
           <p class="book-meta">
             {{ formatDate(item.record.borrowDate) }} — {{ formatDate(item.record.returnDate) }}
           </p>
+          <p class="word-count">阅读字数：{{ formatWordCount(item.book?.word_count) }}字</p>
           <span class="status-pill">{{ t('buttons.borrowed') }}</span>
         </article>
       </div>

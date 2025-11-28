@@ -17,13 +17,13 @@ export const generateToken = (user: User): string => {
     role: user.role
   };
 
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN as any });
+  return jwt.sign(payload, JWT_SECRET as string, { expiresIn: JWT_EXPIRES_IN as string });
 };
 
 export const verifyToken = (token: string): JWTPayload => {
   try {
     return jwt.verify(token, JWT_SECRET) as JWTPayload;
-  } catch (error) {
+  } catch {
     throw new Error('Invalid token');
   }
 };
@@ -35,5 +35,5 @@ export const generateRefreshToken = (user: User): string => {
     role: user.role
   };
 
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: '30d' as any });
+  return jwt.sign(payload, JWT_SECRET as string, { expiresIn: '30d' });
 };

@@ -95,36 +95,30 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    // 允许没有 origin 的请求（如移动应用或 Postman）
-    if (!origin) {
+    // 开发环境下，允许所有 localhost 请求
+    if (!origin || 
+        origin.startsWith('http://localhost') || 
+        process.env.NODE_ENV === 'development') {
       return callback(null, true);
     }
 
     // 检查 origin 是否在允许列表中
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
-    } else {
-      // 开发环境下，允许所有 localhost 相关请求（包括无端口号的http://localhost）
-      if (process.env.NODE_ENV === 'development' &&
-          (origin.startsWith('http://localhost:') || origin === 'http://localhost')) {
-        callback(null, true);
-      } else if (process.env.NODE_ENV === 'production') {
-        // 生产环境下，从环境变量读取允许的域名列表
-        // 如果没有配置，默认允许通过nginx代理的请求
-        const allowedDomains = process.env.ALLOWED_DOMAINS ?
-          process.env.ALLOWED_DOMAINS.split(',') : [];
+    } else if (process.env.NODE_ENV === 'production') {
+      // 生产环境下，从环境变量读取允许的域名列表
+      const allowedDomains = process.env.ALLOWED_DOMAINS ?
+        process.env.ALLOWED_DOMAINS.split(',') : [];
 
-        // 检查是否在允许的域名列表中
-        if (allowedDomains.some(domain => origin.includes(domain))) {
-          callback(null, true);
-        } else {
-          // 生产环境默认允许来自服务器自身的请求
-          // 这适用于nginx代理的情况
-          callback(null, true);
-        }
+      if (allowedDomains.some(domain => origin.includes(domain))) {
+        callback(null, true);
       } else {
-        callback(new Error('Not allowed by CORS'));
+        // 生产环境默认允许来自服务器自身的请求
+        callback(null, true);
       }
+    } else {
+      // 仅在严格模式下拒绝请求
+      callback(new Error('Not allowed by CORS'));
     }
   },
   credentials: true,

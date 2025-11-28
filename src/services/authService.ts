@@ -1,7 +1,7 @@
-import type { LoginRequest, RegisterRequest, AuthResponse } from '@/types/library'
+import type { LoginRequest, RegisterRequest, AuthResponse, AuthUser } from '@/types/library'
 import msalService from './msalService'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
 
 class AuthService {
   private getHeaders(): Record<string, string> {
@@ -274,11 +274,23 @@ class AuthService {
       // 保存token到localStorage
       if (msalResponse.data?.token) {
         localStorage.setItem('token', msalResponse.data.token)
-        localStorage.setItem('refreshToken', msalResponse.data.refreshToken)
+        if (msalResponse.data.refreshToken) {
+          localStorage.setItem('refreshToken', msalResponse.data.refreshToken)
+        }
         this.setLoginMethod('m365')
       }
 
-      return msalResponse
+      // 确保返回值符合AuthResponse类型
+      const responseData = msalResponse.data || {};
+      return {
+        success: msalResponse.success,
+        message: msalResponse.message || '登录成功',
+        data: {
+          user: responseData.user as unknown as AuthUser,
+          token: responseData.token || '',
+          refreshToken: responseData.refreshToken || ''
+        }
+      }
     } catch (error) {
       if (error instanceof Error) {
         throw error
@@ -325,7 +337,12 @@ class AuthService {
       const response = await msalService.verifyWithBackend(token)
       if (response.success && response.data?.token) {
         // 保存完整的用户会话
-        this.saveUserSession(response.data.user || {}, response.data.token, response.data.refreshToken, 'm365')
+        this.saveUserSession(
+          response.data.user || {},
+          response.data.token,
+          response.data.refreshToken || '',
+          'm365'
+        )
 
         // 获取并清除重定向URL
       const redirectUrl = localStorage.getItem('postLoginRedirect') || undefined;

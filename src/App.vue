@@ -146,6 +146,9 @@ onMounted(async () => {
         <RouterLink :class="{ active: route.name === 'borrowings' }" to="/borrowings">
           {{ t('common.borrowings') }}
         </RouterLink>
+        <RouterLink :class="{ active: route.name === 'community' }" to="/community">
+          {{ t('common.community') }}
+        </RouterLink>
       </nav>
 
       <LanguageSwitcher />

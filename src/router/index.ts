@@ -6,19 +6,28 @@ import MyBorrowingsPage from '@/pages/MyBorrowingsPage.vue'
 import LoginPage from '@/pages/LoginPage.vue'
 import RegisterPage from '@/pages/RegisterPage.vue'
 import AuthCallbackPage from '@/pages/AuthCallbackPage.vue'
+import TestPage from '@/pages/TestPage.vue'
+import CommunityPage from '@/pages/CommunityPage.vue'
 import AdminLayout from '@/pages/admin/AdminLayout.vue'
 import AdminBooksPage from '@/pages/admin/AdminBooksPage.vue'
 import AdminUsersPage from '@/pages/admin/AdminUsersPage.vue'
 import AdminBorrowingsPage from '@/pages/admin/AdminBorrowingsPage.vue'
+import AdminAnnouncementsPage from '@/pages/admin/AdminAnnouncementsPage.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
-      path: '/',
-      name: 'home',
-      component: HomePage,
-    },
+    path: '/',
+    name: 'home',
+    component: HomePage,
+  },
+  {
+    path: '/test',
+    name: 'test',
+    component: TestPage,
+    meta: { requiresAuth: false },
+  },
     {
       path: '/books/:id',
       name: 'book-detail',
@@ -29,6 +38,11 @@ const router = createRouter({
       name: 'borrowings',
       component: MyBorrowingsPage,
       meta: { requiresAuth: true },
+    },
+    {
+      path: '/community',
+      name: 'community',
+      component: CommunityPage,
     },
     {
       path: '/login',
@@ -73,6 +87,12 @@ const router = createRouter({
           component: AdminBorrowingsPage,
           meta: { requiresAuth: true, requiresRole: ['admin', 'librarian'] },
         },
+        {
+          path: 'announcements',
+          name: 'admin-announcements',
+          component: AdminAnnouncementsPage,
+          meta: { requiresAuth: true, requiresRole: ['admin', 'librarian'] },
+        },
       ],
     },
   ],
@@ -89,13 +109,13 @@ router.addRoute({
 
 router.beforeEach((to, from, next) => {
   const authStore = useAuthStore()
-  
+
   // 特殊处理auth-callback路由，允许访问
   if (to.name === 'auth-callback') {
     next()
     return
   }
-  
+
   // 检查路由是否需要认证
   if (to.meta?.requiresAuth && !authStore.user) {
     // 如果需要认证且用户未登录，重定向到登录页面
