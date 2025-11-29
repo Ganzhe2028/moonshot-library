@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+
 import { useAuthStore } from '@/stores/auth'
 import HomePage from '@/pages/HomePage.vue'
 import BookDetailPage from '@/pages/BookDetailPage.vue'
@@ -29,11 +30,6 @@ const router = createRouter({
       name: 'borrowings',
       component: MyBorrowingsPage,
       meta: { requiresAuth: true },
-    },
-    {
-      path: '/login',
-      name: 'login',
-      component: LoginPage,
     },
     {
       path: '/register',

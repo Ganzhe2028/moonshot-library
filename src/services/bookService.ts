@@ -3,26 +3,25 @@ import type { Book, BookImportResult } from '@/types/library'
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api'
 
 class BookService {
-  private getHeaders(includeAuth = false, contentType: string | null = 'application/json'): Record<string, string> {
-    const headers: Record<string, string> = {
-      ...(contentType ? { 'Content-Type': contentType } : {}),
+  private getHeaders(includeJson = true): Record<string, string> {
+    const headers: Record<string, string> = {}
+    if (includeJson) {
+      headers['Content-Type'] = 'application/json'
     }
-    if (includeAuth) {
-      const token = localStorage.getItem('token')
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`
-      }
+    const token = localStorage.getItem('token')
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
     }
     return headers
   }
 
   private async request<T>(path: string, init?: RequestInit): Promise<T> {
     const response = await fetch(`${API_BASE_URL}${path}`, init)
-
-    const data = await response.json()
+    const data = await response.json().catch(() => ({}))
 
     if (!response.ok) {
-      throw new Error(data.message || '请求图书数据失败')
+      const message = data?.message || '请求图书数据失败'
+      throw new Error(message)
     }
 
     return data.data as T
@@ -30,20 +29,22 @@ class BookService {
 
   async fetchBooks(): Promise<Book[]> {
     const data = await this.request<{ books: Book[] }>('/books', {
-      headers: this.getHeaders(),
+      method: 'GET',
+      headers: this.getHeaders(false),
     })
     return data.books ?? []
   }
 
   async fetchBookById(id: string): Promise<Book> {
     const data = await this.request<{ book: Book }>(`/books/${id}`, {
-      headers: this.getHeaders(),
+      method: 'GET',
+      headers: this.getHeaders(false),
     })
     return data.book
   }
 
   async createBook(payload: Omit<Book, 'id' | 'availableCopies'> & { availableCopies?: number }): Promise<Book> {
-    const data = await this.request<{ book: Book }>(`/books`, {
+    const data = await this.request<{ book: Book }>('/books', {
       method: 'POST',
       headers: this.getHeaders(true),
       body: JSON.stringify(payload),
@@ -51,7 +52,10 @@ class BookService {
     return data.book
   }
 
-  async updateBook(id: string, payload: Partial<Book>): Promise<Book> {
+  async updateBook(
+    id: string,
+    payload: Omit<Book, 'id' | 'availableCopies'> & { availableCopies?: number },
+  ): Promise<Book> {
     const data = await this.request<{ book: Book }>(`/books/${id}`, {
       method: 'PUT',
       headers: this.getHeaders(true),
@@ -61,9 +65,9 @@ class BookService {
   }
 
   async deleteBook(id: string): Promise<void> {
-    await this.request<void>(`/books/${id}`, {
+    await this.request<null>(`/books/${id}`, {
       method: 'DELETE',
-      headers: this.getHeaders(true),
+      headers: this.getHeaders(false),
     })
   }
 
@@ -73,9 +77,10 @@ class BookService {
 
     const data = await this.request<BookImportResult>('/books/import', {
       method: 'POST',
-      headers: this.getHeaders(true, null),
+      headers: this.getHeaders(false),
       body: formData,
     })
+
     return data
   }
 }
