@@ -37,13 +37,15 @@ export const useLibraryStore = defineStore('library', {
     commentError: '',
   }),
   getters: {
-    getBookById: (state) => (id: string) => state.books.find((book) => book.id === id),
     activeBorrowings: (state): BorrowingRecord[] =>
       state.borrowings.filter((record) => record.status === 'active'),
     borrowingHistory: (state): BorrowingRecord[] =>
       state.borrowings.filter((record) => record.status !== 'active'),
     isBookBorrowedByUser(): (bookId: string) => boolean {
       return (bookId: string) => this.activeBorrowings.some((record) => record.bookId === bookId)
+    },
+    getBookById: (state) => (id: string) => {
+      return state.books.find(book => book.id === id)
     },
   },
   actions: {

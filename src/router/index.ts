@@ -35,15 +35,15 @@ const router = createRouter({
     },
     {
       path: '/borrowings',
-      name: 'borrowings',
-      component: MyBorrowingsPage,
-      meta: { requiresAuth: true },
-    },
-    {
+    name: 'borrowings',
+    component: MyBorrowingsPage,
+    meta: { requiresAuth: true },
+  },
+  {
       path: '/community',
       name: 'community',
-      component: CommunityPage,
-    },
+    component: CommunityPage,
+  },
     {
       path: '/login',
       name: 'login',

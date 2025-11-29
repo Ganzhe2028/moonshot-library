@@ -13,7 +13,7 @@ class BookService {
       ...init.headers
     } : defaultHeaders
 
-    const response = await fetch(path, {
+    const response = await fetch(`${API_BASE_URL}${path}`, {
       ...init,
       headers
     })
@@ -51,7 +51,7 @@ class BookService {
 
     const query = searchParams.toString()
 
-    const data = await this.request<{ books: Book[] }>(`${API_BASE_URL}/books${query ? `?${query}` : ''}`, {
+    const data = await this.request<{ books: Book[] }>(`/books${query ? `?${query}` : ''}`, {
       headers: this.getHeaders(),
     })
 
@@ -59,7 +59,7 @@ class BookService {
   }
 
   async fetchBookById(id: string): Promise<Book> {
-    const data = await this.request<{ book: Book }>(`${API_BASE_URL}/books/${id}`, {
+    const data = await this.request<{ book: Book }>(`/books/${id}`, {
       headers: this.getHeaders(),
     })
 
@@ -67,7 +67,7 @@ class BookService {
   }
 
   async createBook(payload: Omit<Book, 'id'>): Promise<Book> {
-    const data = await this.request<{ book: Book }>(`${API_BASE_URL}/books`, {
+    const data = await this.request<{ book: Book }>('/books', {
       method: 'POST',
       body: JSON.stringify(payload)
     })
@@ -75,7 +75,7 @@ class BookService {
   }
 
   async updateBook(id: string, payload: Partial<Book>): Promise<Book> {
-    const data = await this.request<{ book: Book }>(`${API_BASE_URL}/books/${id}`, {
+    const data = await this.request<{ book: Book }>(`/books/${id}`, {
       method: 'PUT',
       body: JSON.stringify(payload)
     })
@@ -83,7 +83,7 @@ class BookService {
   }
 
   async deleteBook(id: string): Promise<void> {
-    await this.request(`${API_BASE_URL}/books/${id}`, {
+    await this.request(`/books/${id}`, {
       method: 'DELETE'
     })
   }
@@ -92,7 +92,7 @@ class BookService {
     const formData = new FormData()
     formData.append('file', file)
 
-    const data = await this.request<BookImportResult>(`${API_BASE_URL}/books/import`, {
+    const data = await this.request<BookImportResult>('/books/import', {
       method: 'POST',
       headers: {}, // 不设置Content-Type，让浏览器自动设置multipart/form-data
       body: formData
@@ -102,7 +102,7 @@ class BookService {
   }
 
   async getCategories(): Promise<string[]> {
-    const data = await this.request<{ categories?: string[] }>(`${API_BASE_URL}/books/categories`, {
+    const data = await this.request<{ categories?: string[] }>('/books/categories', {
       headers: this.getHeaders(),
     })
 
