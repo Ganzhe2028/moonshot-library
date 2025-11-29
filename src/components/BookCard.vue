@@ -63,10 +63,15 @@ const coverImageUrl = computed(
 
 .status {
   font-size: 0.8rem;
-  padding: 0.3rem 0.8rem;
+  padding: 6px 12px;
+  min-width: 80px;
+  width: fit-content;
+  text-align: center;
+  white-space: nowrap;
   border-radius: 999px;
   font-weight: 600;
   z-index: 10;
+  flex-shrink: 0;
 }
 
 .status.available {
