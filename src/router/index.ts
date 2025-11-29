@@ -77,6 +77,12 @@ const router = createRouter({
   },
 })
 
+// 添加404路由处理
+router.addRoute({
+  path: '/:pathMatch(.*)*',
+  redirect: '/'
+})
+
 router.beforeEach((to, from, next) => {
   const authStore = useAuthStore()
   
