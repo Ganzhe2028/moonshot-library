@@ -49,21 +49,27 @@ ensure_dependencies() {
 
 start_backend() {
   info "Starting backend (server)..."
-  local host_env=()
-  if [ -n "$FORCE_HOST" ]; then
-    host_env=(HOST="$FORCE_HOST")
-  fi
-  (cd "$BACK_DIR" && "${host_env[@]}" npm run dev -- --host "${FORCE_HOST:-}") &
+  (
+    cd "$BACK_DIR"
+    if [ -n "$FORCE_HOST" ]; then
+      HOST="$FORCE_HOST" npm run dev -- --host "$FORCE_HOST"
+    else
+      npm run dev -- --host "${FORCE_HOST:-}"
+    fi
+  ) &
   BACK_PID=$!
 }
 
 start_frontend() {
   info "Starting frontend (Vite)..."
-  local host_flag=()
-  if [ -n "$FORCE_HOST" ]; then
-    host_flag=(--host "$FORCE_HOST")
-  fi
-  (cd "$FRONT_DIR" && npm run dev -- --port "$FRONT_PORT" "${host_flag[@]}") &
+  (
+    cd "$FRONT_DIR"
+    if [ -n "$FORCE_HOST" ]; then
+      npm run dev -- --port "$FRONT_PORT" --host "$FORCE_HOST"
+    else
+      npm run dev -- --port "$FRONT_PORT"
+    fi
+  ) &
   FRONT_PID=$!
 }
 

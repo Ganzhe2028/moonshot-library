@@ -3,36 +3,84 @@ import type { Book, BookImportResult } from '@/types/library'
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api'
 
 class BookService {
-  private async request<T>(path: string): Promise<T> {
-    const response = await fetch(`${API_BASE_URL}${path}`, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
+  private getHeaders(includeJson = true): Record<string, string> {
+    const headers: Record<string, string> = {}
+    if (includeJson) {
+      headers['Content-Type'] = 'application/json'
+    }
+    const token = localStorage.getItem('token')
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    }
+    return headers
+  }
 
   private async request<T>(path: string, init?: RequestInit): Promise<T> {
-
     const response = await fetch(`${API_BASE_URL}${path}`, init)
-
-    const data = await response.json()
-
+    const data = await response.json().catch(() => ({}))
 
     if (!response.ok) {
-      throw new Error(data.message || '请求图书数据失败')
+      const message = data?.message || '请求图书数据失败'
+      throw new Error(message)
     }
-    const data = await this.request<{ books: Book[] }>('/books')
+
+    return data.data as T
+  }
+
   async fetchBooks(): Promise<Book[]> {
     const data = await this.request<{ books: Book[] }>('/books', {
-      headers: this.getHeaders(),
+      method: 'GET',
+      headers: this.getHeaders(false),
     })
-    const data = await this.request<{ book: Book }>(`/books/${id}`)
+    return data.books ?? []
+  }
+
+  async fetchBookById(id: string): Promise<Book> {
+    const data = await this.request<{ book: Book }>(`/books/${id}`, {
+      method: 'GET',
+      headers: this.getHeaders(false),
+    })
+    return data.book
+  }
+
+  async createBook(payload: Omit<Book, 'id' | 'availableCopies'> & { availableCopies?: number }): Promise<Book> {
+    const data = await this.request<{ book: Book }>('/books', {
+      method: 'POST',
+      headers: this.getHeaders(true),
+      body: JSON.stringify(payload),
+    })
+    return data.book
+  }
+
+  async updateBook(
+    id: string,
+    payload: Omit<Book, 'id' | 'availableCopies'> & { availableCopies?: number },
+  ): Promise<Book> {
+    const data = await this.request<{ book: Book }>(`/books/${id}`, {
+      method: 'PUT',
+      headers: this.getHeaders(true),
+      body: JSON.stringify(payload),
+    })
+    return data.book
+  }
+
+  async deleteBook(id: string): Promise<void> {
+    await this.request<null>(`/books/${id}`, {
       method: 'DELETE',
+      headers: this.getHeaders(false),
+    })
+  }
+
+  async importBooks(file: File): Promise<BookImportResult> {
+    const formData = new FormData()
+    formData.append('file', file)
 
     const data = await this.request<BookImportResult>('/books/import', {
       method: 'POST',
-      headers: this.getHeaders(true, null),
+      headers: this.getHeaders(false),
       body: formData,
     })
+
     return data
   }
 }

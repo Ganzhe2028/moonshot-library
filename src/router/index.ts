@@ -1,10 +1,12 @@
 import { createRouter, createWebHistory } from 'vue-router'
+
 import { useAuthStore } from '@/stores/auth'
 import HomePage from '@/pages/HomePage.vue'
 import BookDetailPage from '@/pages/BookDetailPage.vue'
 import MyBorrowingsPage from '@/pages/MyBorrowingsPage.vue'
 import LoginPage from '@/pages/LoginPage.vue'
 import RegisterPage from '@/pages/RegisterPage.vue'
+import AuthCallbackPage from '@/pages/AuthCallbackPage.vue'
 import AdminLayout from '@/pages/admin/AdminLayout.vue'
 import AdminBooksPage from '@/pages/admin/AdminBooksPage.vue'
 import AdminUsersPage from '@/pages/admin/AdminUsersPage.vue'
@@ -26,7 +28,8 @@ const router = createRouter({
     {
       path: '/borrowings',
       name: 'borrowings',
-      component: LoginPage,
+      component: MyBorrowingsPage,
+      meta: { requiresAuth: true },
     },
     {
       path: '/register',
@@ -52,7 +55,11 @@ const router = createRouter({
           path: 'books',
           name: 'admin-books',
           component: AdminBooksPage,
-    // 其他情况正常导航
+          meta: { requiresAuth: true, requiresRole: ['admin', 'librarian'] },
+        },
+        {
+          path: 'users',
+          name: 'admin-users',
           component: AdminUsersPage,
           meta: { requiresAuth: true, requiresRole: ['admin', 'librarian'] },
         },
