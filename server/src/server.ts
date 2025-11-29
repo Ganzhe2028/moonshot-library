@@ -96,8 +96,8 @@ const allowedOrigins = [
 app.use(cors({
   origin: (origin, callback) => {
     // 开发环境下，允许所有 localhost 请求
-    if (!origin || 
-        origin.startsWith('http://localhost') || 
+    if (!origin ||
+        origin.startsWith('http://localhost') ||
         process.env.NODE_ENV === 'development') {
       return callback(null, true);
     }

@@ -76,45 +76,29 @@ build_project() {
 
 # 启动后端服务
 start_backend() {
-  info "启动后端服务..."
-  local host_env=()
-  if [ -n "$FORCE_HOST" ]; then
-    host_env=(HOST="$FORCE_HOST")
-  fi
-  
-  if [ "$ENV" = "development" ]; then
-    # 开发环境使用 dev 模式
-    if [ ${#host_env[@]} -gt 0 ]; then
-      (cd "$BACK_DIR" && "${host_env[@]}" npm run dev -- --host "${FORCE_HOST:-}") &
+  info "Starting backend (server)..."
+  (
+    cd "$BACK_DIR"
+    if [ -n "$FORCE_HOST" ]; then
+      HOST="$FORCE_HOST" npm run dev -- --host "$FORCE_HOST"
     else
-      (cd "$BACK_DIR" && npm run dev -- --host "${FORCE_HOST:-}") &
+      npm run dev -- --host "${FORCE_HOST:-}"
     fi
-  else
-    # 生产环境使用 build 后的代码
-    if [ ${#host_env[@]} -gt 0 ]; then
-      (cd "$BACK_DIR" && "${host_env[@]}" npm start) &
-    else
-      (cd "$BACK_DIR" && npm start) &
-    fi
-  fi
-  
+  ) &
   BACK_PID=$!
   info "后端服务已启动，PID: $BACK_PID"
 }
 
-# 启动前端开发服务器
-start_frontend_dev() {
-  info "启动前端开发服务器..."
-  local host_flag=()
-  if [ -n "$FORCE_HOST" ]; then
-    host_flag=(--host "$FORCE_HOST")
-  fi
-  
-  if [ ${#host_flag[@]} -gt 0 ]; then
-    (cd "$FRONT_DIR" && npm run dev -- --port "$FRONT_PORT" "${host_flag[@]}") &
-  else
-    (cd "$FRONT_DIR" && npm run dev -- --port "$FRONT_PORT") &
-  fi
+start_frontend() {
+  info "Starting frontend (Vite)..."
+  (
+    cd "$FRONT_DIR"
+    if [ -n "$FORCE_HOST" ]; then
+      npm run dev -- --port "$FRONT_PORT" --host "$FORCE_HOST"
+    else
+      npm run dev -- --port "$FRONT_PORT"
+    fi
+  ) &
   FRONT_PID=$!
   info "前端开发服务器已启动，PID: $FRONT_PID"
 }

@@ -1,4 +1,4 @@
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
 import { User } from '../types';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
@@ -17,7 +17,8 @@ export const generateToken = (user: User): string => {
     role: user.role
   };
 
-  return jwt.sign(payload, JWT_SECRET as string, { expiresIn: JWT_EXPIRES_IN as string });
+  const options: SignOptions = { expiresIn: JWT_EXPIRES_IN as any };
+  return jwt.sign(payload, JWT_SECRET, options);
 };
 
 export const verifyToken = (token: string): JWTPayload => {
@@ -35,5 +36,6 @@ export const generateRefreshToken = (user: User): string => {
     role: user.role
   };
 
-  return jwt.sign(payload, JWT_SECRET as string, { expiresIn: '30d' });
+  const options: SignOptions = { expiresIn: '30d' as any };
+  return jwt.sign(payload, JWT_SECRET, options);
 };

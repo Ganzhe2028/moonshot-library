@@ -3,43 +3,28 @@ import type { Book, BookImportResult } from '@/types/library'
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
 
 class BookService {
-  private async request<T>(path: string, init?: RequestInit): Promise<T> {
-    const defaultHeaders = {
-      'Content-Type': 'application/json',
-    }
-
-    const headers = init?.headers ? {
-      ...defaultHeaders,
-      ...init.headers
-    } : defaultHeaders
-
-    const response = await fetch(`${API_BASE_URL}${path}`, {
-      ...init,
-      headers
-    })
-
-    const result = await response.json().catch(() => ({}))
-
-    if (!response.ok) {
-      const message = result?.message || '请求图书数据失败'
-      throw new Error(message)
-    }
-
-    return (result.success && result.data) ? result.data as T : result as unknown as T
-  }
-
-  private getHeaders(isMultipart = false, token?: string | null): Record<string, string> {
+  private getHeaders(includeJson = true): Record<string, string> {
     const headers: Record<string, string> = {}
-
+    if (includeJson) {
+      headers['Content-Type'] = 'application/json'
+    }
+    const token = localStorage.getItem('token')
     if (token) {
       headers['Authorization'] = `Bearer ${token}`
     }
+    return headers
+  }
 
-    if (!isMultipart) {
-      headers['Content-Type'] = 'application/json'
+  private async request<T>(path: string, init?: RequestInit): Promise<T> {
+    const response = await fetch(`${API_BASE_URL}${path}`, init)
+    const data = await response.json().catch(() => ({}))
+
+    if (!response.ok) {
+      const message = data?.message || '请求图书数据失败'
+      throw new Error(message)
     }
 
-    return headers
+    return data.data as T
   }
 
   async fetchBooks(params?: { limit?: number; offset?: number; category?: string; search?: string }): Promise<Book[]> {
@@ -52,39 +37,46 @@ class BookService {
     const query = searchParams.toString()
 
     const data = await this.request<{ books: Book[] }>(`/books${query ? `?${query}` : ''}`, {
-      headers: this.getHeaders(),
+      method: 'GET',
+      headers: this.getHeaders(false),
     })
 
-    return data.books || []
+    return data.books ?? []
   }
 
   async fetchBookById(id: string): Promise<Book> {
     const data = await this.request<{ book: Book }>(`/books/${id}`, {
-      headers: this.getHeaders(),
+      method: 'GET',
+      headers: this.getHeaders(false),
     })
-
     return data.book
   }
 
-  async createBook(payload: Omit<Book, 'id'>): Promise<Book> {
+  async createBook(payload: Omit<Book, 'id' | 'availableCopies'> & { availableCopies?: number }): Promise<Book> {
     const data = await this.request<{ book: Book }>('/books', {
       method: 'POST',
-      body: JSON.stringify(payload)
+      headers: this.getHeaders(true),
+      body: JSON.stringify(payload),
     })
     return data.book
   }
 
-  async updateBook(id: string, payload: Partial<Book>): Promise<Book> {
+  async updateBook(
+    id: string,
+    payload: Omit<Book, 'id' | 'availableCopies'> & { availableCopies?: number },
+  ): Promise<Book> {
     const data = await this.request<{ book: Book }>(`/books/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(payload)
+      headers: this.getHeaders(true),
+      body: JSON.stringify(payload),
     })
     return data.book
   }
 
   async deleteBook(id: string): Promise<void> {
-    await this.request(`/books/${id}`, {
-      method: 'DELETE'
+    await this.request<null>(`/books/${id}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(false),
     })
   }
 
@@ -94,8 +86,8 @@ class BookService {
 
     const data = await this.request<BookImportResult>('/books/import', {
       method: 'POST',
-      headers: {}, // 不设置Content-Type，让浏览器自动设置multipart/form-data
-      body: formData
+      headers: this.getHeaders(false),
+      body: formData,
     })
 
     return data

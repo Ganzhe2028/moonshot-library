@@ -1,10 +1,9 @@
 import { defineStore } from 'pinia'
-import { useAuthStore } from './auth'
-
 import type { Book, BookImportResult, BorrowingRecord, Rating, Comment } from '@/types/library'
 import { bookService } from '@/services/bookService'
 import { borrowingService } from '@/services/borrowingService'
 import { ratingService } from '@/services/ratingService'
+import { useAuthStore } from './auth'
 
 interface LibraryState {
   books: Book[]
@@ -41,11 +40,11 @@ export const useLibraryStore = defineStore('library', {
       state.borrowings.filter((record) => record.status === 'active'),
     borrowingHistory: (state): BorrowingRecord[] =>
       state.borrowings.filter((record) => record.status !== 'active'),
+    getBookById: (state) => {
+      return (id: string) => state.books.find((book) => book.id === id)
+    },
     isBookBorrowedByUser(): (bookId: string) => boolean {
       return (bookId: string) => this.activeBorrowings.some((record) => record.bookId === bookId)
-    },
-    getBookById: (state) => (id: string) => {
-      return state.books.find(book => book.id === id)
     },
   },
   actions: {
@@ -61,6 +60,29 @@ export const useLibraryStore = defineStore('library', {
         }))
       } catch (err) {
         this.booksError = err instanceof Error ? err.message : '无法加载图书数据'
+      } finally {
+        this.booksLoading = false
+      }
+    },
+    async fetchBookById(id: string) {
+      const existing = this.getBookById(id)
+      if (existing) return existing
+
+      this.booksLoading = true
+      this.booksError = ''
+      try {
+        const book = await bookService.fetchBookById(id)
+        const normalized = { ...book, tags: book.tags ?? [] }
+        const index = this.books.findIndex((item) => item.id === book.id)
+        if (index >= 0) {
+          this.books.splice(index, 1, normalized)
+        } else {
+          this.books.push(normalized)
+        }
+        return normalized
+      } catch (err) {
+        this.booksError = err instanceof Error ? err.message : '无法获取图书信息'
+        return null
       } finally {
         this.booksLoading = false
       }
@@ -82,15 +104,16 @@ export const useLibraryStore = defineStore('library', {
         return { success: false, message }
       }
     },
-    async updateBook(id: string, payload: Partial<Book>) {
+    async updateBook(id: string, payload: Omit<Book, 'id' | 'availableCopies'> & { availableCopies?: number }) {
       this.booksError = ''
       try {
         const book = await bookService.updateBook(id, payload)
+        const normalized = { ...book, tags: book.tags ?? [] }
         const index = this.books.findIndex((item) => item.id === id)
         if (index >= 0) {
-          this.books.splice(index, 1, { ...book, tags: book.tags ?? [] })
+          this.books.splice(index, 1, normalized)
         } else {
-          this.books.push({ ...book, tags: book.tags ?? [] })
+          this.books.push(normalized)
         }
         return { success: true, message: '书籍信息已更新。' }
       } catch (err) {
@@ -127,28 +150,6 @@ export const useLibraryStore = defineStore('library', {
         return { success: false, message }
       }
     },
-    async fetchBookById(id: string) {
-      const existing = this.getBookById(id)
-      if (existing) return existing
-
-      this.booksLoading = true
-      this.booksError = ''
-      try {
-        const book = await bookService.fetchBookById(id)
-        const index = this.books.findIndex((item) => item.id === book.id)
-        if (index >= 0) {
-          this.books[index] = book
-        } else {
-          this.books.push(book)
-        }
-        return book
-      } catch (err) {
-        this.booksError = err instanceof Error ? err.message : '无法获取图书信息'
-        return null
-      } finally {
-        this.booksLoading = false
-      }
-    },
     async fetchBorrowings(force = false) {
       const authStore = useAuthStore()
       if (!authStore.user) {
@@ -175,6 +176,11 @@ export const useLibraryStore = defineStore('library', {
         return { success: false, message: '请先登录后再借阅图书。' }
       }
 
+      const targetBook = this.getBookById(bookId)
+      if (targetBook && targetBook.status !== 'available') {
+        return { success: false, message: '该图书暂不可借阅。' }
+      }
+
       try {
         const targetBook = this.getBookById(bookId)
         if (!targetBook || targetBook.status !== 'available') {
@@ -190,10 +196,8 @@ export const useLibraryStore = defineStore('library', {
         await Promise.all([this.fetchBorrowings(true), this.fetchBooks(true)])
         return { success: true, message: '借阅成功，祝你阅读愉快！' }
       } catch (err) {
-        return {
-          success: false,
-          message: err instanceof Error ? err.message : '借阅失败，请稍后再试。',
-        }
+        const message = err instanceof Error ? err.message : '借阅失败，请稍后再试。'
+        return { success: false, message }
       }
     },
     async returnBook(recordId: string) {
@@ -203,42 +207,9 @@ export const useLibraryStore = defineStore('library', {
       }
 
       try {
-        // 获取借阅记录，以便获取书籍信息
-        const borrowing = this.borrowings.find(record => record.id === recordId)
-        if (borrowing) {
-          const book = this.books.find(b => b.id === borrowing.bookId)
-          const bookWordCount = book?.word_count || 0
-
-          // 归还书籍
-          await borrowingService.returnBook(recordId)
-          await this.fetchBorrowings(true)
-
-          // 如果书籍有字数信息，累加到用户的总阅读字数
-          if (bookWordCount > 0 && authStore.user) {
-            // 创建新的用户对象以避免直接修改可能为undefined的属性
-            const updatedUser = {
-              ...authStore.user,
-              total_words_read: (authStore.user.total_words_read || 0) + bookWordCount
-            }
-
-            // 这里可以添加API调用来更新服务器上的用户总阅读字数
-            // await userService.updateUserReadingStats(updatedUser.id, updatedUser.total_words_read)
-            // 直接设置用户数据
-            authStore.user = updatedUser as typeof authStore.user
-          }
-
-          return {
-            success: true,
-            message: bookWordCount > 0
-              ? `图书归还成功，已累计阅读${bookWordCount}字！`
-              : '图书归还成功。'
-          }
-        }
-
-        // 如果找不到借阅记录，仍然执行归还操作
         await borrowingService.returnBook(recordId)
-        await this.fetchBorrowings(true)
-        return { success: true, message: '图书归还成功。' }
+        await Promise.all([this.fetchBorrowings(true), this.fetchBooks(true)])
+        return { success: true, message: '图书已归还，感谢使用。' }
       } catch (err) {
         return {
           success: false,
@@ -263,7 +234,6 @@ export const useLibraryStore = defineStore('library', {
         }
       }
     },
-
     // 评分相关操作
     async fetchBookRatings(bookId: string) {
       this.ratingsLoading = true
@@ -411,6 +381,6 @@ export const useLibraryStore = defineStore('library', {
     // 获取书籍的评论列表
     getBookComments(bookId: string): Comment[] {
       return this.comments.filter(comment => comment.bookId === bookId)
-    },
+    }
   },
 })

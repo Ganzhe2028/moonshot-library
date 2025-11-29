@@ -29,7 +29,7 @@ const isAdmin = computed(() => authStore.isAdmin || authStore.isLibrarian)
 // 获取公告列表
 const fetchAnnouncements = async () => {
   // 已经在页面中通过v-if="!isAdmin"进行了权限检查，这里无需重复检查
-  
+
   loading.value = true
   try {
     announcements.value = await announcementService.getAnnouncements()
@@ -79,7 +79,7 @@ const submitForm = async () => {
     showMessage('标题和内容不能为空', 'error')
     return
   }
-  
+
   loading.value = true
   try {
     if (editingAnnouncement.value) {
@@ -105,7 +105,7 @@ const submitForm = async () => {
 // 删除公告
 const deleteAnnouncement = async (id: string) => {
   if (!confirm('确定要删除这条公告吗？')) return
-  
+
   loading.value = true
   try {
     await announcementService.deleteAnnouncement(id)
@@ -159,11 +159,11 @@ onMounted(() => {
         <div v-if="loading" class="loading">
           <p>{{ t('admin.loading') || '加载中...' }}</p>
         </div>
-        
+
         <div v-else-if="announcements.length === 0" class="empty">
           <p>{{ t('admin.noData') || '暂无公告数据' }}</p>
         </div>
-        
+
         <div v-else class="announcement-list">
           <div v-for="announcement in announcements" :key="announcement.id" class="announcement-card">
             <div class="card-header">
@@ -190,38 +190,38 @@ onMounted(() => {
       <div v-if="showCreateForm" class="form-overlay" @click.self="showCreateForm = false">
         <div class="form-container">
           <h2>{{ editingAnnouncement ? '编辑公告' : '创建公告' }}</h2>
-          
+
           <div class="form-group">
             <label for="title">{{ t('admin.title') || '标题' }}</label>
-            <input 
-              id="title" 
-              v-model="form.title" 
-              type="text" 
+            <input
+              id="title"
+              v-model="form.title"
+              type="text"
               placeholder="请输入公告标题"
             >
           </div>
-          
+
           <div class="form-group">
             <label for="content">{{ t('admin.content') || '内容' }}</label>
-            <textarea 
-              id="content" 
-              v-model="form.content" 
-              rows="6" 
+            <textarea
+              id="content"
+              v-model="form.content"
+              rows="6"
               placeholder="请输入公告内容"
             ></textarea>
           </div>
-          
+
           <div class="form-group">
             <label for="author">{{ t('admin.author') || '作者' }}</label>
-            <input 
-              id="author" 
-              v-model="form.author" 
-              type="text" 
+            <input
+              id="author"
+              v-model="form.author"
+              type="text"
               placeholder="请输入作者名称"
               :disabled="isAdmin"
             >
           </div>
-          
+
           <div class="form-actions">
             <button type="button" class="secondary" @click="showCreateForm = false">
               {{ t('admin.cancel') || '取消' }}
@@ -479,21 +479,21 @@ onMounted(() => {
     flex-direction: column;
     align-items: flex-start;
   }
-  
+
   .card-actions {
     width: 100%;
     justify-content: flex-end;
   }
-  
+
   .announcement-meta {
     flex-direction: column;
     gap: 0.3rem;
   }
-  
+
   .form-actions {
     flex-direction: column;
   }
-  
+
   .form-actions button {
     width: 100%;
   }

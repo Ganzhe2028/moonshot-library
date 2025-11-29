@@ -54,7 +54,7 @@ class AuthService {
 
   // 检查会话是否有效
   isSessionValid(): boolean {
-    const token = localStorage.getItem('token');
+    const token = this.getToken();
     if (!token) return false;
 
     try {
@@ -99,10 +99,14 @@ class AuthService {
         }
       }
 
-      // 保存token到localStorage
-      if (data.data?.token) {
-        localStorage.setItem('token', data.data.token)
-        localStorage.setItem('refreshToken', data.data.refreshToken)
+      // 使用统一的会话保存方法
+      if (data.data?.token && data.data?.user) {
+        this.saveUserSession(
+          data.data.user,
+          data.data.token,
+          data.data.refreshToken || '',
+          'local'
+        )
       }
 
       // 如果有重定向URL，添加到返回数据中
@@ -149,10 +153,14 @@ class AuthService {
         }
       }
 
-      // 保存token到localStorage
-      if (data.data?.token) {
-        localStorage.setItem('token', data.data.token)
-        localStorage.setItem('refreshToken', data.data.refreshToken)
+      // 使用统一的会话保存方法
+      if (data.data?.token && data.data?.user) {
+        this.saveUserSession(
+          data.data.user,
+          data.data.token,
+          data.data.refreshToken || '',
+          'local'
+        )
       }
 
       return data
@@ -226,10 +234,20 @@ class AuthService {
       }
 
       if (data.data?.token) {
+        // 获取当前用户会话信息
+        const currentSession = this.getUserSession()
+
+        // 保存新的令牌，保持现有用户信息
         localStorage.setItem('token', data.data.token)
         if (data.data?.refreshToken) {
           localStorage.setItem('refreshToken', data.data.refreshToken)
         }
+
+        // 如果有用户信息，确保它仍然被保存
+        if (currentSession?.user) {
+          localStorage.setItem('user', JSON.stringify(currentSession.user))
+        }
+
         return data.data.token
       }
     } catch (error) {
@@ -271,13 +289,14 @@ class AuthService {
         throw new Error(msalResponse.message || 'M365登录失败')
       }
 
-      // 保存token到localStorage
-      if (msalResponse.data?.token) {
-        localStorage.setItem('token', msalResponse.data.token)
-        if (msalResponse.data.refreshToken) {
-          localStorage.setItem('refreshToken', msalResponse.data.refreshToken)
-        }
-        this.setLoginMethod('m365')
+      // 使用统一的会话保存方法
+      if (msalResponse.data?.token && msalResponse.data?.user) {
+        this.saveUserSession(
+          msalResponse.data.user,
+          msalResponse.data.token,
+          msalResponse.data.refreshToken || '',
+          'm365'
+        )
       }
 
       // 确保返回值符合AuthResponse类型
@@ -292,6 +311,8 @@ class AuthService {
         }
       }
     } catch (error) {
+      // 登录失败时清除会话
+      this.clearSession()
       if (error instanceof Error) {
         throw error
       }
@@ -345,7 +366,7 @@ class AuthService {
         )
 
         // 获取并清除重定向URL
-      const redirectUrl = localStorage.getItem('postLoginRedirect') || undefined;
+        const redirectUrl = localStorage.getItem('postLoginRedirect') || undefined;
         localStorage.removeItem('m365LoginStarted');
         localStorage.removeItem('postLoginRedirect');
 
@@ -365,8 +386,25 @@ class AuthService {
     return localStorage.getItem('token');
   }
 
+  // 获取M365令牌（用于M365 API调用）
+  async getM365Token(): Promise<string | null> {
+    try {
+      const loginMethod = this.getLoginMethod()
+      if (loginMethod === 'm365') {
+        const token = await msalService.getToken()
+        return token
+      }
+      return null
+    } catch (error) {
+      console.error('获取M365令牌失败:', error)
+      return null
+    }
+  }
+
   isAuthenticated(): boolean {
-    return !!this.getToken();
+    // 增强的认证检查：检查令牌是否存在并有效
+    const token = this.getToken();
+    return !!token && this.isSessionValid();
   }
 }
 
