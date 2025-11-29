@@ -4,18 +4,24 @@ import { Book } from '../types'
 export const createBook = async (bookData: {
   id: string
   title: string
+  titleEn?: string
   authors: string[]
+  authorsEn?: string[]
   isbn?: string
   publisher?: string
+  publisherEn?: string
   publishedYear?: number
   category: string
+  categoryEn?: string
   description?: string
+  descriptionEn?: string
   coverImage?: string
   status?: 'available' | 'borrowed' | 'reserved' | 'maintenance'
   totalCopies: number
   availableCopies?: number
   location?: string
   tags?: string[]
+  tagsEn?: string[]
 }): Promise<Book> => {
   const db = getDatabase()
   const availableCopies = bookData.availableCopies ?? bookData.totalCopies
@@ -24,10 +30,10 @@ export const createBook = async (bookData: {
   return new Promise((resolve, reject) => {
     const sql = `
       INSERT INTO books (
-        id, title, authors, isbn, publisher, published_year,
-        category, description, cover_image, total_copies, available_copies, status,
-        location, tags
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        id, title, title_en, authors, authors_en, isbn, publisher, publisher_en, published_year,
+        category, category_en, description, description_en, cover_image, total_copies, available_copies, status,
+        location, tags, tags_en
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `
 
     db.run(
@@ -35,18 +41,24 @@ export const createBook = async (bookData: {
       [
         bookData.id,
         bookData.title,
+        bookData.titleEn || null,
         JSON.stringify(bookData.authors),
+        JSON.stringify(bookData.authorsEn || []),
         bookData.isbn || null,
         bookData.publisher || null,
+        bookData.publisherEn || null,
         bookData.publishedYear || null,
         bookData.category,
+        bookData.categoryEn || null,
         bookData.description || null,
+        bookData.descriptionEn || null,
         bookData.coverImage || null,
         bookData.totalCopies,
         availableCopies,
         status,
         bookData.location || null,
         JSON.stringify(bookData.tags || []),
+        JSON.stringify(bookData.tagsEn || []),
       ],
       async (err) => {
         if (err) {
@@ -112,9 +124,21 @@ export const getAllBooks = async (
     }
 
     if (search) {
-      sql += ' AND (title LIKE ? OR authors LIKE ? OR category LIKE ?)'
+      sql +=
+        ' AND (title LIKE ? OR title_en LIKE ? OR authors LIKE ? OR authors_en LIKE ? OR category LIKE ? OR category_en LIKE ? OR publisher LIKE ? OR publisher_en LIKE ? OR description LIKE ? OR description_en LIKE ?)'
       const searchPattern = `%${search}%`
-      params.push(searchPattern, searchPattern, searchPattern)
+      params.push(
+        searchPattern,
+        searchPattern,
+        searchPattern,
+        searchPattern,
+        searchPattern,
+        searchPattern,
+        searchPattern,
+        searchPattern,
+        searchPattern,
+        searchPattern,
+      )
     }
 
     sql += ' ORDER BY created_at DESC LIMIT ? OFFSET ?'
@@ -133,28 +157,35 @@ export const getAllBooks = async (
 export const updateBook = async (id: string, updates: Partial<Book>): Promise<Book> => {
   const db = getDatabase()
 
-  const allowedFields = [
-    'title',
-    'authors',
-    'isbn',
-    'publisher',
-    'published_year',
-    'category',
-    'description',
-    'cover_image',
-    'total_copies',
-    'available_copies',
-    'status',
-    'location',
-    'tags',
-  ]
+  const fieldMap: Record<string, string> = {
+    title: 'title',
+    titleEn: 'title_en',
+    authors: 'authors',
+    authorsEn: 'authors_en',
+    isbn: 'isbn',
+    publisher: 'publisher',
+    publisherEn: 'publisher_en',
+    publishedYear: 'published_year',
+    category: 'category',
+    categoryEn: 'category_en',
+    description: 'description',
+    descriptionEn: 'description_en',
+    coverImage: 'cover_image',
+    totalCopies: 'total_copies',
+    availableCopies: 'available_copies',
+    status: 'status',
+    location: 'location',
+    tags: 'tags',
+    tagsEn: 'tags_en',
+  }
   const fields: string[] = []
   const values: any[] = []
 
   Object.entries(updates).forEach(([key, value]) => {
-    if (allowedFields.includes(key) && value !== undefined) {
-      fields.push(`${key} = ?`)
-      if (key === 'authors' || key === 'tags') {
+    const column = fieldMap[key]
+    if (column && value !== undefined) {
+      fields.push(`${column} = ?`)
+      if (key === 'authors' || key === 'authorsEn' || key === 'tags' || key === 'tagsEn') {
         values.push(JSON.stringify(value))
       } else {
         values.push(value)
@@ -253,18 +284,24 @@ const deserializeBook = (row: any): Book => {
   return {
     id: row.id,
     title: row.title,
+    titleEn: row.title_en || undefined,
     authors: JSON.parse(row.authors || '[]'),
+    authorsEn: JSON.parse(row.authors_en || '[]'),
     isbn: row.isbn,
     publisher: row.publisher,
+    publisherEn: row.publisher_en || undefined,
     publishedYear: row.published_year,
     category: row.category,
+    categoryEn: row.category_en || undefined,
     description: row.description,
+    descriptionEn: row.description_en || undefined,
     coverImage: row.cover_image,
     totalCopies: row.total_copies,
     availableCopies: row.available_copies,
     status: row.status,
     location: row.location,
     tags: JSON.parse(row.tags || '[]'),
+    tagsEn: JSON.parse(row.tags_en || '[]'),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }

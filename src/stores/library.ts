@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 import { bookService } from '@/services/bookService'
 import { borrowingService } from '@/services/borrowingService'
 import type { Book, BookImportResult, BorrowingRecord } from '@/types/library'
+import { i18n } from '@/i18n'
 import { useAuthStore } from './auth'
 
 interface LibraryState {
@@ -45,6 +46,7 @@ export const useLibraryStore = defineStore('library', {
         this.books = books.map((book) => ({
           ...book,
           tags: book.tags ?? [],
+          tagsEn: book.tagsEn ?? [],
         }))
       } catch (err) {
         this.booksError = err instanceof Error ? err.message : '无法加载图书数据'
@@ -60,7 +62,7 @@ export const useLibraryStore = defineStore('library', {
       this.booksError = ''
       try {
         const book = await bookService.fetchBookById(id)
-        const normalized = { ...book, tags: book.tags ?? [] }
+        const normalized = { ...book, tags: book.tags ?? [], tagsEn: book.tagsEn ?? [] }
         const index = this.books.findIndex((item) => item.id === book.id)
         if (index >= 0) {
           this.books.splice(index, 1, normalized)
@@ -79,7 +81,7 @@ export const useLibraryStore = defineStore('library', {
       this.booksError = ''
       try {
         const book = await bookService.createBook(payload)
-        this.books.push({ ...book, tags: book.tags ?? [] })
+        this.books.push({ ...book, tags: book.tags ?? [], tagsEn: book.tagsEn ?? [] })
         return { success: true, message: '书籍已创建。' }
       } catch (err) {
         const message = err instanceof Error ? err.message : '创建书籍失败'
@@ -91,7 +93,7 @@ export const useLibraryStore = defineStore('library', {
       this.booksError = ''
       try {
         const book = await bookService.updateBook(id, payload)
-        const normalized = { ...book, tags: book.tags ?? [] }
+        const normalized = { ...book, tags: book.tags ?? [], tagsEn: book.tagsEn ?? [] }
         const index = this.books.findIndex((item) => item.id === id)
         if (index >= 0) {
           this.books.splice(index, 1, normalized)
@@ -167,7 +169,7 @@ export const useLibraryStore = defineStore('library', {
       try {
         await borrowingService.borrowBook(bookId)
         await Promise.all([this.fetchBorrowings(true), this.fetchBooks(true)])
-        return { success: true, message: '借阅成功，请按时归还。' }
+        return { success: true, message: i18n.global.t('borrowings.messages.borrowSuccess') }
       } catch (err) {
         const message = err instanceof Error ? err.message : '借阅失败，请稍后再试。'
         return { success: false, message }
@@ -182,7 +184,7 @@ export const useLibraryStore = defineStore('library', {
       try {
         await borrowingService.renewBorrowing(recordId)
         await this.fetchBorrowings(true)
-        return { success: true, message: '续借成功，已延长借阅时间。' }
+        return { success: true, message: i18n.global.t('borrowings.messages.renewSuccess') }
       } catch (err) {
         return {
           success: false,
@@ -199,7 +201,7 @@ export const useLibraryStore = defineStore('library', {
       try {
         await borrowingService.returnBook(recordId)
         await Promise.all([this.fetchBorrowings(true), this.fetchBooks(true)])
-        return { success: true, message: '图书已归还，感谢使用。' }
+        return { success: true, message: i18n.global.t('borrowings.messages.returnSuccess') }
       } catch (err) {
         return {
           success: false,
