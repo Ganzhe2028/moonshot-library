@@ -18,6 +18,11 @@ export const validateCreateBook = [
     .trim()
     .isLength({ min: 1, max: 200 })
     .withMessage('Title must be between 1 and 200 characters'),
+  body('titleEn')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isLength({ min: 1, max: 200 })
+    .withMessage('English title must be between 1 and 200 characters'),
   body('authors')
     .isArray({ min: 1 })
     .withMessage('Authors must be a non-empty array'),
@@ -25,6 +30,15 @@ export const validateCreateBook = [
     .trim()
     .isLength({ min: 1, max: 100 })
     .withMessage('Each author name must be between 1 and 100 characters'),
+  body('authorsEn')
+    .optional()
+    .isArray()
+    .withMessage('English authors must be an array'),
+  body('authorsEn.*')
+    .optional()
+    .trim()
+    .isLength({ min: 1, max: 100 })
+    .withMessage('Each English author name must be between 1 and 100 characters'),
   body('isbn')
     .optional()
     .trim()
@@ -35,6 +49,11 @@ export const validateCreateBook = [
     .trim()
     .isLength({ min: 1, max: 100 })
     .withMessage('Publisher must be between 1 and 100 characters'),
+  body('publisherEn')
+    .optional()
+    .trim()
+    .isLength({ min: 1, max: 100 })
+    .withMessage('English publisher must be between 1 and 100 characters'),
   body('publishedYear')
     .optional()
     .isInt({ min: 1000, max: new Date().getFullYear() })
@@ -43,11 +62,21 @@ export const validateCreateBook = [
     .trim()
     .isLength({ min: 1, max: 50 })
     .withMessage('Category must be between 1 and 50 characters'),
+  body('categoryEn')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isLength({ min: 1, max: 50 })
+    .withMessage('English category must be between 1 and 50 characters'),
   body('description')
     .optional()
     .trim()
     .isLength({ max: 1000 })
     .withMessage('Description must not exceed 1000 characters'),
+  body('descriptionEn')
+    .optional()
+    .trim()
+    .isLength({ max: 1000 })
+    .withMessage('English description must not exceed 1000 characters'),
   body('coverImage')
     .optional()
     .trim()
@@ -77,7 +106,16 @@ export const validateCreateBook = [
     .optional()
     .trim()
     .isLength({ min: 1, max: 30 })
-    .withMessage('Each tag must be between 1 and 30 characters')
+    .withMessage('Each tag must be between 1 and 30 characters'),
+  body('tagsEn')
+    .optional()
+    .isArray()
+    .withMessage('English tags must be an array'),
+  body('tagsEn.*')
+    .optional()
+    .trim()
+    .isLength({ min: 1, max: 30 })
+    .withMessage('Each English tag must be between 1 and 30 characters')
 ];
 
 export const validateUpdateBook = [
@@ -430,12 +468,18 @@ const COLUMN_ALIASES: Record<string, keyof BookRequest> = {
   title: 'title',
   书名: 'title',
   标题: 'title',
+  titleen: 'titleEn',
+  英文标题: 'titleEn',
   authors: 'authors',
   author: 'authors',
   作者: 'authors',
+  authorsen: 'authorsEn',
+  英文作者: 'authorsEn',
   category: 'category',
   分类: 'category',
   类别: 'category',
+  categoryen: 'categoryEn',
+  英文分类: 'categoryEn',
   totalcopies: 'totalCopies',
   总册数: 'totalCopies',
   库存: 'totalCopies',
@@ -446,9 +490,13 @@ const COLUMN_ALIASES: Record<string, keyof BookRequest> = {
   状态: 'status',
   tags: 'tags',
   标签: 'tags',
+  tagsen: 'tagsEn',
+  英文标签: 'tagsEn',
   isbn: 'isbn',
   publisher: 'publisher',
   出版社: 'publisher',
+  publisheren: 'publisherEn',
+  英文出版社: 'publisherEn',
   publishedyear: 'publishedYear',
   出版年份: 'publishedYear',
   出版年: 'publishedYear',
@@ -458,7 +506,9 @@ const COLUMN_ALIASES: Record<string, keyof BookRequest> = {
   位置: 'location',
   description: 'description',
   简介: 'description',
-  描述: 'description'
+  描述: 'description',
+  descriptionen: 'descriptionEn',
+  英文简介: 'descriptionEn'
 };
 
 const normalizeKey = (key: string): string => key.toLowerCase().replace(/[\s_]+/g, '');
@@ -577,11 +627,26 @@ const mapRowToPayload = (row: ImportableRow): { payload?: BookRequest; error?: s
     tags: parseListField(mapped.tags)
   };
 
+  const authorsEn = parseListField(mapped.authorsEn);
+  if (authorsEn.length) payload.authorsEn = authorsEn;
+
+  const titleEn = toOptionalString(mapped.titleEn);
+  if (titleEn) payload.titleEn = titleEn;
+
+  const categoryEn = toOptionalString(mapped.categoryEn);
+  if (categoryEn) payload.categoryEn = categoryEn;
+
+  const tagsEn = parseListField(mapped.tagsEn);
+  if (tagsEn.length) payload.tagsEn = tagsEn;
+
   const isbn = toOptionalString(mapped.isbn);
   if (isbn) payload.isbn = isbn;
 
   const publisher = toOptionalString(mapped.publisher);
   if (publisher) payload.publisher = publisher;
+
+  const publisherEn = toOptionalString(mapped.publisherEn);
+  if (publisherEn) payload.publisherEn = publisherEn;
 
   if (publishedYear !== undefined) payload.publishedYear = publishedYear;
 
@@ -590,6 +655,9 @@ const mapRowToPayload = (row: ImportableRow): { payload?: BookRequest; error?: s
 
   const description = toOptionalString(mapped.description);
   if (description) payload.description = description;
+
+  const descriptionEn = toOptionalString(mapped.descriptionEn);
+  if (descriptionEn) payload.descriptionEn = descriptionEn;
 
   return {
     payload

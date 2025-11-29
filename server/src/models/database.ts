@@ -29,6 +29,51 @@ export const getDatabase = (): Database => {
   return db;
 };
 
+const ensureBookColumns = (database: Database): Promise<void> => {
+  const requiredColumns = [
+    { name: 'title_en', type: 'TEXT' },
+    { name: 'category_en', type: 'TEXT' },
+    { name: 'tags_en', type: 'TEXT' },
+    { name: 'authors_en', type: 'TEXT' },
+    { name: 'publisher_en', type: 'TEXT' },
+    { name: 'description_en', type: 'TEXT' }
+  ];
+
+  return new Promise((resolve, reject) => {
+    database.all('PRAGMA table_info(books);', [], (err, rows) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+
+      const existing = new Set((rows || []).map((row: any) => row.name));
+      const missing = requiredColumns.filter((col) => !existing.has(col.name));
+
+      if (!missing.length) {
+        resolve();
+        return;
+      }
+
+      Promise.all(
+        missing.map(
+          (col) =>
+            new Promise<void>((res, rej) => {
+              database.run(`ALTER TABLE books ADD COLUMN ${col.name} ${col.type}`, (alterErr) => {
+                if (alterErr && !String(alterErr.message || alterErr).includes('duplicate column name')) {
+                  rej(alterErr);
+                } else {
+                  res();
+                }
+              });
+            })
+        )
+      )
+        .then(() => resolve())
+        .catch(reject);
+    });
+  });
+};
+
 export const initDatabase = (): Promise<void> => {
   return new Promise((resolve, reject) => {
     const database = getDatabase();
@@ -52,18 +97,24 @@ export const initDatabase = (): Promise<void> => {
       CREATE TABLE IF NOT EXISTS books (
         id TEXT PRIMARY KEY,
         title TEXT NOT NULL,
+        title_en TEXT,
         authors TEXT NOT NULL, -- JSON array
+        authors_en TEXT,
         isbn TEXT,
         publisher TEXT,
+        publisher_en TEXT,
         published_year INTEGER,
         category TEXT NOT NULL,
+        category_en TEXT,
         description TEXT,
+        description_en TEXT,
         cover_image TEXT,
         total_copies INTEGER NOT NULL DEFAULT 1,
         available_copies INTEGER NOT NULL DEFAULT 1,
         status TEXT CHECK(status IN ('available', 'borrowed', 'reserved', 'maintenance')) NOT NULL DEFAULT 'available',
         location TEXT,
         tags TEXT, -- JSON array
+        tags_en TEXT, -- JSON array
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
@@ -144,8 +195,15 @@ export const initDatabase = (): Promise<void> => {
         console.error('Error creating tables:', err);
         reject(err);
       } else {
-        console.log('✅ Database tables initialized successfully');
-        resolve();
+        ensureBookColumns(database)
+          .then(() => {
+            console.log('✅ Database tables initialized successfully');
+            resolve();
+          })
+          .catch((ensureError) => {
+            console.error('Error ensuring book columns:', ensureError);
+            reject(ensureError);
+          });
       }
     });
   });

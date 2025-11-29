@@ -4,11 +4,11 @@ import { useI18n } from 'vue-i18n'
 
 import { useAdminStore } from '@/stores/admin'
 import { useLibraryStore } from '@/stores/library'
-import type { BorrowingStatus } from '@/types/library'
+import type { Book, BorrowingStatus } from '@/types/library'
 
 const adminStore = useAdminStore()
 const libraryStore = useLibraryStore()
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const statusFilter = ref<'all' | BorrowingStatus>('all')
 
@@ -18,7 +18,9 @@ const borrowingRows = computed(() =>
     .map((record) => {
       const book = libraryStore.getBookById(record.bookId)
       const user = adminStore.users.find((u) => u.id === record.userId)
-      return { record, bookTitle: book?.title ?? record.bookId, userName: user?.name ?? record.userId }
+      const bookTitle =
+        locale.value === 'en' && book?.titleEn ? book.titleEn : book?.title ?? record.bookId
+      return { record, bookTitle, userName: user?.name ?? record.userId }
     }),
 )
 
