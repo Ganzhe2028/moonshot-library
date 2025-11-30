@@ -1,6 +1,6 @@
 import type { Book, BookImportResult } from '@/types/library'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
 
 class BookService {
   private getHeaders(includeJson = true): Record<string, string> {
@@ -27,11 +27,20 @@ class BookService {
     return data.data as T
   }
 
-  async fetchBooks(): Promise<Book[]> {
-    const data = await this.request<{ books: Book[] }>('/books', {
+  async fetchBooks(params?: { limit?: number; offset?: number; category?: string; search?: string }): Promise<Book[]> {
+    const searchParams = new URLSearchParams()
+    if (params?.limit) searchParams.append('limit', params.limit.toString())
+    if (params?.offset) searchParams.append('offset', params.offset.toString())
+    if (params?.category) searchParams.append('category', params.category)
+    if (params?.search) searchParams.append('search', params.search)
+
+    const query = searchParams.toString()
+
+    const data = await this.request<{ books: Book[] }>(`/books${query ? `?${query}` : ''}`, {
       method: 'GET',
       headers: this.getHeaders(false),
     })
+
     return data.books ?? []
   }
 
@@ -82,6 +91,14 @@ class BookService {
     })
 
     return data
+  }
+
+  async getCategories(): Promise<string[]> {
+    const data = await this.request<{ categories?: string[] }>('/books/categories', {
+      headers: this.getHeaders(),
+    })
+
+    return data.categories || []
   }
 }
 

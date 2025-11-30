@@ -1,4 +1,4 @@
-import { getDatabase, initDatabase } from '../models/database';
+import { initDatabase } from '../models/database';
 import { seedDatabase } from './seedData';
 
 async function setupTestEnvironment() {

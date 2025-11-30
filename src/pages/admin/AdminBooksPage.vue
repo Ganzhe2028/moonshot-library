@@ -37,7 +37,7 @@ const form = reactive({
   publishedYear: '',
   location: '',
   description: '',
-  descriptionEn: '',
+  descriptionEn: ''
 })
 
 const statusOptions: { value: BookStatus; label: string }[] = [
@@ -78,7 +78,7 @@ const resetForm = () => {
     publishedYear: '',
     location: '',
     description: '',
-    descriptionEn: '',
+    descriptionEn: ''
   })
 }
 
@@ -455,6 +455,10 @@ onMounted(() => {
             {{ t('admin.books.form.year') }}
             <input v-model="form.publishedYear" type="number" min="1900" max="2100" />
           </label>
+
+        </div>
+
+        <div class="two-cols">
           <label>
             {{ t('admin.books.form.location') }}
             <input v-model="form.location" type="text" placeholder="A区-101" />

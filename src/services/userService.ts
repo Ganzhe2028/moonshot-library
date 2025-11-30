@@ -1,6 +1,6 @@
 import type { AuthUser } from '@/types/library'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
 
 class UserService {
   private getHeaders(): Record<string, string> {
@@ -14,53 +14,77 @@ class UserService {
     return headers
   }
 
+  private async request<T>(input: RequestInfo, init?: RequestInit): Promise<T> {
+    const response = await fetch(input, init)
+    const result = await response.json().catch(() => ({}))
+
+    if (!response.ok) {
+      const message = result?.message || '用户接口请求失败'
+      throw new Error(message)
+    }
+
+    return (result.success && result.data) ? result.data as T : result as unknown as T
+  }
+
   async fetchUsers(params: { limit?: number; offset?: number } = {}): Promise<AuthUser[]> {
     const searchParams = new URLSearchParams()
     if (params.limit) searchParams.append('limit', String(params.limit))
     if (params.offset) searchParams.append('offset', String(params.offset))
     const query = searchParams.toString()
 
-    const response = await fetch(`${API_BASE_URL}/users${query ? `?${query}` : ''}`, {
+    const data = await this.request<{ users: AuthUser[] }>(`${API_BASE_URL}/users${query ? `?${query}` : ''}`, {
       headers: this.getHeaders(),
     })
-    const data = await response.json()
 
-    if (!response.ok) {
-      throw new Error(data.message || '获取用户列表失败')
-    }
+    return data.users ?? []
+  }
 
-    return data.data?.users ?? []
+  async getAllUsers(): Promise<AuthUser[]> {
+    const data = await this.request<{ users: AuthUser[] }>(`${API_BASE_URL}/users`, {
+      method: 'GET',
+      headers: this.getHeaders(),
+    })
+
+    return data.users || []
   }
 
   async fetchUserById(id: string): Promise<AuthUser> {
-    const response = await fetch(`${API_BASE_URL}/users/${id}`, {
+    const data = await this.request<{ user: AuthUser }>(`${API_BASE_URL}/users/${id}`, {
       headers: this.getHeaders(),
     })
-    const data = await response.json()
 
-    if (!response.ok) {
-      throw new Error(data.message || '获取用户信息失败')
-    }
+    return data.user
+  }
 
-    return data.data?.user
+  async getUserById(id: string): Promise<AuthUser> {
+    const data = await this.request<{ user: AuthUser }>(`${API_BASE_URL}/users/${id}`, {
+      method: 'GET',
+      headers: this.getHeaders(),
+    })
+
+    return data.user
   }
 
   async updateUser(
     id: string,
     payload: Partial<Pick<AuthUser, 'name' | 'grade' | 'avatarColor' | 'membership'>>,
   ): Promise<AuthUser> {
-    const response = await fetch(`${API_BASE_URL}/users/${id}`, {
+    const data = await this.request<{ user: AuthUser }>(`${API_BASE_URL}/users/${id}`, {
       method: 'PUT',
       headers: this.getHeaders(),
       body: JSON.stringify(payload),
     })
-    const data = await response.json()
 
-    if (!response.ok) {
-      throw new Error(data.message || '更新用户信息失败')
-    }
+    return data.user
+  }
 
-    return data.data?.user
+  async getUsersByRole(role: string): Promise<AuthUser[]> {
+    const data = await this.request<{ users: AuthUser[] }>(`${API_BASE_URL}/users/role/${role}`, {
+      method: 'GET',
+      headers: this.getHeaders(),
+    })
+
+    return data.users || []
   }
 }
 
