@@ -5,32 +5,32 @@ import HomePage from '@/pages/HomePage.vue'
 import BookDetailPage from '@/pages/BookDetailPage.vue'
 import MyBorrowingsPage from '@/pages/MyBorrowingsPage.vue'
 import LoginPage from '@/pages/LoginPage.vue'
-import RegisterPage from '@/pages/RegisterPage.vue'
-import AuthCallbackPage from '@/pages/AuthCallbackPage.vue'
+import CommunityPage from '@/pages/CommunityPage.vue'
 import AdminLayout from '@/pages/admin/AdminLayout.vue'
+import AdminAnnouncementsPage from '@/pages/admin/AdminAnnouncementsPage.vue'
 import AdminBooksPage from '@/pages/admin/AdminBooksPage.vue'
 import AdminUsersPage from '@/pages/admin/AdminUsersPage.vue'
 import AdminBorrowingsPage from '@/pages/admin/AdminBorrowingsPage.vue'
+import AdminCommentsPage from '@/pages/admin/AdminCommentsPage.vue'
+import AdminBookCommentsPage from '@/pages/admin/AdminBookCommentsPage.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
-    {
-      path: '/',
+    { path: '/',
       name: 'home',
       component: HomePage,
     },
-    {
-      path: '/books/:id',
+    { path: '/books/:id',
       name: 'book-detail',
       component: BookDetailPage,
     },
-    {
-      path: '/borrowings',
+    { path: '/borrowings',
       name: 'borrowings',
       component: MyBorrowingsPage,
       meta: { requiresAuth: true },
     },
+<<<<<<< HEAD
     {
       path: '/login',
       name: 'login',
@@ -40,42 +40,30 @@ const router = createRouter({
       path: '/register',
       name: 'register',
       component: RegisterPage,
+=======
+    { path: '/login',
+      name: 'login',
+      component: LoginPage,
+>>>>>>> 龙虾的测试
     },
-    {
-      path: '/auth/callback',
-      name: 'auth-callback',
-      component: AuthCallbackPage,
-      // 注意：实际的登录处理逻辑在 App.vue 的 onMounted 钩子中
+    { path: '/community',
+      name: 'community',
+      component: CommunityPage,
     },
-    {
-      path: '/admin',
+    { path: '/admin',
+      name: 'admin',
       component: AdminLayout,
       meta: { requiresAuth: true, requiresRole: ['admin', 'librarian'] },
       children: [
-        {
-          path: '',
-          redirect: '/admin/books',
-        },
-        {
-          path: 'books',
-          name: 'admin-books',
-          component: AdminBooksPage,
-          meta: { requiresAuth: true, requiresRole: ['admin', 'librarian'] },
-        },
-        {
-          path: 'users',
-          name: 'admin-users',
-          component: AdminUsersPage,
-          meta: { requiresAuth: true, requiresRole: ['admin', 'librarian'] },
-        },
-        {
-          path: 'borrowings',
-          name: 'admin-borrowings',
-          component: AdminBorrowingsPage,
-          meta: { requiresAuth: true, requiresRole: ['admin', 'librarian'] },
-        },
-      ],
-    },
+        { path: '', redirect: '/admin/books' },
+        { path: 'books', name: 'admin-books', component: AdminBooksPage },
+        { path: 'users', name: 'admin-users', component: AdminUsersPage },
+        { path: 'borrowings', name: 'admin-borrowings', component: AdminBorrowingsPage },
+        { path: 'announcements', name: 'admin-announcements', component: AdminAnnouncementsPage },
+        { path: 'comments', name: 'admin-comments', component: AdminCommentsPage },
+        { path: 'book-comments', name: 'admin-book-comments', component: AdminBookCommentsPage }
+      ]
+    }
   ],
   scrollBehavior() {
     return { top: 0 }
@@ -90,13 +78,13 @@ router.addRoute({
 
 router.beforeEach((to, from, next) => {
   const authStore = useAuthStore()
-  
+
   // 特殊处理auth-callback路由，允许访问
   if (to.name === 'auth-callback') {
     next()
     return
   }
-  
+
   // 检查路由是否需要认证
   if (to.meta?.requiresAuth && !authStore.user) {
     // 如果需要认证且用户未登录，重定向到登录页面

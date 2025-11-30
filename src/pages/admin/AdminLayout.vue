@@ -14,6 +14,21 @@ const tabs = computed(() => [
     path: '/admin/borrowings',
     active: route.path.startsWith('/admin/borrowings'),
   },
+  {
+    label: '公告管理',
+    path: '/admin/announcements',
+    active: route.path.startsWith('/admin/announcements'),
+  },
+  {
+    label: '社区评论管理',
+    path: '/admin/comments',
+    active: route.path.startsWith('/admin/comments'),
+  },
+  {
+    label: '书本评论管理',
+    path: '/admin/book-comments',
+    active: route.path.startsWith('/admin/book-comments'),
+  },
 ])
 </script>
 

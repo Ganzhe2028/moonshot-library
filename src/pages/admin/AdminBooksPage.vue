@@ -37,7 +37,11 @@ const form = reactive({
   publishedYear: '',
   location: '',
   description: '',
+<<<<<<< HEAD
   descriptionEn: '',
+=======
+  word_count: '',
+>>>>>>> 龙虾的测试
 })
 
 const statusOptions: { value: BookStatus; label: string }[] = [
@@ -78,7 +82,11 @@ const resetForm = () => {
     publishedYear: '',
     location: '',
     description: '',
+<<<<<<< HEAD
     descriptionEn: '',
+=======
+    word_count: '',
+>>>>>>> 龙虾的测试
   })
 }
 
@@ -93,6 +101,7 @@ const startEdit = (bookId: string) => {
   showForm.value = true
   editingId.value = bookId
   Object.assign(form, {
+<<<<<<< HEAD
     title: book.title,
     titleEn: book.titleEn || '',
     authors: book.authors.join(', '),
@@ -112,6 +121,22 @@ const startEdit = (bookId: string) => {
     description: book.description || '',
     descriptionEn: book.descriptionEn || '',
   })
+=======
+      title: book.title,
+      authors: book.authors.join(', '),
+      category: book.category,
+      totalCopies: book.totalCopies,
+      availableCopies: book.availableCopies,
+      status: book.status,
+      tags: (book.tags || []).join(', '),
+      isbn: book.isbn || '',
+      publisher: book.publisher || '',
+      publishedYear: book.publishedYear ?? '',
+      location: book.location || '',
+      description: book.description || '',
+      word_count: book.word_count ?? '',
+    })
+>>>>>>> 龙虾的测试
 }
 
 const parseList = (value: string) =>
@@ -139,7 +164,11 @@ const handleSubmit = async () => {
     publishedYear: form.publishedYear ? Number(form.publishedYear) : undefined,
     location: form.location.trim() || undefined,
     description: form.description.trim() || undefined,
+<<<<<<< HEAD
     descriptionEn: form.descriptionEn.trim() || undefined,
+=======
+    word_count: form.word_count ? Number(form.word_count) : undefined,
+>>>>>>> 龙虾的测试
   }
 
   if (!payload.title || !payload.authors.length || !payload.category) {
@@ -455,6 +484,13 @@ onMounted(() => {
             {{ t('admin.books.form.year') }}
             <input v-model="form.publishedYear" type="number" min="1900" max="2100" />
           </label>
+          <label>
+            字数
+            <input v-model="form.word_count" type="number" min="0" placeholder="输入书籍字数" />
+          </label>
+        </div>
+        
+        <div class="two-cols">
           <label>
             {{ t('admin.books.form.location') }}
             <input v-model="form.location" type="text" placeholder="A区-101" />

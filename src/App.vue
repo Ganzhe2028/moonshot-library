@@ -57,17 +57,17 @@ onMounted(async () => {
   const token = urlParams.get('token')
   const refreshToken = urlParams.get('refreshToken')
   const error = urlParams.get('error')
-  
+
   // 处理后端重定向回来的token
   if (token && refreshToken && !m365CallbackProcessed.value) {
     try {
       m365CallbackProcessed.value = true
-      
+
       // 保存token和refreshToken
       localStorage.setItem('token', token)
       localStorage.setItem('refreshToken', refreshToken)
       localStorage.setItem('login_method', 'm365')
-      
+
       // 获取用户信息
       try {
         const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api'
@@ -77,7 +77,7 @@ onMounted(async () => {
             'Content-Type': 'application/json'
           }
         })
-        
+
         if (response.ok) {
           const data = await response.json()
           if (data.success && data.data?.user) {
@@ -92,14 +92,14 @@ onMounted(async () => {
         console.error('获取用户信息失败:', apiError)
         // 即使获取用户信息失败，也继续流程（token已保存）
       }
-      
+
       // 获取并清除重定向URL
       const redirectUrl = localStorage.getItem('postLoginRedirect') || '/'
       localStorage.removeItem('postLoginRedirect')
-      
+
       // 清除URL中的查询参数
       window.history.replaceState({}, document.title, window.location.pathname)
-      
+
       // 重定向到目标页面
       router.push(redirectUrl)
     } catch (error) {
@@ -145,6 +145,9 @@ onMounted(async () => {
         </RouterLink>
         <RouterLink :class="{ active: route.name === 'borrowings' }" to="/borrowings">
           {{ t('common.borrowings') }}
+        </RouterLink>
+        <RouterLink :class="{ active: route.name === 'community' }" to="/community">
+          {{ t('common.community') }}
         </RouterLink>
       </nav>
 
