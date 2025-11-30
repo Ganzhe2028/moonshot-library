@@ -316,7 +316,7 @@ deploy_services() {
     warn "构建尝试 ${retry}/${max_retries}..."
     
     # 分步执行：先构建，后启动（更可靠）
-    if $COMPOSE_BIN build --no-cache --timeout 300 && $COMPOSE_BIN up -d --timeout 300; then
+    if $COMPOSE_BIN build --no-cache && $COMPOSE_BIN up -d --timeout 300; then
       success=true
       break
     else
