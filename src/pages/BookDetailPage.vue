@@ -4,6 +4,9 @@ import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 
 import { useLibraryStore } from '@/stores/library'
+import RatingStars from '@/components/RatingStars.vue'
+import CommentSection from '@/components/CommentSection.vue'
+import type { Comment } from '@/types/library'
 
 const route = useRoute()
 const router = useRouter()
@@ -49,6 +52,87 @@ const displayTags = computed(() => {
 
 const feedback = ref('')
 const feedbackVariant = ref<'success' | 'error'>('success')
+
+const userRating = ref(0)
+const ratingFeedback = ref('')
+const ratingVariant = ref<'success' | 'error'>('success')
+
+const commentSectionRef = ref<InstanceType<typeof CommentSection>>()
+const comments = ref<Comment[]>([])
+
+const handleRatingChange = (rating: number) => {
+  userRating.value = rating
+  // 这里将在store更新后调用API
+  ratingFeedback.value = `您的评分: ${rating}星`
+  ratingVariant.value = 'success'
+
+  // 3秒后清除反馈信息
+  setTimeout(() => {
+    ratingFeedback.value = ''
+  }, 3000)
+}
+
+// 处理评论提交
+const handleCommentSubmit = async (content: string) => {
+  if (!book.value) return
+
+  // 模拟提交评论（将在store更新后实现真实API调用）
+  const newComment: Comment = {
+    id: Date.now().toString(),
+    bookId: book.value.id,
+    userId: 'current-user',
+    userName: '当前用户',
+    content,
+    createdAt: new Date().toISOString()
+  }
+
+  comments.value.unshift(newComment)
+
+  if (commentSectionRef.value) {
+    commentSectionRef.value.setComments(comments.value)
+  }
+}
+
+// 处理评论删除
+const handleCommentDelete = (commentId: string) => {
+  // 从评论列表中移除指定ID的评论
+  comments.value = comments.value.filter(comment => comment.id !== commentId)
+
+  // 更新评论区组件的数据
+  if (commentSectionRef.value) {
+    commentSectionRef.value.setComments(comments.value)
+  }
+}
+
+// 处理评论加载
+const handleCommentsLoad = () => {
+  // 模拟加载评论（将在store更新后实现真实API调用）
+  // 这里使用模拟数据
+  const mockComments: Comment[] = [
+    {
+      id: '1',
+      bookId: book.value?.id || '',
+      userId: 'user1',
+      userName: '张三',
+      content: '这本书非常精彩，强烈推荐！',
+      createdAt: new Date(Date.now() - 3600000).toISOString()
+    },
+    {
+      id: '2',
+      bookId: book.value?.id || '',
+      userId: 'user2',
+      userName: '李四',
+      content: '内容丰富，值得一读。',
+      createdAt: new Date(Date.now() - 7200000).toISOString()
+    }
+  ]
+
+  comments.value = mockComments
+
+  if (commentSectionRef.value) {
+    commentSectionRef.value.setComments(comments.value)
+  }
+}
 
 const statusCopy = computed(() => {
   switch (book.value?.status) {
@@ -103,7 +187,23 @@ const coverImage = computed(
         <p class="category">{{ displayCategory }}</p>
         <h1>{{ displayTitle }}</h1>
         <p class="author">{{ t('bookDetail.info') }} · {{ authorLine }}</p>
+
+        <div class="rating-section">
+          <RatingStars
+            :average-rating="book.averageRating || 0"
+            :show-average="true"
+            v-model="userRating"
+            @rating-change="handleRatingChange"
+          />
+          <span v-if="book.ratingCount" class="rating-count">
+            ({{ book.ratingCount }} 人评分)
+          </span>
+        </div>
+        <p v-if="ratingFeedback" :class="['rating-feedback', ratingVariant]">
+          {{ ratingFeedback }}
+        </p>
         <p class="summary">{{ displayDescription }}</p>
+
 
         <div class="tags">
           <span v-for="tag in displayTags" :key="tag">{{ tag }}</span>
@@ -169,6 +269,17 @@ const coverImage = computed(
     </section>
   </div>
 
+  <!-- 评论区 -->
+  <div v-if="book" class="comments-section">
+    <CommentSection
+      ref="commentSectionRef"
+      :book-id="book.id"
+      @submit="handleCommentSubmit"
+      @load="handleCommentsLoad"
+      @delete="handleCommentDelete"
+    />
+  </div>
+
   <div v-else class="missing">
     <p>{{ t('bookDetail.missing') }}</p>
     <button type="button" @click="goBack">{{ t('bookDetail.missingBack') }}</button>
@@ -219,6 +330,35 @@ h1 {
 .author {
   color: #4c4f59;
   margin: 0.4rem 0 1rem;
+}
+
+.rating-section {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.rating-count {
+  margin-left: 8px;
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.rating-feedback {
+  margin-bottom: 1rem;
+  padding: 0.5rem 1rem;
+  border-radius: 12px;
+  font-size: 0.9rem;
+}
+
+.rating-feedback.success {
+  background: rgba(16, 185, 129, 0.12);
+  color: #047857;
+}
+
+.rating-feedback.error {
+  background: rgba(239, 68, 68, 0.12);
+  color: #b91c1c;
 }
 
 .summary {
@@ -347,6 +487,10 @@ dd {
   padding: 0.8rem 1.5rem;
   background: #4338ca;
   color: white;
+}
+
+.comments-section {
+  margin-top: 3rem;
 }
 
 @media (max-width: 900px) {

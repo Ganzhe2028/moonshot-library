@@ -21,6 +21,9 @@ export interface Book {
   availableCopies: number
   tags: string[]
   tagsEn?: string[]
+  averageRating?: number
+  ratingCount?: number
+  word_count?: number // 书籍字数
 }
 
 export interface BookImportError {
@@ -51,6 +54,33 @@ export interface BorrowingRecord {
   updatedAt?: string
 }
 
+export interface Announcement {
+  id: string
+  title: string
+  content: string
+  createdAt: string
+  author: string
+}
+
+export interface Rating {
+  id: string
+  bookId: string
+  userId: string
+  rating: number // 1-5
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface Comment {
+  id: string
+  bookId: string
+  userId: string
+  userName: string
+  content: string
+  createdAt?: string
+  updatedAt?: string
+}
+
 export interface AuthUser {
   id: string
   email: string
@@ -59,6 +89,7 @@ export interface AuthUser {
   grade?: string
   membership: 'active' | 'suspended'
   avatarColor: string
+  total_words_read?: number // 总阅读字数
 }
 
 export interface LoginRequest {

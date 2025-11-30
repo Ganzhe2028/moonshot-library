@@ -86,19 +86,19 @@ class MsalService {
       return authResult.accessToken;
     } catch (error) {
       console.error('获取令牌失败:', error);
-      
+
       // 如果静默获取失败，尝试交互方式获取
       try {
         const account = await this.getAccount();
         if (!account) {
           return null;
         }
-        
+
         const interactiveRequest = {
           ...tokenRequest,
           account,
         };
-        
+
         const authResult = await this.msalInstance.acquireTokenPopup(interactiveRequest);
         return authResult.accessToken;
       } catch (popupError) {
@@ -127,7 +127,7 @@ class MsalService {
   }
 
   // 后端验证并完成登录
-  async verifyWithBackend(accessToken: string): Promise<any> {
+  async verifyWithBackend(accessToken: string): Promise<{success: boolean; message?: string; data?: {user?: Record<string, unknown>; token?: string; refreshToken?: string}}> {
     try {
       const response = await axios.post('/api/auth/msal/verify', {
         token: accessToken,
@@ -142,7 +142,7 @@ class MsalService {
   }
 
   // 开始完整的M365 SSO登录流程
-  async msalLoginFlow(): Promise<any> {
+  async msalLoginFlow(): Promise<{success: boolean; message?: string; data?: {user?: Record<string, unknown>; token?: string; refreshToken?: string}}> {
     try {
       // 1. 登录Microsoft账户
       const account = await this.signIn();
@@ -158,7 +158,7 @@ class MsalService {
 
       // 3. 向后端验证令牌并完成登录
       const backendResponse = await this.verifyWithBackend(accessToken);
-      
+
       return backendResponse;
     } catch (error) {
       console.error('M365 SSO登录流程失败:', error);
