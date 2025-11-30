@@ -3,6 +3,7 @@ import type { Book, BookImportResult, BorrowingRecord, Rating, Comment } from '@
 import { bookService } from '@/services/bookService'
 import { borrowingService } from '@/services/borrowingService'
 import { ratingService } from '@/services/ratingService'
+import type { Book, BookImportResult, BorrowingRecord } from '@/types/library'
 import { i18n } from '@/i18n'
 import { useAuthStore } from './auth'
 
@@ -98,8 +99,8 @@ export const useLibraryStore = defineStore('library', {
           availableCopies: payload.availableCopies ?? 1
         }
         const book = await bookService.createBook(bookPayload)
-        this.books.unshift({ ...book, tags: book.tags ?? [], tagsEn: book.tagsEn ?? [] })
-        return { success: true, message: '已创建新书籍。' }
+        this.books.push({ ...book, tags: book.tags ?? [], tagsEn: book.tagsEn ?? [] })
+        return { success: true, message: '书籍已创建。' }
       } catch (err) {
         const message = err instanceof Error ? err.message : '创建书籍失败'
         this.booksError = message
@@ -202,6 +203,23 @@ export const useLibraryStore = defineStore('library', {
         return { success: false, message }
       }
     },
+    async renewBorrowing(recordId: string) {
+      const authStore = useAuthStore()
+      if (!authStore.user) {
+        return { success: false, message: '请先登录后再续借图书。' }
+      }
+
+      try {
+        await borrowingService.returnBook(recordId)
+        await Promise.all([this.fetchBorrowings(true), this.fetchBooks(true)])
+        return { success: true, message: i18n.global.t('borrowings.messages.returnSuccess') }
+      } catch (err) {
+        return {
+          success: false,
+          message: err instanceof Error ? err.message : '续借失败，请稍后再试。',
+        }
+      }
+    },
     async returnBook(recordId: string) {
       const authStore = useAuthStore()
       if (!authStore.user) {
@@ -216,23 +234,6 @@ export const useLibraryStore = defineStore('library', {
         return {
           success: false,
           message: err instanceof Error ? err.message : '归还失败，请稍后再试。',
-        }
-      }
-    },
-    async renewBorrowing(recordId: string) {
-      const authStore = useAuthStore()
-      if (!authStore.user) {
-        return { success: false, message: '请先登录后再续借图书。' }
-      }
-
-      try {
-        await borrowingService.renewBorrowing(recordId)
-        await this.fetchBorrowings(true)
-        return { success: true, message: i18n.global.t('borrowings.messages.renewSuccess') }
-      } catch (err) {
-        return {
-          success: false,
-          message: err instanceof Error ? err.message : '续借失败，请稍后再试。',
         }
       }
     },

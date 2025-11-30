@@ -37,7 +37,8 @@ const form = reactive({
   publishedYear: '',
   location: '',
   description: '',
-  descriptionEn: ''
+  word_count: '',
+  descriptionEn: '',
 })
 
 const statusOptions: { value: BookStatus; label: string }[] = [
@@ -78,7 +79,8 @@ const resetForm = () => {
     publishedYear: '',
     location: '',
     description: '',
-    descriptionEn: ''
+    word_count: '',
+    descriptionEn: '',
   })
 }
 
@@ -139,6 +141,7 @@ const handleSubmit = async () => {
     publishedYear: form.publishedYear ? Number(form.publishedYear) : undefined,
     location: form.location.trim() || undefined,
     description: form.description.trim() || undefined,
+    word_count: form.word_count ? Number(form.word_count) : undefined,
     descriptionEn: form.descriptionEn.trim() || undefined,
   }
 
@@ -455,7 +458,10 @@ onMounted(() => {
             {{ t('admin.books.form.year') }}
             <input v-model="form.publishedYear" type="number" min="1900" max="2100" />
           </label>
-
+          <label>
+            字数
+            <input v-model="form.word_count" type="number" min="0" placeholder="输入书籍字数" />
+          </label>
         </div>
 
         <div class="two-cols">
