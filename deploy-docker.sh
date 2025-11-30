@@ -150,11 +150,36 @@ check_prereqs() {
 }
 
 ensure_env() {
+  # 加载.env文件
   if [ -f ".env" ]; then
     set -a
     . ./.env
     set +a
+    log "已加载.env文件"
   fi
+  
+  # 确保.env.production文件存在
+  if [ ! -f ".env.production" ]; then
+    warn ".env.production文件不存在，正在创建默认配置..."
+    cat > .env.production << EOF
+# 生产环境配置
+VITE_API_URL=/api
+NODE_ENV=production
+EOF
+    log "已创建默认.env.production文件"
+  fi
+  
+  # 检查API URL配置
+  if [ -z "${VITE_API_URL:-}" ]; then
+    export VITE_API_URL="/api"
+    log "已设置默认API URL: $VITE_API_URL"
+  fi
+  
+  # 显示当前配置
+  log "当前环境配置:"
+  log "  NODE_ENV: ${NODE_ENV:-production}"
+  log "  NODE_IMAGE: ${NODE_IMAGE:-node:20-alpine}"
+  log "  VITE_API_URL: ${VITE_API_URL}"
 }
 
 ensure_jwt() {
@@ -263,6 +288,7 @@ wait_for_health() {
 deploy_services() {
   warn "开始构建和启动服务..."
 
+  # 设置构建环境变量
   export NODE_ENV=production
   export NODE_IMAGE=${NODE_IMAGE:-node:20-alpine}
   export LOG_LEVEL=${LOG_LEVEL:-warn}
@@ -271,6 +297,14 @@ deploy_services() {
   export TRUST_PROXY=${TRUST_PROXY:-1}
   export COMPOSE_HTTP_TIMEOUT=${COMPOSE_HTTP_TIMEOUT:-1200}
   export DOCKER_BUILDKIT=1 # 启用BuildKit加速构建
+  export VITE_API_URL=${VITE_API_URL:-/api} # 确保API URL配置正确
+  
+  # 显示构建配置
+  log "构建配置:"
+  log "  NODE_ENV: $NODE_ENV"
+  log "  NODE_IMAGE: $NODE_IMAGE"
+  log "  VITE_API_URL: $VITE_API_URL"
+  log "  DOCKER_BUILDKIT: $DOCKER_BUILDKIT"
   
   # 构建并启动服务，总是重新构建镜像
   local max_retries=3
@@ -281,11 +315,13 @@ deploy_services() {
     retry=$((retry + 1))
     warn "构建尝试 ${retry}/${max_retries}..."
     
-    if $COMPOSE_BIN up -d --build --timeout 300; then
+    # 使用--no-cache确保每次构建都是最新的
+    if $COMPOSE_BIN up -d --build --no-cache --timeout 300; then
       success=true
       break
     else
-      warn "构建失败，${max_retries - retry}次重试机会"
+      local remaining_retries=$((max_retries - retry))
+      warn "构建失败，${remaining_retries}次重试机会"
       if [ $retry -lt $max_retries ]; then
         warn "清理失败的构建..."
         $COMPOSE_BIN down -v --remove-orphans || true
