@@ -20,13 +20,10 @@ export interface Book {
   totalCopies: number
   availableCopies: number
   tags: string[]
-<<<<<<< HEAD
   tagsEn?: string[]
-=======
   averageRating?: number
   ratingCount?: number
   word_count?: number // 书籍字数
->>>>>>> 龙虾的测试
 }
 
 export interface BookImportError {
