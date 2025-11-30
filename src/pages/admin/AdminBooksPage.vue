@@ -37,11 +37,7 @@ const form = reactive({
   publishedYear: '',
   location: '',
   description: '',
-<<<<<<< HEAD
-  descriptionEn: '',
-=======
-  word_count: '',
->>>>>>> 龙虾的测试
+  descriptionEn: ''
 })
 
 const statusOptions: { value: BookStatus; label: string }[] = [
@@ -82,11 +78,7 @@ const resetForm = () => {
     publishedYear: '',
     location: '',
     description: '',
-<<<<<<< HEAD
-    descriptionEn: '',
-=======
-    word_count: '',
->>>>>>> 龙虾的测试
+    descriptionEn: ''
   })
 }
 
