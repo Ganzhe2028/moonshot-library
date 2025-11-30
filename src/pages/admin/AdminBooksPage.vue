@@ -463,7 +463,7 @@ onMounted(() => {
             <input v-model="form.word_count" type="number" min="0" placeholder="输入书籍字数" />
           </label>
         </div>
-        
+
         <div class="two-cols">
           <label>
             {{ t('admin.books.form.location') }}

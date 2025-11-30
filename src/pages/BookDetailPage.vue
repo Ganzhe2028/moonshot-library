@@ -97,7 +97,7 @@ const handleCommentSubmit = async (content: string) => {
 const handleCommentDelete = (commentId: string) => {
   // 从评论列表中移除指定ID的评论
   comments.value = comments.value.filter(comment => comment.id !== commentId)
-  
+
   // 更新评论区组件的数据
   if (commentSectionRef.value) {
     commentSectionRef.value.setComments(comments.value)
@@ -187,6 +187,7 @@ const coverImage = computed(
         <p class="category">{{ displayCategory }}</p>
         <h1>{{ displayTitle }}</h1>
         <p class="author">{{ t('bookDetail.info') }} · {{ authorLine }}</p>
+
         <div class="rating-section">
           <RatingStars
             :average-rating="book.averageRating || 0"
@@ -201,8 +202,8 @@ const coverImage = computed(
         <p v-if="ratingFeedback" :class="['rating-feedback', ratingVariant]">
           {{ ratingFeedback }}
         </p>
-        <p class="summary">{{ book.description }}</p>
         <p class="summary">{{ displayDescription }}</p>
+
 
         <div class="tags">
           <span v-for="tag in displayTags" :key="tag">{{ tag }}</span>
