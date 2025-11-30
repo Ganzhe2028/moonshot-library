@@ -99,9 +99,6 @@ export const useLibraryStore = defineStore('library', {
           availableCopies: payload.availableCopies ?? 1
         }
         const book = await bookService.createBook(bookPayload)
-        this.books.unshift({ ...book, tags: book.tags ?? [] })
-        return { success: true, message: '已创建新书籍。' }
-        const book = await bookService.createBook(payload)
         this.books.push({ ...book, tags: book.tags ?? [], tagsEn: book.tagsEn ?? [] })
         return { success: true, message: '书籍已创建。' }
       } catch (err) {
@@ -237,23 +234,6 @@ export const useLibraryStore = defineStore('library', {
         return {
           success: false,
           message: err instanceof Error ? err.message : '归还失败，请稍后再试。',
-        }
-      }
-    },
-    async renewBorrowing(recordId: string) {
-      const authStore = useAuthStore()
-      if (!authStore.user) {
-        return { success: false, message: '请先登录后再续借图书。' }
-      }
-
-      try {
-        await borrowingService.renewBorrowing(recordId)
-        await this.fetchBorrowings(true)
-        return { success: true, message: '续借成功，已延长借阅时间。' }
-      } catch (err) {
-        return {
-          success: false,
-          message: err instanceof Error ? err.message : '续借失败，请稍后再试。',
         }
       }
     },
