@@ -9,7 +9,7 @@ const props = defineProps<{
   book: Book
 }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const statusLabel = computed(() => {
   const map: Record<string, { text: string; className: string }> = {
@@ -22,9 +22,23 @@ const statusLabel = computed(() => {
   return map[props.book.status]
 })
 
+const localizedTitle = computed(() =>
+  locale.value === 'en' && props.book.titleEn ? props.book.titleEn : props.book.title,
+)
+
+const localizedCategory = computed(() =>
+  locale.value === 'en' && props.book.categoryEn ? props.book.categoryEn : props.book.category,
+)
+
+const localizedTags = computed(
+  () => (locale.value === 'en' && props.book.tagsEn?.length ? props.book.tagsEn : props.book.tags || []),
+)
+
 const authorLine = computed(() => {
-  if (!props.book.authors?.length) return '未知作者'
-  return props.book.authors.join(' / ')
+  const authors =
+    locale.value === 'en' && props.book.authorsEn?.length ? props.book.authorsEn : props.book.authors
+  if (!authors?.length) return t('empty.noData')
+  return authors.join(' / ')
 })
 
 const coverImageUrl = computed(
@@ -39,14 +53,14 @@ const coverImageUrl = computed(
     <div class="cover" :style="{ backgroundImage: `url(${coverImageUrl})` }" />
     <div class="info">
       <div class="category-status-container">
-        <p class="category">{{ book.category }}</p>
+        <p class="category">{{ localizedCategory }}</p>
         <span class="status" :class="statusLabel?.className">{{ statusLabel?.text }}</span>
       </div>
-      <h3>{{ book.title }}</h3>
+      <h3>{{ localizedTitle }}</h3>
       <p class="author">{{ authorLine }}</p>
 
       <div class="tags">
-        <span v-for="tag in book.tags" :key="tag">{{ tag }}</span>
+        <span v-for="tag in localizedTags" :key="tag">{{ tag }}</span>
       </div>
     </div>
   </RouterLink>

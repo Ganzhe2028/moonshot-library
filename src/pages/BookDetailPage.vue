@@ -11,7 +11,7 @@ import type { Comment } from '@/types/library'
 const route = useRoute()
 const router = useRouter()
 const libraryStore = useLibraryStore()
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 watch(
   () => route.params.id,
@@ -31,6 +31,24 @@ const book = computed(() => libraryStore.getBookById(route.params.id as string))
 const hasBorrowed = computed(() =>
   book.value ? libraryStore.isBookBorrowedByUser(book.value.id) : false,
 )
+
+const displayTitle = computed(() => {
+  if (!book.value) return ''
+  if (locale.value === 'en' && book.value.titleEn) return book.value.titleEn
+  return book.value.title
+})
+
+const displayCategory = computed(() => {
+  if (!book.value) return ''
+  if (locale.value === 'en' && book.value.categoryEn) return book.value.categoryEn
+  return book.value.category
+})
+
+const displayTags = computed(() => {
+  if (!book.value) return []
+  if (locale.value === 'en' && book.value.tagsEn?.length) return book.value.tagsEn
+  return book.value.tags || []
+})
 
 const feedback = ref('')
 const feedbackVariant = ref<'success' | 'error'>('success')
@@ -140,9 +158,18 @@ const handleBorrow = async () => {
 
 const goBack = () => router.push('/')
 
-const authorLine = computed(() =>
-  book.value?.authors?.length ? book.value.authors.join(' / ') : t('empty.noData'),
-)
+const authorLine = computed(() => {
+  if (!book.value) return t('empty.noData')
+  const authors =
+    locale.value === 'en' && book.value.authorsEn?.length ? book.value.authorsEn : book.value.authors
+  return authors?.length ? authors.join(' / ') : t('empty.noData')
+})
+
+const displayDescription = computed(() => {
+  if (!book.value) return ''
+  if (locale.value === 'en' && book.value.descriptionEn) return book.value.descriptionEn
+  return book.value.description || t('empty.noData')
+})
 
 const coverImage = computed(
   () =>
@@ -157,8 +184,8 @@ const coverImage = computed(
     <section class="header">
       <div class="cover" :style="{ backgroundImage: `url(${coverImage})` }" />
       <div class="content">
-        <p class="category">{{ book.category }}</p>
-        <h1>{{ book.title }}</h1>
+        <p class="category">{{ displayCategory }}</p>
+        <h1>{{ displayTitle }}</h1>
         <p class="author">{{ t('bookDetail.info') }} · {{ authorLine }}</p>
         <div class="rating-section">
           <RatingStars
@@ -175,9 +202,10 @@ const coverImage = computed(
           {{ ratingFeedback }}
         </p>
         <p class="summary">{{ book.description }}</p>
+        <p class="summary">{{ displayDescription }}</p>
 
         <div class="tags">
-          <span v-for="tag in book.tags" :key="tag">{{ tag }}</span>
+          <span v-for="tag in displayTags" :key="tag">{{ tag }}</span>
         </div>
 
         <div class="actions">
@@ -214,7 +242,7 @@ const coverImage = computed(
           </div>
           <div>
             <dt>{{ t('bookDetail.category') }}</dt>
-            <dd>{{ book.category }}</dd>
+            <dd>{{ displayCategory }}</dd>
           </div>
           <div>
             <dt>{{ t('bookDetail.location') }}</dt>

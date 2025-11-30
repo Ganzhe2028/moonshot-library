@@ -30,9 +30,15 @@ const router = createRouter({
       component: MyBorrowingsPage,
       meta: { requiresAuth: true },
     },
-    { path: '/login',
+    {
+      path: '/login',
       name: 'login',
       component: LoginPage,
+    },
+    {
+      path: '/register',
+      name: 'register',
+      component: RegisterPage,
     },
     { path: '/community',
       name: 'community',

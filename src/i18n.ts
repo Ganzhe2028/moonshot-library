@@ -115,6 +115,11 @@ export const messages = {
       return: '归还',
       renewTip: '每次续借将延长归还时间。',
       dueDate: '到期',
+      messages: {
+        borrowSuccess: '借阅成功，请按时归还。',
+        returnSuccess: '图书已归还，感谢使用。',
+        renewSuccess: '续借成功，已延长借阅时间。',
+      },
     },
     admin: {
       layout: {
@@ -160,17 +165,24 @@ export const messages = {
         closeForm: '关闭',
         form: {
           title: '标题',
+          titleEn: '标题（英文，可选）',
           authors: '作者（用逗号分隔）',
+          authorsEn: '作者（英文，逗号分隔，可选）',
           category: '分类',
+          categoryEn: '分类（英文，可选）',
           total: '总册数',
           available: '可用册数',
           status: '状态',
           tags: '标签（逗号分隔）',
+          tagsEn: '英文标签（逗号分隔，可选）',
           isbn: 'ISBN',
           publisher: '出版社',
+          publisherEn: '出版社（英文，可选）',
           year: '出版年份',
           location: '馆藏位置',
           desc: '简介',
+          descEn: '简介（英文，可选）',
+          bilingualHint: '如需提供英文界面显示，请填写英文标题/作者/分类/出版社/简介/标签；留空则默认显示中文。',
           required: '请填写标题、作者和分类。',
           submitCreate: '创建书籍',
           submitUpdate: '保存修改',
@@ -178,7 +190,7 @@ export const messages = {
         import: {
           title: '批量导入',
           hint:
-            '下载 Excel 模板填写后上传，一次导入多本书（支持 .xlsx/.xls，兼容 CSV）。字段支持：标题、作者、分类、总册数、可用册数、状态、标签、ISBN、出版社、出版年份、位置、简介。',
+            '下载 Excel 模板填写后上传，一次导入多本书（支持 .xlsx/.xls，兼容 CSV）。字段支持：标题、英文标题、作者、英文作者、分类、英文分类、总册数、可用册数、状态、标签、英文标签、ISBN、出版社、英文出版社、出版年份、位置、简介、英文简介。',
           download: '下载模板',
           upload: '上传文件',
           uploading: '正在导入...',
@@ -352,6 +364,11 @@ export const messages = {
       return: 'Return',
       renewTip: 'Each renewal extends the due date.',
       dueDate: 'Due',
+      messages: {
+        borrowSuccess: 'Borrowed successfully. Please return on time.',
+        returnSuccess: 'Book returned. Thanks for using the library.',
+        renewSuccess: 'Renewed successfully. Due date has been extended.',
+      },
     },
     admin: {
       layout: {
@@ -397,17 +414,25 @@ export const messages = {
         closeForm: 'Close',
         form: {
           title: 'Title',
+          titleEn: 'Title (English, optional)',
           authors: 'Authors (comma separated)',
+          authorsEn: 'Authors (English, optional)',
           category: 'Category',
+          categoryEn: 'Category (English, optional)',
           total: 'Total copies',
           available: 'Available copies',
           status: 'Status',
           tags: 'Tags (comma separated)',
+          tagsEn: 'Tags (English, optional)',
           isbn: 'ISBN',
           publisher: 'Publisher',
+          publisherEn: 'Publisher (English, optional)',
           year: 'Published year',
           location: 'Location',
           desc: 'Description',
+          descEn: 'Description (English, optional)',
+          bilingualHint:
+            'Add English title/authors/category/publisher/description/tags for the English locale; leave blank to fall back to Chinese.',
           required: 'Please fill in title, authors, and category.',
           submitCreate: 'Create book',
           submitUpdate: 'Save changes',
@@ -415,7 +440,7 @@ export const messages = {
         import: {
           title: 'Bulk import',
           hint:
-            'Download the Excel template and upload after filling. Supports .xlsx/.xls, CSV compatible. Fields: title, authors, category, total copies, available copies, status, tags, ISBN, publisher, published year, location, description.',
+            'Download the Excel template and upload after filling. Supports .xlsx/.xls, CSV compatible. Fields: title, title (EN), authors, authors (EN), category, category (EN), total copies, available copies, status, tags, tags (EN), ISBN, publisher, publisher (EN), published year, location, description, description (EN).',
           download: 'Download template',
           upload: 'Upload file',
           uploading: 'Importing...',

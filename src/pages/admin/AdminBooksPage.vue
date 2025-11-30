@@ -4,10 +4,10 @@ import * as XLSX from 'xlsx'
 import { useI18n } from 'vue-i18n'
 
 import { useLibraryStore } from '@/stores/library'
-import type { BookImportResult, BookStatus } from '@/types/library'
+import type { Book, BookImportResult, BookStatus } from '@/types/library'
 
 const libraryStore = useLibraryStore()
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const editingId = ref<string | null>(null)
 const message = ref('')
@@ -21,18 +21,24 @@ const fileInputRef = ref<HTMLInputElement | null>(null)
 
 const form = reactive({
   title: '',
+  titleEn: '',
   authors: '',
+  authorsEn: '',
   category: '',
+  categoryEn: '',
   totalCopies: 1,
   availableCopies: 1,
   status: 'available' as BookStatus,
   tags: '',
+  tagsEn: '',
   isbn: '',
   publisher: '',
+  publisherEn: '',
   publishedYear: '',
   location: '',
   description: '',
   word_count: '',
+  descriptionEn: '',
 })
 
 const statusOptions: { value: BookStatus; label: string }[] = [
@@ -44,22 +50,37 @@ const statusOptions: { value: BookStatus; label: string }[] = [
 
 const books = computed(() => libraryStore.books)
 
+const titleForLocale = (book: Book) =>
+  locale.value === 'en' && book.titleEn ? book.titleEn : book.title
+
+const authorsForLocale = (book: Book) =>
+  locale.value === 'en' && book.authorsEn?.length ? book.authorsEn : book.authors || []
+
+const categoryForLocale = (book: Book) =>
+  locale.value === 'en' && book.categoryEn ? book.categoryEn : book.category
+
 const resetForm = () => {
   editingId.value = null
   Object.assign(form, {
     title: '',
+    titleEn: '',
     authors: '',
+    authorsEn: '',
     category: '',
+    categoryEn: '',
     totalCopies: 1,
     availableCopies: 1,
     status: 'available' as BookStatus,
     tags: '',
+    tagsEn: '',
     isbn: '',
     publisher: '',
+    publisherEn: '',
     publishedYear: '',
     location: '',
     description: '',
     word_count: '',
+    descriptionEn: '',
   })
 }
 
@@ -74,20 +95,25 @@ const startEdit = (bookId: string) => {
   showForm.value = true
   editingId.value = bookId
   Object.assign(form, {
-      title: book.title,
-      authors: book.authors.join(', '),
-      category: book.category,
-      totalCopies: book.totalCopies,
-      availableCopies: book.availableCopies,
-      status: book.status,
-      tags: (book.tags || []).join(', '),
-      isbn: book.isbn || '',
-      publisher: book.publisher || '',
-      publishedYear: book.publishedYear ?? '',
-      location: book.location || '',
-      description: book.description || '',
-      word_count: book.word_count ?? '',
-    })
+    title: book.title,
+    titleEn: book.titleEn || '',
+    authors: book.authors.join(', '),
+    authorsEn: (book.authorsEn || []).join(', '),
+    category: book.category,
+    categoryEn: book.categoryEn || '',
+    totalCopies: book.totalCopies,
+    availableCopies: book.availableCopies,
+    status: book.status,
+    tags: (book.tags || []).join(', '),
+    tagsEn: (book.tagsEn || []).join(', '),
+    isbn: book.isbn || '',
+    publisher: book.publisher || '',
+    publisherEn: book.publisherEn || '',
+    publishedYear: book.publishedYear ?? '',
+    location: book.location || '',
+    description: book.description || '',
+    descriptionEn: book.descriptionEn || '',
+  })
 }
 
 const parseList = (value: string) =>
@@ -99,18 +125,24 @@ const parseList = (value: string) =>
 const handleSubmit = async () => {
   const payload = {
     title: form.title.trim(),
+    titleEn: form.titleEn.trim(),
     authors: parseList(form.authors),
+    authorsEn: parseList(form.authorsEn),
     category: form.category.trim(),
+    categoryEn: form.categoryEn.trim(),
     totalCopies: Number(form.totalCopies),
     availableCopies: form.availableCopies !== null ? Number(form.availableCopies) : undefined,
     status: form.status,
     tags: parseList(form.tags),
+    tagsEn: parseList(form.tagsEn),
     isbn: form.isbn.trim() || undefined,
     publisher: form.publisher.trim() || undefined,
+    publisherEn: form.publisherEn.trim() || undefined,
     publishedYear: form.publishedYear ? Number(form.publishedYear) : undefined,
     location: form.location.trim() || undefined,
     description: form.description.trim() || undefined,
     word_count: form.word_count ? Number(form.word_count) : undefined,
+    descriptionEn: form.descriptionEn.trim() || undefined,
   }
 
   if (!payload.title || !payload.authors.length || !payload.category) {
@@ -162,31 +194,43 @@ const triggerFilePicker = () => fileInputRef.value?.click()
 const downloadTemplate = () => {
   const headers = [
     'Title',
+    'TitleEn',
     'Authors',
+    'AuthorsEn',
     'Category',
+    'CategoryEn',
     'TotalCopies',
     'AvailableCopies',
     'Status',
     'Tags',
+    'TagsEn',
     'ISBN',
     'Publisher',
+    'PublisherEn',
     'PublishedYear',
     'Location',
     'Description',
+    'DescriptionEn',
   ]
   const sample = [
     '人工智能导论',
+    'Introduction to Artificial Intelligence',
     '张三，李四',
+    'Zhang San, Li Si',
     '计算机科学',
+    'Computer Science',
     '5',
     '5',
     'available',
     'AI，教材',
+    'AI, Textbook',
     '9787111123456',
     '机械工业出版社',
+    'Mechanical Industry Press',
     `${new Date().getFullYear()}`,
     'A区-101',
     '经典的AI入门读物',
+    'A classic AI primer',
   ]
   const worksheet = XLSX.utils.aoa_to_sheet([headers, sample])
   const workbook = XLSX.utils.book_new()
@@ -311,10 +355,10 @@ onMounted(() => {
         </div>
         <div v-for="book in books" :key="book.id" class="table-row">
           <div>
-            <p class="book-title">{{ book.title }}</p>
-            <p class="book-meta">{{ book.authors.join(' / ') }}</p>
+            <p class="book-title">{{ titleForLocale(book) }}</p>
+            <p class="book-meta">{{ authorsForLocale(book).join(' / ') }}</p>
           </div>
-          <span>{{ book.category }}</span>
+          <span>{{ categoryForLocale(book) }}</span>
           <span>{{ book.availableCopies }} / {{ book.totalCopies }}</span>
           <span :class="['pill', statusBadge(book.status).className]">
             {{ statusBadge(book.status).text }}
@@ -338,17 +382,30 @@ onMounted(() => {
       </div>
 
       <form class="form" @submit.prevent="handleSubmit">
+        <p class="hint note">{{ t('admin.books.form.bilingualHint') }}</p>
         <label>
           {{ t('admin.books.form.title') }}
           <input v-model="form.title" type="text" :placeholder="t('admin.books.form.title')" required />
+        </label>
+        <label>
+          {{ t('admin.books.form.titleEn') }}
+          <input v-model="form.titleEn" type="text" :placeholder="t('admin.books.form.titleEn')" />
         </label>
         <label>
           {{ t('admin.books.form.authors') }}
           <input v-model="form.authors" type="text" :placeholder="t('admin.books.form.authors')" required />
         </label>
         <label>
+          {{ t('admin.books.form.authorsEn') }}
+          <input v-model="form.authorsEn" type="text" :placeholder="t('admin.books.form.authorsEn')" />
+        </label>
+        <label>
           {{ t('admin.books.form.category') }}
           <input v-model="form.category" type="text" :placeholder="t('admin.books.form.category')" required />
+        </label>
+        <label>
+          {{ t('admin.books.form.categoryEn') }}
+          <input v-model="form.categoryEn" type="text" :placeholder="t('admin.books.form.categoryEn')" />
         </label>
 
         <div class="two-cols">
@@ -375,6 +432,10 @@ onMounted(() => {
           {{ t('admin.books.form.tags') }}
           <input v-model="form.tags" type="text" :placeholder="t('admin.books.form.tags')" />
         </label>
+        <label>
+          {{ t('admin.books.form.tagsEn') }}
+          <input v-model="form.tagsEn" type="text" :placeholder="t('admin.books.form.tagsEn')" />
+        </label>
 
         <div class="two-cols">
           <label>
@@ -386,6 +447,11 @@ onMounted(() => {
             <input v-model="form.publisher" type="text" />
           </label>
         </div>
+
+        <label>
+          {{ t('admin.books.form.publisherEn') }}
+          <input v-model="form.publisherEn" type="text" />
+        </label>
 
         <div class="two-cols">
           <label>
@@ -408,6 +474,10 @@ onMounted(() => {
         <label>
           {{ t('admin.books.form.desc') }}
           <textarea v-model="form.description" rows="3" :placeholder="t('admin.books.form.desc')" />
+        </label>
+        <label>
+          {{ t('admin.books.form.descEn') }}
+          <textarea v-model="form.descriptionEn" rows="3" :placeholder="t('admin.books.form.descEn')" />
         </label>
 
         <button type="submit" class="primary">
@@ -654,6 +724,10 @@ select {
 .hint {
   color: #6c6f78;
   font-size: 0.95rem;
+}
+
+.note {
+  margin: 0 0 0.5rem;
 }
 
 @media (max-width: 1024px) {

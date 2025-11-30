@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import { useAuthStore } from '@/stores/auth'
 import { useLibraryStore } from '@/stores/library'
-import type { BorrowingRecord } from '@/types/library'
+import type { Book, BorrowingRecord } from '@/types/library'
 
 const authStore = useAuthStore()
 const libraryStore = useLibraryStore()
@@ -66,6 +66,9 @@ const avatarStyle = computed(() => ({
   color: '#fff',
 }))
 
+const localizedTitle = (book?: Book) =>
+  !book ? '' : locale.value === 'en' && book.titleEn ? book.titleEn : book.title
+
 const formatDate = (dateString?: string) =>
   dateString
     ? new Date(dateString).toLocaleDateString(locale.value === 'en' ? 'en-US' : 'zh-CN', {
@@ -88,7 +91,12 @@ const dueLabel = (dateString: string) => {
   return t('home.remainingDays', { days: diff })
 }
 
-const formatAuthors = (authors?: string[]) => (authors?.length ? authors.join(' / ') : '--')
+const formatAuthors = (book?: Book) => {
+  if (!book) return t('empty.noData')
+  const authors =
+    locale.value === 'en' && book.authorsEn?.length ? book.authorsEn : book.authors
+  return authors?.length ? authors.join(' / ') : t('empty.noData')
+}
 
 const formatWordCount = (count?: number): string => {
   if (!count) return '0'
@@ -179,12 +187,12 @@ watch(
       <div v-if="activeBorrowings.length" class="borrowing-grid">
         <article v-for="item in activeBorrowings" :key="item.record.id" class="borrowing-card">
           <div class="card-head">
-            <p class="book-title">{{ item.book?.title }}</p>
+            <p class="book-title">{{ localizedTitle(item.book) }}</p>
             <span class="due" :class="{ warning: daysUntil(item.record.dueDate) <= 3 }">
               {{ dueLabel(item.record.dueDate) }}
             </span>
           </div>
-          <p class="book-author">{{ formatAuthors(item.book?.authors) }}</p>
+          <p class="book-author">{{ formatAuthors(item.book) }}</p>
           <p class="book-meta">
             {{ t('buttons.borrow') }}：{{ formatDate(item.record.borrowDate) }} · {{ t('borrowings.dueDate') }}：
             {{ formatDate(item.record.dueDate) }}
@@ -224,8 +232,8 @@ watch(
       <div v-if="historyRecords.length" class="history-list">
         <article v-for="item in historyRecords" :key="item.record.id">
           <div>
-            <p class="book-title">{{ item.book?.title }}</p>
-            <p class="book-author">{{ formatAuthors(item.book?.authors) }}</p>
+            <p class="book-title">{{ localizedTitle(item.book) }}</p>
+            <p class="book-author">{{ formatAuthors(item.book) }}</p>
           </div>
           <p class="book-meta">
             {{ formatDate(item.record.borrowDate) }} — {{ formatDate(item.record.returnDate) }}
