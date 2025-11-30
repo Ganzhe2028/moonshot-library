@@ -315,8 +315,8 @@ deploy_services() {
     retry=$((retry + 1))
     warn "构建尝试 ${retry}/${max_retries}..."
     
-    # 使用--no-cache确保每次构建都是最新的
-    if $COMPOSE_BIN up -d --build --no-cache --timeout 300; then
+    # 分步执行：先构建，后启动（更可靠）
+    if $COMPOSE_BIN build --no-cache --timeout 300 && $COMPOSE_BIN up -d --timeout 300; then
       success=true
       break
     else
