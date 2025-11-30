@@ -19,6 +19,18 @@ const searchQuery = ref('')
 const statusFilter = ref<StatusFilter>('all')
 const filters: StatusFilter[] = ['all', 'available', 'borrowed', 'reserved']
 
+const localizedTitle = (book: Book) =>
+  locale.value === 'en' && book.titleEn ? book.titleEn : book.title
+
+const localizedAuthors = (book: Book) =>
+  locale.value === 'en' && book.authorsEn?.length ? book.authorsEn : book.authors || []
+
+const localizedCategory = (book: Book) =>
+  locale.value === 'en' && book.categoryEn ? book.categoryEn : book.category
+
+const localizedTags = (book: Book) =>
+  locale.value === 'en' && book.tagsEn?.length ? book.tagsEn : book.tags || []
+
 const availableCount = computed(
   () => libraryStore.books.filter((book) => book.status === 'available').length,
 )
@@ -27,14 +39,18 @@ const filteredBooks = computed(() => {
   const query = searchQuery.value.trim().toLowerCase()
 
   return libraryStore.books.filter((book) => {
-    const authors = (book.authors ?? []).join(' ').toLowerCase()
+    const authors = localizedAuthors(book).join(' ').toLowerCase()
     const isbn = book.isbn?.toLowerCase() ?? ''
+    const title = localizedTitle(book).toLowerCase()
+    const category = localizedCategory(book).toLowerCase()
+    const tags = localizedTags(book).map((tag) => tag.toLowerCase())
     const matchesQuery =
       query.length === 0 ||
-      book.title.toLowerCase().includes(query) ||
+      title.includes(query) ||
       authors.includes(query) ||
       isbn.includes(query) ||
-      book.category.toLowerCase().includes(query)
+      category.includes(query) ||
+      tags.some((tag) => tag.includes(query))
 
     const matchesStatus = statusFilter.value === 'all' || book.status === statusFilter.value
 
@@ -44,7 +60,7 @@ const filteredBooks = computed(() => {
 
 const spotlightTags = computed(() => {
   const tags = new Set<string>()
-  libraryStore.books.forEach((book) => (book.tags || []).forEach((tag) => tags.add(tag)))
+  libraryStore.books.forEach((book) => localizedTags(book).forEach((tag) => tags.add(tag)))
   return Array.from(tags).slice(0, 6)
 })
 
@@ -121,7 +137,7 @@ watch(
     <section class="status-panel" v-if="nextDue">
       <div class="status-badge">{{ t('home.nextDue') }}</div>
       <div>
-        <p class="status-title">{{ nextDue!.book.title }}</p>
+        <p class="status-title">{{ localizedTitle(nextDue!.book) }}</p>
         <p class="status-meta">
           {{ formatDate(nextDue!.record.dueDate) }} ·
           <strong>{{ t('home.remainingDays', { days: daysUntil(nextDue!.record.dueDate) }) }}</strong>

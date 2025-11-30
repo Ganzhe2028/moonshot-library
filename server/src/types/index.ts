@@ -14,18 +14,24 @@ export interface User {
 export interface Book {
   id: string;
   title: string;
+  titleEn?: string;
   authors: string[];
+  authorsEn?: string[];
   isbn?: string;
   publisher?: string;
+  publisherEn?: string;
   publishedYear?: number;
   category: string;
+  categoryEn?: string;
   description?: string;
+  descriptionEn?: string;
   coverImage?: string;
   totalCopies: number;
   availableCopies: number;
   status: 'available' | 'borrowed' | 'reserved' | 'maintenance';
   location?: string;
   tags: string[];
+  tagsEn?: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -86,18 +92,24 @@ export interface RegisterRequest {
 
 export interface BookRequest {
   title: string;
+  titleEn?: string;
   authors: string[];
+  authorsEn?: string[];
   isbn?: string;
   publisher?: string;
+  publisherEn?: string;
   publishedYear?: number;
   category: string;
+  categoryEn?: string;
   description?: string;
+  descriptionEn?: string;
   coverImage?: string;
   totalCopies: number;
   availableCopies?: number;
   status?: 'available' | 'borrowed' | 'reserved' | 'maintenance';
   location?: string;
   tags?: string[];
+  tagsEn?: string[];
 }
 
 export interface BorrowRequest {

@@ -3,18 +3,24 @@ export type BookStatus = 'available' | 'borrowed' | 'reserved' | 'maintenance'
 export interface Book {
   id: string
   title: string
+  titleEn?: string
   authors: string[]
+  authorsEn?: string[]
   isbn?: string
   publisher?: string
+  publisherEn?: string
   publishedYear?: number
   category: string
+  categoryEn?: string
   location?: string
   status: BookStatus
   description?: string
+  descriptionEn?: string
   coverImage?: string
   totalCopies: number
   availableCopies: number
   tags: string[]
+  tagsEn?: string[]
 }
 
 export interface BookImportError {

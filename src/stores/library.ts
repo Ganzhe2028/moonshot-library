@@ -1,9 +1,10 @@
 import { defineStore } from 'pinia'
-import { useAuthStore } from './auth'
 
-import type { Book, BookImportResult, BorrowingRecord } from '@/types/library'
 import { bookService } from '@/services/bookService'
 import { borrowingService } from '@/services/borrowingService'
+import type { Book, BookImportResult, BorrowingRecord } from '@/types/library'
+import { i18n } from '@/i18n'
+import { useAuthStore } from './auth'
 
 interface LibraryState {
   books: Book[]
@@ -24,11 +25,13 @@ export const useLibraryStore = defineStore('library', {
     borrowingsError: '',
   }),
   getters: {
-    getBookById: (state) => (id: string) => state.books.find((book) => book.id === id),
     activeBorrowings: (state): BorrowingRecord[] =>
       state.borrowings.filter((record) => record.status === 'active'),
     borrowingHistory: (state): BorrowingRecord[] =>
       state.borrowings.filter((record) => record.status !== 'active'),
+    getBookById: (state) => {
+      return (id: string) => state.books.find((book) => book.id === id)
+    },
     isBookBorrowedByUser(): (bookId: string) => boolean {
       return (bookId: string) => this.activeBorrowings.some((record) => record.bookId === bookId)
     },
@@ -43,9 +46,33 @@ export const useLibraryStore = defineStore('library', {
         this.books = books.map((book) => ({
           ...book,
           tags: book.tags ?? [],
+          tagsEn: book.tagsEn ?? [],
         }))
       } catch (err) {
         this.booksError = err instanceof Error ? err.message : '无法加载图书数据'
+      } finally {
+        this.booksLoading = false
+      }
+    },
+    async fetchBookById(id: string) {
+      const existing = this.getBookById(id)
+      if (existing) return existing
+
+      this.booksLoading = true
+      this.booksError = ''
+      try {
+        const book = await bookService.fetchBookById(id)
+        const normalized = { ...book, tags: book.tags ?? [], tagsEn: book.tagsEn ?? [] }
+        const index = this.books.findIndex((item) => item.id === book.id)
+        if (index >= 0) {
+          this.books.splice(index, 1, normalized)
+        } else {
+          this.books.push(normalized)
+        }
+        return normalized
+      } catch (err) {
+        this.booksError = err instanceof Error ? err.message : '无法获取图书信息'
+        return null
       } finally {
         this.booksLoading = false
       }
@@ -54,23 +81,24 @@ export const useLibraryStore = defineStore('library', {
       this.booksError = ''
       try {
         const book = await bookService.createBook(payload)
-        this.books.unshift({ ...book, tags: book.tags ?? [] })
-        return { success: true, message: '已创建新书籍。' }
+        this.books.push({ ...book, tags: book.tags ?? [], tagsEn: book.tagsEn ?? [] })
+        return { success: true, message: '书籍已创建。' }
       } catch (err) {
         const message = err instanceof Error ? err.message : '创建书籍失败'
         this.booksError = message
         return { success: false, message }
       }
     },
-    async updateBook(id: string, payload: Partial<Book>) {
+    async updateBook(id: string, payload: Omit<Book, 'id' | 'availableCopies'> & { availableCopies?: number }) {
       this.booksError = ''
       try {
         const book = await bookService.updateBook(id, payload)
+        const normalized = { ...book, tags: book.tags ?? [], tagsEn: book.tagsEn ?? [] }
         const index = this.books.findIndex((item) => item.id === id)
         if (index >= 0) {
-          this.books.splice(index, 1, { ...book, tags: book.tags ?? [] })
+          this.books.splice(index, 1, normalized)
         } else {
-          this.books.push({ ...book, tags: book.tags ?? [] })
+          this.books.push(normalized)
         }
         return { success: true, message: '书籍信息已更新。' }
       } catch (err) {
@@ -107,28 +135,6 @@ export const useLibraryStore = defineStore('library', {
         return { success: false, message }
       }
     },
-    async fetchBookById(id: string) {
-      const existing = this.getBookById(id)
-      if (existing) return existing
-
-      this.booksLoading = true
-      this.booksError = ''
-      try {
-        const book = await bookService.fetchBookById(id)
-        const index = this.books.findIndex((item) => item.id === book.id)
-        if (index >= 0) {
-          this.books[index] = book
-        } else {
-          this.books.push(book)
-        }
-        return book
-      } catch (err) {
-        this.booksError = err instanceof Error ? err.message : '无法获取图书信息'
-        return null
-      } finally {
-        this.booksLoading = false
-      }
-    },
     async fetchBorrowings(force = false) {
       const authStore = useAuthStore()
       if (!authStore.user) {
@@ -155,24 +161,34 @@ export const useLibraryStore = defineStore('library', {
         return { success: false, message: '请先登录后再借阅图书。' }
       }
 
+      const targetBook = this.getBookById(bookId)
+      if (targetBook && targetBook.status !== 'available') {
+        return { success: false, message: '该图书暂不可借阅。' }
+      }
+
       try {
-        const targetBook = this.getBookById(bookId)
-        if (!targetBook || targetBook.status !== 'available') {
-          return { success: false, message: '该图书暂不可借阅。' }
-        }
-
-        await this.fetchBorrowings(true)
-        if (this.isBookBorrowedByUser(bookId)) {
-          return { success: false, message: '你已经借阅了这本书。' }
-        }
-
         await borrowingService.borrowBook(bookId)
         await Promise.all([this.fetchBorrowings(true), this.fetchBooks(true)])
-        return { success: true, message: '借阅成功，祝你阅读愉快！' }
+        return { success: true, message: i18n.global.t('borrowings.messages.borrowSuccess') }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : '借阅失败，请稍后再试。'
+        return { success: false, message }
+      }
+    },
+    async renewBorrowing(recordId: string) {
+      const authStore = useAuthStore()
+      if (!authStore.user) {
+        return { success: false, message: '请先登录后再续借图书。' }
+      }
+
+      try {
+        await borrowingService.renewBorrowing(recordId)
+        await this.fetchBorrowings(true)
+        return { success: true, message: i18n.global.t('borrowings.messages.renewSuccess') }
       } catch (err) {
         return {
           success: false,
-          message: err instanceof Error ? err.message : '借阅失败，请稍后再试。',
+          message: err instanceof Error ? err.message : '续借失败，请稍后再试。',
         }
       }
     },
@@ -185,28 +201,11 @@ export const useLibraryStore = defineStore('library', {
       try {
         await borrowingService.returnBook(recordId)
         await Promise.all([this.fetchBorrowings(true), this.fetchBooks(true)])
-        return { success: true, message: '已归还图书。' }
+        return { success: true, message: i18n.global.t('borrowings.messages.returnSuccess') }
       } catch (err) {
         return {
           success: false,
           message: err instanceof Error ? err.message : '归还失败，请稍后再试。',
-        }
-      }
-    },
-    async renewBorrowing(recordId: string) {
-      const authStore = useAuthStore()
-      if (!authStore.user) {
-        return { success: false, message: '请先登录后再续借图书。' }
-      }
-
-      try {
-        await borrowingService.renewBorrowing(recordId)
-        await this.fetchBorrowings(true)
-        return { success: true, message: '续借成功，已延长借阅时间。' }
-      } catch (err) {
-        return {
-          success: false,
-          message: err instanceof Error ? err.message : '续借失败，请稍后再试。',
         }
       }
     },
