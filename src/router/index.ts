@@ -5,6 +5,7 @@ import HomePage from '@/pages/HomePage.vue'
 import BookDetailPage from '@/pages/BookDetailPage.vue'
 import MyBorrowingsPage from '@/pages/MyBorrowingsPage.vue'
 import LoginPage from '@/pages/LoginPage.vue'
+import RegisterPage from '@/pages/RegisterPage.vue'
 import CommunityPage from '@/pages/CommunityPage.vue'
 import AdminLayout from '@/pages/admin/AdminLayout.vue'
 import AdminAnnouncementsPage from '@/pages/admin/AdminAnnouncementsPage.vue'
@@ -30,7 +31,6 @@ const router = createRouter({
       component: MyBorrowingsPage,
       meta: { requiresAuth: true },
     },
-<<<<<<< HEAD
     {
       path: '/login',
       name: 'login',
@@ -40,11 +40,6 @@ const router = createRouter({
       path: '/register',
       name: 'register',
       component: RegisterPage,
-=======
-    { path: '/login',
-      name: 'login',
-      component: LoginPage,
->>>>>>> 龙虾的测试
     },
     { path: '/community',
       name: 'community',
