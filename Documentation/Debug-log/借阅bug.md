@@ -12,7 +12,7 @@
   2. libraryStore.borrowBook 增加本地 status 检查与借阅前的刷新，避免重复请求。
   3. 后端 createBorrowing 取消老的 userId 传参校验，自动取 req.user.id，并将“不可借”判断收敛于 book.status !== 'available'。
   4. updateBookAvailability 读取当前图书，按剩余副本数实时更新 available_copies + status（满 -> available，部分/为零 -> borrowed，维护状态保持不变）。
-  5. 前后端重新构建验证 (npm --prefix server run build、npm run build)。
+5. 前后端重新构建验证 (npm --prefix backend run build、npm run build)。
 - **结果与验证**
   - 学生借书后，老师端刷新即看到状态变为“借出”，借阅按钮也会收到 “Book is not available for borrowing” 提示。
   - 相同账号在不同浏览器操作，也会因前端 watch + store 刷新而一致显示库存状态。

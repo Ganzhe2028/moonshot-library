@@ -239,13 +239,13 @@ export HEALTH_CHECK_PATH=/health
 export TRUST_PROXY=1
 
 # 创建数据库目录并设置权限
-mkdir -p server/database
-chmod -R 755 server/database
+mkdir -p backend/database
+chmod -R 755 backend/database
 
 # Linux 环境下设置用户组（可选但推荐）
 if getent group docker > /dev/null; then
     DOCKER_GID=$(getent group docker | cut -d: -f3)
-    chown -R :$DOCKER_GID ./server/database 2>/dev/null || true
+    chown -R :$DOCKER_GID ./backend/database 2>/dev/null || true
 fi
 
 # 清理旧服务（如果需要）
@@ -367,11 +367,11 @@ df -h
 **解决方案**：
 ```bash
 # 检查数据库目录权限
-ls -la server/database
-chmod -R 755 server/database
+ls -la backend/database
+chmod -R 755 backend/database
 
 # 从备份恢复数据库（如果有）
-cp server/database/backups/library_db_backup_*.db server/database/library.db
+cp backend/database/backups/library_db_backup_*.db backend/database/library.db
 ```
 
 ### 问题：Docker 镜像拉取超时

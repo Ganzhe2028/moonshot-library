@@ -3,8 +3,8 @@ set -euo pipefail
 
 # Root paths
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-FRONT_DIR="$ROOT_DIR"
-BACK_DIR="$ROOT_DIR/server"
+FRONT_DIR="$ROOT_DIR/frontend"
+BACK_DIR="$ROOT_DIR/backend"
 SCRIPT_PID="$$"
 SCRIPT_PGID="$(ps -o pgid= "$SCRIPT_PID" | tr -d ' ')"
 CLEANED_UP=0
@@ -37,7 +37,7 @@ ensure_dependencies() {
       info "Installing frontend deps..."
       (cd "$FRONT_DIR" && npm install)
     else
-      error "Frontend dependencies missing. Run 'npm install' in project root."
+      error "Frontend dependencies missing. Run 'cd frontend && npm install'."
       exit 1
     fi
   fi
@@ -47,14 +47,14 @@ ensure_dependencies() {
       info "Installing backend deps..."
       (cd "$BACK_DIR" && npm install)
     else
-      error "Backend dependencies missing. Run 'cd server && npm install'."
+      error "Backend dependencies missing. Run 'cd backend && npm install'."
       exit 1
     fi
   fi
 }
 
 start_backend() {
-  info "Starting backend (server)..."
+  info "Starting backend..."
   (
     cd "$BACK_DIR"
     PORT="$BACK_PORT" HOST="$FORCE_HOST" npm run dev -- --host "${FORCE_HOST:-}"

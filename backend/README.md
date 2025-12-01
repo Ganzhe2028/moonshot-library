@@ -34,9 +34,9 @@ Backend server for the Moonshot Library System - a modern campus library managem
 ### Installation
 
 1. Clone the repository
-2. Navigate to the server directory:
+2. Navigate to the backend directory:
    ```bash
-   cd server
+   cd backend
    ```
 
 3. Install dependencies:
@@ -64,7 +64,7 @@ The server will start on `http://localhost:3000` (or the port specified in your 
 
 ## Environment Variables
 
-Create a `.env` file in the server directory with the following variables:
+Create a `.env` file in the backend directory with the following variables:
 
 ```env
 # Server Configuration
@@ -244,7 +244,7 @@ Manages book reservation requests
 ### Project Structure
 
 ```
-server/
+backend/
 ├── src/
 │   ├── config/          # Configuration files (including Swagger)
 │   ├── controllers/     # Request handlers

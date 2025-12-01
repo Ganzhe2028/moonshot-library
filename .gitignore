@@ -40,8 +40,10 @@ __screenshots__/
 .env.*
 !.env.example
 
-# backend
-/server/.env
-library.db
-/server/database/backups/library_db_backup_20251125_142801.db
+# backend/frontend local artifacts
+/backend/.env
+/backend/database/
+/backend/dist
+/frontend/dist
+/server/
 .trae/documents/修复借阅历史显示问题.md

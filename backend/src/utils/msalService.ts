@@ -1,6 +1,6 @@
 // 确保在导入其他模块前加载环境变量
 import dotenv from 'dotenv';
-// 明确从server目录加载.env文件
+// 明确从 backend 目录加载 .env 文件
 dotenv.config({ path: './.env' });
 
 import { AuthorizationUrlRequest, ConfidentialClientApplication, Configuration } from '@azure/msal-node';

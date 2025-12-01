@@ -14,6 +14,10 @@ NON_INTERACTIVE=${NON_INTERACTIVE:-false}
 CLEAN_VOLUMES=${CLEAN_VOLUMES:-false}
 PROJECT_NAME=${COMPOSE_PROJECT_NAME:-moonshot-library}
 COMPOSE_BIN=${COMPOSE_BIN:-docker-compose}
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Always run from repo root so relative paths are stable
+cd "$ROOT_DIR"
 
 log() { echo -e "${GREEN}$*${NC}"; }
 warn() { echo -e "${YELLOW}$*${NC}"; }
@@ -200,12 +204,13 @@ ensure_jwt() {
 }
 
 backup_database() {
-  if [ -d "./server/database" ] && [ -f "./server/database/library.db" ]; then
+  local db_dir="./backend/database"
+  if [ -d "$db_dir" ] && [ -f "$db_dir/library.db" ]; then
     warn "备份数据库..."
-    local backup_dir="./server/database/backups"
+    local backup_dir="$db_dir/backups"
     mkdir -p "$backup_dir"
     local backup_file="$backup_dir/library_db_backup_$(date +%Y%m%d_%H%M%S).db"
-    cp ./server/database/library.db "$backup_file"
+    cp "$db_dir/library.db" "$backup_file"
     log "✅ 数据库已备份到: $backup_file"
     find "$backup_dir" -name "library_db_backup_*.db" -mtime +30 -delete
   else
@@ -214,8 +219,8 @@ backup_database() {
 }
 
 create_database_directory() {
-  mkdir -p ./server/database
-  chmod -R 755 ./server/database
+  mkdir -p ./backend/database
+  chmod -R 755 ./backend/database
 }
 
 # 清理构建缓存

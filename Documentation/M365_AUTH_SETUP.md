@@ -47,7 +47,7 @@ VITE_API_BASE_URL="http://localhost:3000/api"
 
 #### 后端环境变量
 
-在 `server` 目录创建 `.env` 文件，添加以下配置：
+在 `backend` 目录创建 `.env` 文件，添加以下配置：
 
 ```env
 # 服务器配置
@@ -147,13 +147,13 @@ DATABASE_PATH="./data/library.db"
 
 ### 后端实现
 
-- **`server/src/utils/msalService.ts`**: 处理 Microsoft 365 OAuth 认证、生成登录 URL、处理回调、令牌验证和用户信息提取
-- **`server/src/utils/auth.ts`**: 处理 JWT 令牌生成和验证
-- **`server/src/controllers/authController.ts`**: 处理认证相关的 API 请求
+- **`backend/src/utils/msalService.ts`**: 处理 Microsoft 365 OAuth 认证、生成登录 URL、处理回调、令牌验证和用户信息提取
+- **`backend/src/utils/auth.ts`**: 处理 JWT 令牌生成和验证
+- **`backend/src/controllers/authController.ts`**: 处理认证相关的 API 请求
   - `msalLogin`: 生成 Microsoft 登录 URL
   - `msalCallback`: 处理 Microsoft OAuth 回调，生成 JWT token 并重定向到前端
   - `getCurrentUser`: 获取当前用户信息（用于前端回调后获取用户详情）
-- **`server/src/models/user.ts`**: 包含 `createUserFromMicrosoft` 方法，用于创建或更新 Microsoft 用户
+- **`backend/src/models/user.ts`**: 包含 `createUserFromMicrosoft` 方法，用于创建或更新 Microsoft 用户
 
 ## 错误处理
 
