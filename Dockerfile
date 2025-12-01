@@ -55,11 +55,38 @@ RUN printf 'worker_processes auto;\nuser nginx;\npid /var/run/nginx.pid;\n\neven
 # 复制构建产物到nginx
 COPY --from=build /app/dist /usr/share/nginx/html
 
-# 配置Nginx代理
+# 创建SSL证书目录
+RUN mkdir -p /etc/nginx/ssl
+
+# 配置Nginx代理 - 支持HTTPS
 RUN mkdir -p /etc/nginx/conf.d && \
-    echo 'server {' > /etc/nginx/conf.d/default.conf && \
-    echo '    listen       80;' >> /etc/nginx/conf.d/default.conf && \
-    echo '    server_name  localhost;' >> /etc/nginx/conf.d/default.conf && \
+    # HTTP 到 HTTPS 重定向配置
+    echo '# HTTP 到 HTTPS 重定向配置' > /etc/nginx/conf.d/default.conf && \
+    echo 'server {' >> /etc/nginx/conf.d/default.conf && \
+    echo '    listen 80;' >> /etc/nginx/conf.d/default.conf && \
+    echo '    listen [::]:80;' >> /etc/nginx/conf.d/default.conf && \
+    echo '    server_name localhost;' >> /etc/nginx/conf.d/default.conf && \
+    echo '    ' >> /etc/nginx/conf.d/default.conf && \
+    echo '    # 将所有HTTP请求重定向到HTTPS' >> /etc/nginx/conf.d/default.conf && \
+    echo '    return 301 https://$host$request_uri;' >> /etc/nginx/conf.d/default.conf && \
+    echo '}' >> /etc/nginx/conf.d/default.conf && \
+    echo '' >> /etc/nginx/conf.d/default.conf && \
+    echo '# HTTPS 服务器配置' >> /etc/nginx/conf.d/default.conf && \
+    echo 'server {' >> /etc/nginx/conf.d/default.conf && \
+    echo '    listen 443 ssl;' >> /etc/nginx/conf.d/default.conf && \
+    echo '    listen [::]:443 ssl;' >> /etc/nginx/conf.d/default.conf && \
+    echo '    server_name localhost;' >> /etc/nginx/conf.d/default.conf && \
+    echo '' >> /etc/nginx/conf.d/default.conf && \
+    echo '    # SSL证书配置' >> /etc/nginx/conf.d/default.conf && \
+    echo '    ssl_certificate /etc/nginx/ssl/cert.pem;' >> /etc/nginx/conf.d/default.conf && \
+    echo '    ssl_certificate_key /etc/nginx/ssl/key.pem;' >> /etc/nginx/conf.d/default.conf && \
+    echo '    ' >> /etc/nginx/conf.d/default.conf && \
+    echo '    # SSL优化配置' >> /etc/nginx/conf.d/default.conf && \
+    echo '    ssl_protocols TLSv1.2 TLSv1.3;' >> /etc/nginx/conf.d/default.conf && \
+    echo '    ssl_prefer_server_ciphers on;' >> /etc/nginx/conf.d/default.conf && \
+    echo '    ssl_ciphers "ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256";' >> /etc/nginx/conf.d/default.conf && \
+    echo '    ssl_session_timeout 1d;' >> /etc/nginx/conf.d/default.conf && \
+    echo '    ssl_session_cache shared:SSL:10m;' >> /etc/nginx/conf.d/default.conf && \
     echo '' >> /etc/nginx/conf.d/default.conf && \
     echo '    # 增加超时设置' >> /etc/nginx/conf.d/default.conf && \
     echo '    proxy_connect_timeout 600s;' >> /etc/nginx/conf.d/default.conf && \
@@ -118,12 +145,12 @@ RUN mkdir -p /etc/nginx/conf.d && \
 RUN echo "跳过构建时的nginx配置验证..."
 
 # 暴露端口
-EXPOSE 80
+EXPOSE 80 443
 
 # 启动nginx，添加详细日志
 RUN echo '#!/bin/sh' > /start.sh && \
     echo 'echo "[$(date)] 启动Nginx服务器..."' >> /start.sh && \
-    echo 'echo "服务器将在80端口启动"' >> /start.sh && \
+    echo 'echo "服务器将在80和443端口启动"' >> /start.sh && \
     echo 'nginx -t && nginx -g "daemon off;"' >> /start.sh && \
     chmod +x /start.sh
 

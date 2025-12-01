@@ -3,7 +3,6 @@ import type { Book, BookImportResult, BorrowingRecord, Rating, Comment } from '@
 import { bookService } from '@/services/bookService'
 import { borrowingService } from '@/services/borrowingService'
 import { ratingService } from '@/services/ratingService'
-import type { Book, BookImportResult, BorrowingRecord } from '@/types/library'
 import { i18n } from '@/i18n'
 import { useAuthStore } from './auth'
 

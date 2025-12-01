@@ -76,6 +76,10 @@ services:
     container_name: moonshot-library-frontend
     ports:
       - "80:80"
+      - "443:443"
+    volumes:
+      # SSL证书卷挂载，需要确保./ssl目录存在且包含证书文件
+      - ./ssl:/etc/nginx/ssl:ro
     networks:
       moonshot-network:
         ipv4_address: 172.20.0.3
@@ -91,9 +95,10 @@ services:
         soft: 65536
         hard: 65536
     healthcheck:
-      test: ["CMD", "wget", "--spider", "http://localhost"]
-      interval: 30s
-      timeout: 10s
+      # 更新健康检查URL为HTTPS
+      test: ["CMD", "curl", "--fail", "--insecure", "https://localhost"]
+      interval: 15s
+      timeout: 5s
       retries: 3
       start_period: 20s
 
