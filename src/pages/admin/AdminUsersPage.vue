@@ -1,13 +1,19 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, reactive } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useAdminStore } from '@/stores/admin'
+import { userService } from '@/services/userService'
+import type { AuthUser } from '@/types/library'
 
 const adminStore = useAdminStore()
 const { t } = useI18n()
 
 const roleFilter = ref<'all' | 'student' | 'teacher' | 'librarian' | 'admin'>('all')
+const showEditDialog = ref(false)
+const editingUser = reactive<Partial<AuthUser>>({})
+const isSaving = ref(false)
+const saveError = ref('')
 
 const users = computed(() => {
   if (roleFilter.value === 'all') return adminStore.users
@@ -23,6 +29,120 @@ const membershipBadge = (status?: string) => {
     default:
       return { text: status || t('empty.noData'), className: 'gray' }
   }
+}
+
+const openEditDialog = (user: AuthUser) => {
+  // 创建一个新的对象副本，而不是直接使用user对象
+  const userCopy = { ...user }
+
+  // 如果用户角色是admin，需要特殊处理，因为下拉框中没有admin选项
+  // 我们可以将其角色设置为默认的librarian，或者保留原始角色但在UI中处理
+  // 这里保留原始角色，但在显示时会处理不匹配的情况
+
+  Object.assign(editingUser, userCopy)
+  showEditDialog.value = true
+  saveError.value = ''
+}
+
+const closeEditDialog = () => {
+  showEditDialog.value = false
+  Object.keys(editingUser).forEach(key => {
+    delete (editingUser as Record<string, string | number | undefined>)[key]
+  })
+  saveError.value = ''
+}
+
+const validateForm = (): string | null => {
+  // 获取当前登录用户信息（这里简化处理，实际应该从auth store获取）
+  const currentUser = localStorage.getItem('user')
+  let currentUserId = ''
+  let currentUserRole = ''
+
+  try {
+    if (currentUser) {
+      const parsed = JSON.parse(currentUser)
+      currentUserId = parsed.id || ''
+      currentUserRole = parsed.role || ''
+    }
+  } catch {
+    // 忽略解析错误
+  }
+
+  // 防止管理员更改自己的角色（如果当前用户是管理员并且正在编辑自己）
+  if (currentUserRole === 'admin' && currentUserId === editingUser.id &&
+      editingUser.role && editingUser.role !== 'admin') {
+    return t('admin.users.cannotChangeOwnRole') || '不能更改自己的角色'
+  }
+
+  // 确保角色和会员状态不为空
+  if (!editingUser.role) {
+    return t('admin.users.roleRequired') || '请选择用户角色'
+  }
+
+  if (!editingUser.membership) {
+    return t('admin.users.membershipRequired') || '请选择会员状态'
+  }
+
+  // 学生角色需要年级信息
+  if (editingUser.role === 'student' && !editingUser.grade) {
+    return t('admin.users.gradeRequiredForStudent') || '学生角色需要填写年级信息'
+  }
+
+  // 验证年级格式（如果提供了年级）
+  if (editingUser.grade && !/^[0-9]{1,2}$/.test(editingUser.grade)) {
+    return t('admin.users.invalidGradeFormat') || '年级格式无效，请输入1-2位数字'
+  }
+
+  return null
+}
+
+const saveUserChanges = async () => {
+  if (!editingUser.id) return
+
+  // 表单验证
+  const validationError = validateForm()
+  if (validationError) {
+    saveError.value = validationError
+    return
+  }
+
+  isSaving.value = true
+  saveError.value = ''
+  try {
+    // 准备更新参数，对于admin用户不更新角色
+    const updateParams: any = {
+      membership: editingUser.membership,
+      grade: editingUser.grade
+    }
+
+    // 只有当用户不是admin时才更新角色
+    if (editingUser.role !== 'admin') {
+      updateParams.role = editingUser.role
+    }
+
+    const updatedUser = await userService.updateUser(editingUser.id, updateParams)
+
+    // 更新本地用户列表
+    const index = adminStore.users.findIndex(u => u.id === updatedUser.id)
+    if (index !== -1) {
+      adminStore.users[index] = updatedUser
+    }
+
+    closeEditDialog()
+  } catch (error) {
+      // 提供更友好的错误信息和回退文本
+      if (error instanceof Error) {
+        if (error.message.includes('权限') || error.message.includes('Permission')) {
+          saveError.value = t('admin.users.permissionDenied') || '没有权限执行此操作'
+        } else {
+          saveError.value = error.message
+        }
+      } else {
+        saveError.value = t('admin.users.updateFailed') || '更新用户信息失败'
+      }
+    } finally {
+      isSaving.value = false
+    }
 }
 
 const reload = () => adminStore.fetchUsers(true)
@@ -70,10 +190,68 @@ onMounted(() => {
           {{ membershipBadge(user.membership).text }}
         </span>
         <span>{{ user.grade || '--' }}</span>
+        <button type="button" class="ghost small" @click="openEditDialog(user)">
+          {{ t('admin.edit') }}
+        </button>
       </div>
       <p v-if="!users.length" class="hint">{{ t('empty.noData') }}</p>
     </div>
   </section>
+
+  <!-- 编辑用户对话框 -->
+  <div v-if="showEditDialog" class="modal-overlay" @click.self="closeEditDialog">
+    <div class="dialog">
+      <div class="dialog-header">
+        <h3>{{ t('admin.editUser') }}: {{ editingUser.name }}</h3>
+        <button type="button" class="close-button" @click="closeEditDialog">×</button>
+      </div>
+
+      <div class="dialog-content">
+        <div v-if="saveError" class="alert error">{{ saveError }}</div>
+
+        <div class="form-group">
+          <label>{{ t('auth.role') }}</label>
+          <!-- 为admin用户显示特殊选项，但不允许修改 -->
+          <div v-if="editingUser.role === 'admin'" class="form-group-readonly">
+            <span class="role-display">{{ t('auth.role') }}: Admin</span>
+            <small class="readonly-hint">{{ t('admin.users.cannotEditAdminRole') || '管理员角色不能被修改' }}</small>
+          </div>
+          <select v-else v-model="editingUser.role" :disabled="isSaving">
+            <option value="student">{{ t('auth.student') }}</option>
+            <option value="teacher">{{ t('auth.teacher') }}</option>
+            <option value="librarian">{{ t('auth.librarian') }}</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>{{ t('admin.users.membership') }}</label>
+          <select v-model="editingUser.membership" :disabled="isSaving">
+            <option value="active">{{ t('admin.users.membershipActive') }}</option>
+            <option value="suspended">{{ t('admin.users.membershipSuspended') }}</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>{{ t('auth.grade') }}</label>
+          <input
+            type="text"
+            v-model="editingUser.grade"
+            :disabled="isSaving"
+            placeholder="{{ t('admin.users.gradePlaceholder') || '如：1-12' }}"
+          />
+        </div>
+      </div>
+
+      <div class="dialog-actions">
+        <button type="button" class="ghost" @click="closeEditDialog" :disabled="isSaving">
+          {{ t('admin.cancel') }}
+        </button>
+        <button type="button" @click="saveUserChanges" :disabled="isSaving">
+          {{ isSaving ? t('admin.saving') : t('admin.save') }}
+        </button>
+      </div>
+    </div>
+  </div>
 </template>
 
 <style scoped>
@@ -123,6 +301,17 @@ select {
   border-radius: 10px;
   padding: 0.5rem 0.8rem;
   color: #1f1f25;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ghost:hover {
+  background: rgba(15, 17, 21, 0.08);
+}
+
+.ghost.small {
+  padding: 0.3rem 0.6rem;
+  font-size: 0.85rem;
 }
 
 .table {
@@ -134,7 +323,7 @@ select {
 .table-head,
 .table-row {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr;
+  grid-template-columns: 2fr 1fr 1fr 1fr auto;
   gap: 0.6rem;
   align-items: center;
 }
@@ -203,7 +392,147 @@ select {
 @media (max-width: 768px) {
   .table-head,
   .table-row {
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   }
+}
+
+/* 模态框样式 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.dialog {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid rgba(15, 17, 21, 0.05);
+}
+
+.dialog-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  color: #6c6f78;
+  padding: 0.2rem;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.close-button:hover {
+  background: rgba(15, 17, 21, 0.05);
+  color: #1f1f25;
+}
+
+.dialog-content {
+  padding: 1.25rem;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.form-group select,
+.form-group input {
+  width: 100%;
+  padding: 0.7rem;
+  border: 1px solid rgba(15, 17, 21, 0.1);
+  border-radius: 8px;
+  font-size: 0.95rem;
+  background: white;
+}
+
+.form-group-readonly {
+  padding: 0.7rem;
+  background-color: rgba(15, 17, 21, 0.05);
+  border-radius: 8px;
+  border: 1px solid rgba(15, 17, 21, 0.1);
+}
+
+.role-display {
+  font-weight: 500;
+  display: block;
+}
+
+.readonly-hint {
+  color: #6c6f78;
+  font-size: 0.8rem;
+  display: block;
+  margin-top: 0.25rem;
+}
+
+.form-group select:focus,
+.form-group input:focus {
+  outline: none;
+  border-color: rgba(15, 17, 21, 0.3);
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  border-top: 1px solid rgba(15, 17, 21, 0.05);
+}
+
+.dialog-actions button {
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dialog-actions button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.dialog-actions button:not(.ghost) {
+  background: #1f1f25;
+  color: white;
+  border: none;
+}
+
+.dialog-actions button:not(.ghost):hover:not(:disabled) {
+  background: #374151;
 }
 </style>
