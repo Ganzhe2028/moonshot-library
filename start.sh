@@ -5,6 +5,9 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FRONT_DIR="$ROOT_DIR"
 BACK_DIR="$ROOT_DIR/server"
+SCRIPT_PID="$$"
+SCRIPT_PGID="$(ps -o pgid= "$SCRIPT_PID" | tr -d ' ')"
+CLEANED_UP=0
 
 # Runtime options
 AUTO_INSTALL=${AUTO_INSTALL:-true}
@@ -72,17 +75,31 @@ start_frontend() {
   info "Frontend PID $FRONT_PID (group $FRONT_PGID)"
 }
 
+stop_service() {
+  local pid=${1:-}
+  local pgid=${2:-}
+
+  # Avoid killing our own process group to prevent recursive traps
+  if [ -n "$pgid" ] && [ "$pgid" != "$SCRIPT_PGID" ]; then
+    kill -TERM "-${pgid}" 2>/dev/null || true
+  elif [ -n "$pid" ]; then
+    kill -TERM "${pid}" 2>/dev/null || true
+  fi
+}
+
 cleanup() {
+  if [ "$CLEANED_UP" -eq 1 ]; then
+    return
+  fi
+  CLEANED_UP=1
+  trap - EXIT INT TERM
+
   echo ""
   echo "🛑 Shutting down servers..."
 
   # Kill whole process groups to avoid orphaned children
-  if [ -n "${BACK_PGID:-}" ]; then
-    kill -TERM "-${BACK_PGID}" 2>/dev/null || true
-  fi
-  if [ -n "${FRONT_PGID:-}" ]; then
-    kill -TERM "-${FRONT_PGID}" 2>/dev/null || true
-  fi
+  stop_service "${BACK_PID:-}" "${BACK_PGID:-}"
+  stop_service "${FRONT_PID:-}" "${FRONT_PGID:-}"
 
   wait 2>/dev/null || true
   echo "✅ All services stopped."
