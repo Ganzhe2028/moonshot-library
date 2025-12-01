@@ -68,6 +68,34 @@ const saveCommunityPosts = (posts: CommunityPost[]) => {
   localStorage.setItem('communityPosts', JSON.stringify(posts))
 }
 
+const POST_LIKES_KEY = 'postLikes'
+
+const getAllUserLikes = (): Record<string, string[]> => {
+  try {
+    const stored = localStorage.getItem(POST_LIKES_KEY)
+    if (!stored) return {}
+    const parsed = JSON.parse(stored)
+    return typeof parsed === 'object' && parsed !== null ? parsed : {}
+  } catch (error) {
+    console.error('解析点赞数据失败:', error)
+    return {}
+  }
+}
+
+export const getUserLikedPostIds = (userId: string): string[] => {
+  if (!userId) return []
+  const allLikes = getAllUserLikes()
+  const likes = allLikes[userId]
+  return Array.isArray(likes) ? likes : []
+}
+
+const saveUserLikedPostIds = (userId: string, postIds: string[]) => {
+  if (!userId) return
+  const allLikes = getAllUserLikes()
+  allLikes[userId] = Array.isArray(postIds) ? postIds : []
+  localStorage.setItem(POST_LIKES_KEY, JSON.stringify(allLikes))
+}
+
 // 获取评论数据
 const getComments = (type: 'book' | 'post', id: string): Comment[] => {
   try {
@@ -334,5 +362,50 @@ export const fetchAllComments = async (): Promise<Array<{ post: CommunityPost, c
   } catch (error) {
     console.error('获取所有评论失败:', error)
     return []
+  }
+}
+
+/**
+ * 切换社区动态点赞状态
+ */
+export const togglePostLike = async (
+  postId: string,
+  userId: string
+): Promise<{ likes: number, liked: boolean }> => {
+  try {
+    if (!postId || !userId) {
+      throw new Error('无效的动态或用户信息')
+    }
+
+    const posts = getCommunityPosts()
+    const index = posts.findIndex(post => post.id === postId)
+
+    if (index === -1 || !posts[index]) {
+      throw new Error('社区动态不存在')
+    }
+
+    const likedPostIds = new Set(getUserLikedPostIds(userId))
+    const alreadyLiked = likedPostIds.has(postId)
+    const currentLikes = posts[index].likes || 0
+
+    const updatedLikes = alreadyLiked ? Math.max(0, currentLikes - 1) : currentLikes + 1
+    if (alreadyLiked) {
+      likedPostIds.delete(postId)
+    } else {
+      likedPostIds.add(postId)
+    }
+
+    posts[index] = {
+      ...posts[index],
+      likes: updatedLikes
+    }
+
+    saveCommunityPosts(posts)
+    saveUserLikedPostIds(userId, Array.from(likedPostIds))
+
+    return { likes: updatedLikes, liked: !alreadyLiked }
+  } catch (error) {
+    console.error('切换点赞状态失败:', error)
+    throw error
   }
 }
