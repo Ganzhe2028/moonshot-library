@@ -1,8 +1,17 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import type { Comment } from '@/types/library'
-import { fetchPostComments, addPostComment, deletePostComment } from '@/services/communityService'
+import type { CommunityPost } from '@/services/communityService'
+import {
+  fetchCommunityPosts,
+  createCommunityPost,
+  togglePostLike,
+  fetchPostComments,
+  addPostComment,
+  deletePostComment,
+  getUserLikedPostIds
+} from '@/services/communityService'
 
 // 定义本地类型接口
 interface User {
@@ -11,18 +20,6 @@ interface User {
   email?: string
   total_words_read?: number
   avatarColor?: string
-}
-
-interface CommunityPost {
-  id: string
-  userId: string
-  userName: string
-  userAvatar: string
-  content: string
-  images: string[]
-  likes: number
-  comments: number
-  createdAt: string
 }
 
 interface Announcement {
@@ -42,30 +39,9 @@ const readingStars = ref<User[]>([])
 const loadingStars = ref(true)
 
 // UGC动态数据
-const communityPosts = ref<CommunityPost[]>([
-  {
-    id: '1',
-    userId: '1',
-    userName: '张小明',
-    userAvatar: '#3b82f6',
-    content: '最近读完了《百年孤独》，马尔克斯的魔幻现实主义手法令人惊叹，时间的循环往复和家族命运的交织让人深思。',
-    images: [],
-    likes: 23,
-    comments: 5,
-    createdAt: '2024-01-15T10:30:00Z'
-  },
-  {
-    id: '2',
-    userId: '2',
-    userName: '李华',
-    userAvatar: '#ef4444',
-    content: '分享一下我的读书笔记，最近读了《人类简史》，对历史发展的脉络有了新的理解。',
-    images: ['book1.jpg'],
-    likes: 18,
-    comments: 3,
-    createdAt: '2024-01-14T15:20:00Z'
-  }
-])
+const communityPosts = ref<CommunityPost[]>([])
+const likedPostIds = ref<string[]>([])
+const loadingCommunity = ref(true)
 
 // 公告数据
 const announcements = ref<Announcement[]>([
@@ -126,6 +102,28 @@ const handleImageUpload = (event: Event) => {
 const removeImage = (index: number) => {
   newPostImages.value.splice(index, 1)
 }
+
+// 加载社区动态
+const loadCommunityPosts = async () => {
+  loadingCommunity.value = true
+  try {
+    communityPosts.value = await fetchCommunityPosts()
+  } catch (error) {
+    console.error('加载社区动态失败:', error)
+    communityPosts.value = []
+  } finally {
+    loadingCommunity.value = false
+  }
+}
+
+// 刷新当前用户的点赞记录
+const refreshUserLikes = () => {
+  const userId = currentUser.value?.id
+  likedPostIds.value = userId ? getUserLikedPostIds(userId) : []
+}
+
+// 判断动态是否已被当前用户点赞
+const isPostLiked = (postId: string): boolean => likedPostIds.value.includes(postId)
 
 // 获取阅读之星排行榜
 const fetchReadingStars = async () => {
@@ -214,22 +212,21 @@ const generateAvatarColor = (): string => {
 // 发布新动态
 const publishPost = async () => {
   if (!newPostContent.value.trim() && newPostImages.value.length === 0) return
+  if (!isLoggedIn.value || !currentUser.value) {
+    alert('请先登录后再发布动态')
+    return
+  }
 
   loadingPosts.value = true
   try {
-    const newPost: CommunityPost = {
-      id: Date.now().toString(),
-      userId: currentUser.value?.id || '',
-      userName: currentUser.value?.name || '匿名用户',
-      userAvatar: currentUser.value?.avatarColor || '#6b7280',
+    const newPost = await createCommunityPost({
+      userId: currentUser.value.id,
+      userName: currentUser.value.name || '匿名用户',
+      userAvatar: currentUser.value.avatarColor || '#6b7280',
       content: newPostContent.value,
-      images: [...newPostImages.value],
-      likes: 0,
-      comments: 0,
-      createdAt: new Date().toISOString()
-    }
+      images: [...newPostImages.value]
+    })
 
-    // 模拟API调用，实际应该发送到服务器
     communityPosts.value.unshift(newPost)
 
     // 重置表单
@@ -259,6 +256,31 @@ const formatDate = (dateString?: string): string => {
     return `${diffDays}天前`
   } else {
     return date.toLocaleDateString()
+  }
+}
+
+// 切换点赞
+const toggleLike = async (postId: string) => {
+  if (!isLoggedIn.value || !currentUser.value) {
+    alert('请先登录后再点赞')
+    return
+  }
+
+  try {
+    const { likes, liked } = await togglePostLike(postId, currentUser.value.id)
+    const postIndex = communityPosts.value.findIndex(post => post.id === postId)
+
+    if (postIndex !== -1 && communityPosts.value[postIndex]) {
+      communityPosts.value[postIndex].likes = likes
+    }
+
+    if (liked && !likedPostIds.value.includes(postId)) {
+      likedPostIds.value.push(postId)
+    } else if (!liked && likedPostIds.value.includes(postId)) {
+      likedPostIds.value = likedPostIds.value.filter(id => id !== postId)
+    }
+  } catch (error) {
+    console.error('点赞失败:', error)
   }
 }
 
@@ -362,6 +384,8 @@ const formatWordCount = (count?: number): string => {
 
 onMounted(() => {
   fetchReadingStars()
+  refreshUserLikes()
+  loadCommunityPosts()
 
   // 设置定时刷新，每30秒更新一次排行榜数据
   const refreshInterval = setInterval(() => {
@@ -372,6 +396,10 @@ onMounted(() => {
   onUnmounted(() => {
     clearInterval(refreshInterval)
   })
+})
+
+watch(currentUser, () => {
+  refreshUserLikes()
 })
 </script>
 
@@ -471,7 +499,10 @@ onMounted(() => {
         <!-- 社区动态列表 -->
         <section class="posts">
           <h2 class="section-title">社区动态</h2>
-          <div v-if="communityPosts.length === 0" class="empty">
+          <div v-if="loadingCommunity" class="loading">
+            加载中...
+          </div>
+          <div v-else-if="communityPosts.length === 0" class="empty">
             <p>暂无动态，快来发布第一条吧！</p>
           </div>
           <div v-else class="post-list">
@@ -490,7 +521,12 @@ onMounted(() => {
                 <img v-for="(img, index) in post.images" :key="index" :src="img" alt="Post image">
               </div>
               <div class="post-actions">
-                <button type="button" class="action-btn">
+                <button
+                  type="button"
+                  class="action-btn"
+                  :class="{ active: isPostLiked(post.id) }"
+                  @click="toggleLike(post.id)"
+                >
                   👍 {{ post.likes }}
                 </button>
                 <button
@@ -895,6 +931,11 @@ textarea:focus {
 
 .action-btn:hover {
   color: #6366f1;
+}
+
+.action-btn.active {
+  color: #6366f1;
+  font-weight: 600;
 }
 
 /* 评论相关样式 */
