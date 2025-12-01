@@ -1,180 +1,112 @@
-# Moonshot Library System · 新手入门指南
+# Moonshot Library System
 
-Moonshot Library 是一个“前端 + 后端”分离的校园图书馆管理系统。你会接触到两个主要部分：
-
-- **前端**：Vue 3 + Vite + TypeScript，负责界面和交互（位于 `frontend/`）。
-- **后端**：Express.js + TypeScript + SQLite，负责 API、鉴权和数据（位于 `backend/`）。
-
-本指南面向新手程序员，按照如下顺序带你一步步完成环境搭建、运行和探索。
+面向校园的前后端分离图书馆系统。代码已拆分为 `frontend/`（Vue 3 + Vite + TS）与 `backend/`（Express + TS + SQLite），根目录仅保留项目级脚本、Docker 配置与设计类文档。
 
 ---
 
-## 1. 为什么选择这个项目？
-
-- 🧩 **真实业务**：多角色（管理员/馆员/老师/学生）权限、图书 CRUD、借阅流程等完整功能。
-- 🪪 **安全实践**：JWT 鉴权、速率限制、输入校验、Helmet 安全头。
-- 🧠 **技术栈现代**：TypeScript 全覆盖、Vite 极速开发体验、SQLite 轻量数据库。
-- 🧪 **自带测试与文档**：API 文档、自动化测试脚本帮助你理解接口行为。
-
----
-
-## 2. 技术栈速览
-
-| 部分 | 主技术 | 说明 |
-| --- | --- | --- |
-| 前端 | Vue 3、Pinia、Vue Router、Vite | 现代前端脚手架，热更新体验优秀 |
-| 后端 | Node.js、Express.js、TypeScript | 负责 API、认证、业务逻辑 |
-| 数据 | SQLite3 | 免安装数据库，适合本地学习 |
-| 工具 | ESLint、Prettier、npm-run-all2 | 代码质量与并行脚本支持 |
-
----
-
-## 3. 快速体验（建议一步步来）
-
-```Quick Start
-cd frontend && npm install && npm run dev   # 终端1：前端
-cd backend && npm install && npm run dev    # 终端2：后端
-```
-
-
-> ❗️在动手之前，请先安装 **Node.js 20+**（前端要求更高版本，后端兼容 16+，统一使用 20 可以避免问题）。
-
-1. **克隆仓库**
-   ```bash
-   git clone <repository-url>
-   cd moonshot-library
-   ```
-
-2. **安装依赖**
-   ```bash
-   cd frontend && npm install
-   cd ../backend && npm install
-   ```
-
-3. **配置后端环境变量**
-   ```bash
-   cd backend
-   cp .env.example .env
-   ```
-   - 根据注释修改 `.env`（如 JWT 密钥、端口、前端地址、借阅策略等）。
-   - 默认数据库位置为 `backend/database/library.db`，初学者无需改动。
-
-4. **初始化数据库（仅首次）**
-   ```bash
-   cd backend
-   npm run init-db
-   ```
-
-5. **启动后端**
-   ```bash
-   cd backend
-   npm run dev
-   ```
-   - 默认运行在 `http://localhost:3000`，终端会输出 API 日志。
-
-6. **启动前端**
-   ```bash
-   # 新开一个终端
-   cd frontend
-   npm run dev
-   ```
-   - Vite 会提示访问地址，一般是 `http://localhost:5173`。
-
-7. **验证一切正常**
-   - 浏览器访问前端地址，尝试登录/浏览图书。
-- 如需查看 API 列表，进入 `backend/API_DOCUMENTATION.md` 或访问 Swagger（若已暴露）。
-
----
-
-## 4. 项目结构（删繁就简）
-
+## 目录速览
 ```
 moonshot-library/
-├── frontend/           # 前端源代码（Vue 3 + Vite + TS）
-│   ├── src/components  # 复用组件
-│   ├── src/pages       # 页面视图
-│   ├── src/stores      # Pinia 状态
-│   ├── src/services    # 与后端交互的请求封装
-│   └── src/router      # 前端路由配置
-├── backend/            # 后端项目（Express + TS + SQLite）
-│   ├── src/controllers # 处理请求的控制器
-│   ├── src/models      # 数据访问层
-│   ├── src/routes      # 路由定义
-│   ├── src/middleware  # 鉴权/校验等中间件
-│   └── src/scripts     # 初始化数据库、测试脚本
+├── frontend/           # 前端
+├── backend/            # 后端
 ├── Documentation/      # 设计/复盘等非技术文档
-└── readme.md           # 你正在阅读的指南
+├── docker-compose.yml  # 项目级容器编排
+├── start.sh            # 一键本地前后端启动脚本
+└── deploy-docker.sh    # 生产部署脚本
 ```
 
 ---
 
-## 5. 常用脚本速查
+## 运行前准备
+- Node.js 20+（建议统一前后端版本）
+- npm（或兼容的包管理器）
+- 若用 Docker 部署：Docker + Docker Compose
 
-| 位置 | 命令 | 用途 |
+---
+
+## 本地快速启动
+**方式 1：一键脚本（推荐）**
+```bash
+./start.sh                # 自动安装依赖、启动前后端（默认 5173/3000）
+# 环境变量：FRONT_PORT=5174 BACK_PORT=4000 HOST=0.0.0.0 AUTO_INSTALL=true
+```
+
+**方式 2：手动分终端**
+```bash
+cd frontend && npm install && npm run dev   # 终端1：前端 http://localhost:5173
+cd backend  && npm install && npm run dev   # 终端2：后端 http://localhost:3000
+```
+
+---
+
+## 后端环境变量（backend/.env）
+```env
+PORT=3000
+FRONTEND_URL=http://localhost:5173
+DB_PATH=./database/library.db
+JWT_SECRET=please_change_me
+JWT_EXPIRES_IN=24h
+REFRESH_TOKEN_SECRET=please_change_me_too
+MSAL_CLIENT_ID=...
+MSAL_CLIENT_SECRET=...
+MSAL_REDIRECT_URI=http://localhost:3000/api/auth/msal/callback
+```
+> 模板参考 `backend/.env.example`（若缺失可自建）。
+
+数据库首次初始化：
+```bash
+cd backend
+npm run init-db
+```
+
+---
+
+## 常用命令
+| 位置 | 命令 | 说明 |
 | --- | --- | --- |
-| frontend/ | `npm run dev` | 启动前端开发服务器 |
-| frontend/ | `npm run build` | 构建前端产物（`dist/`） |
-| frontend/ | `npm run type-check` | 前端 TypeScript 检查 |
-| frontend/ | `npm run lint` | 前端 ESLint + Prettier |
-| backend/ | `npm run dev` | 启动后端（ts-node-dev 热重载） |
-| backend/ | `npm run build && npm start` | 编译并运行后端生产版本 |
-| backend/ | `npm run init-db` | 初始化SQLite数据库并创建核心表结构，在数据库为空时自动填充示例图书数据，同时创建三种角色的演示账户（学生、教师、图书管理员） |
-| backend/ | `npm run setup-test` | 准备测试数据 |
-| backend/ | `npm test` / `npm run test:watch` | 运行 API 测试 |
-| backend/ | `npm run lint` | 后端 ESLint 检查 |
-| 根目录 | `./start.sh` | 一键启动前后端开发（自动安装依赖，可配置端口） |
+| frontend/ | `npm run dev` | 前端开发服 |
+| frontend/ | `npm run build` | 生成 `frontend/dist` |
+| frontend/ | `npm run type-check` / `npm run lint` | TS 检查 / ESLint+Prettier |
+| backend/ | `npm run dev` | 后端热重载 |
+| backend/ | `npm run build && npm start` | 编译并运行生产版本 |
+| backend/ | `npm run init-db` | 初始化 SQLite 并灌入示例数据 |
+| backend/ | `npm run setup-test` / `npm test` | 预置测试数据 / 运行 API 测试 |
+| backend/ | `npm run lint` | 后端 ESLint |
+| 根目录 | `./start.sh` | 一键本地前后端 |
+| 根目录 | `docker compose up -d` | 按 `docker-compose.yml` 启动前后端容器 |
 
 ---
 
-## 6. API 与数据
-
-- 📄 **API 文档**：`backend/API_DOCUMENTATION.md`（涵盖认证、图书、借阅等所有端点）  
-- 🗄️ **数据库**：默认 SQLite 文件位于 `backend/database/`，测试脚本会自动创建所需表。  
-- 🔑 **用户角色**：Admin → Librarian → Teacher/Student，权限逐级递减，可在 API 文档中查看每个角色能做什么。  
-- ✅ **测试**：先运行 `npm run setup-test` 填充数据，再执行 `npm test` 验证主要流程。  
-- 🔐 **M365 SSO 登录**：支持使用 Microsoft 365 账户登录，配置说明详见 `M365_AUTH_SETUP.md`
+## Docker/部署要点
+- 根目录 `docker-compose.yml`：前端构建上下文 `./frontend`，后端 `./backend`，数据库挂载 `./backend/database`。
+- 生产部署：`deploy-docker.sh`（可选备份 SQLite、检测端口/资源）。
+- SSL 证书：若使用内置 Nginx，挂载 `./frontend/ssl` 到容器 `/etc/nginx/ssl`。
 
 ---
 
-## 7. 新手学习路线（可按需挑选）
-
-1. **理解请求流程**  
-   - 打开浏览器开发者工具，观察前端发出的 API 请求与响应。
-   - 对照 `backend/src/routes` 和 `controllers` 查看后端如何处理请求。
-
-2. **阅读数据模型**  
-   - `backend/src/models` 展示了 SQLite 查询语句和业务字段，适合理解数据库结构。
-
-3. **尝试扩展**  
-   - 在前端 `services` 里新增一个 API 封装，再在 `pages` 中调用它。
-   - 在后端新增一个简单路由（例如“系统状态”），并在 Postman 里测试。
-
-4. **运行测试并调试失败用例**  
-   - 分析 `backend/src/scripts/apiTest.ts`，了解如何使用 axios 进行端到端测试。
-
-5. **安全思维**  
-   - 阅读 `middleware` 中的鉴权、速率限制、输入校验代码，理解为什么要这样做。
+## 文档与学习路径
+- API/数据库/技术文档：见 `backend/`（如 `backend/API_DOCUMENTATION.md`）。
+- 设计/复盘/需求：见 `Documentation/`。
+- 学习建议：
+  1) 观察前端请求 → 对照 `backend/src/routes`、`controllers`。
+  2) 阅读 `backend/src/models` 了解数据结构与索引。
+  3) 跑通 `npm run setup-test && npm test` 熟悉主流程。
+  4) 按需扩展：前端在 `src/services` 封装接口，后端添加路由+控制器。
 
 ---
 
-## 8. 常见问题 & 排障
-
-- **Node 版本不一致**：确保前端/根目录使用 Node 20+，后端也能兼容该版本。`node -v` 检查，必要时使用 nvm 切换。  
-- **无法连接数据库**：确认已运行 `npm run init-db`，并检查 `.env` 中的 `DATABASE_PATH` 是否指向 `./data/library.db`。  
-- **前后端 CORS 报错**：`.env` 中 `FRONTEND_URL` 需与 Vite 真正的访问地址一致（含协议和端口）。  
-- **JWT 报错或登录失败**：确保 `.env` 中的 `JWT_SECRET`、`REFRESH_TOKEN_SECRET` 不为空，并重新启动后端。  
-- **测试脚本失败**：先运行 `npm run setup-test`，确保数据库有基础数据，再执行 `npm test`。  
+## 常见问题
+- 端口被占用：设置 `FRONT_PORT` / `BACK_PORT`，或关闭占用进程。
+- CORS 问题：确认 `backend/.env` 的 `FRONTEND_URL` 与实际前端地址一致。
+- 登录/JWT 失败：检查 `JWT_SECRET` / `REFRESH_TOKEN_SECRET`，重启后端。
+- 数据库找不到：确认 `backend/database/` 可写，必要时重新 `npm run init-db`。
 
 ---
 
-## 9. 贡献 & 支持
+## 贡献指南
+1) Fork & 分支开发  
+2) 完善测试（前端：type-check/lint；后端：lint/test）  
+3) 提交前确保脚本通过  
+4) PR 时附上变更说明与测试结果
 
-1. Fork → 创建分支 → 开发 → 补充测试 → `npm run lint` / `npm test` → 提交 PR。  
-2. 有问题可：
-   - 查看 `backend/README.md` 与 `backend/API_DOCUMENTATION.md` 获取更详细的后端说明；
-   - 在 Issues 中描述你的使用场景与报错；
-   - 阅读测试脚本或 `Documentation/` 目录寻找答案。
-
----
-
-祝使用愉快，欢迎你把 Moonshot Library 当作练手项目，也可以把它部署到自己的校园或社团中继续打磨！ 🚀
+欢迎你把 Moonshot Library 部署到校园环境继续打磨！ 🚀
