@@ -42,5 +42,6 @@ __screenshots__/
 
 # backend
 /server/.env
-/server/database/library.db
+library.db
 /server/database/backups/library_db_backup_20251125_142801.db
+.trae/documents/修复借阅历史显示问题.md

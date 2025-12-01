@@ -209,9 +209,9 @@ export const useLibraryStore = defineStore('library', {
       }
 
       try {
-        await borrowingService.returnBook(recordId)
+        await borrowingService.renewBorrowing(recordId)
         await Promise.all([this.fetchBorrowings(true), this.fetchBooks(true)])
-        return { success: true, message: i18n.global.t('borrowings.messages.returnSuccess') }
+        return { success: true, message: i18n.global.t('borrowings.messages.renewSuccess') }
       } catch (err) {
         return {
           success: false,
