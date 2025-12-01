@@ -4,6 +4,12 @@
 
 ---
 
+**⚠️注意：**
+1. **每次开发前都需要 AI Agent** 阅读：`Documentation/README-BEFORE-DEV-EN.md`。
+2. 第一次以及往后若本文档有所变动，`README-BEFORE-DEV`的两个版本文档有所变动，以及在提交/更新说明/release等处声明时，也请您再次仔细阅读。
+
+---
+
 ## 目录速览
 ```
 moonshot-library/
