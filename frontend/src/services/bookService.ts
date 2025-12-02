@@ -1,6 +1,6 @@
 import type { Book, BookImportResult } from '@/types/library'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api'
 
 class BookService {
   private getHeaders(includeJson = true): Record<string, string> {
