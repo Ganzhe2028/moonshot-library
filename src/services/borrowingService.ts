@@ -2,6 +2,12 @@ import type { BorrowingRecord } from '@/types/library'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
 
+export interface UpdateBorrowingParams {
+  borrowDate?: string; // ISO格式日期时间，支持精确到秒
+  dueDate?: string;
+  status?: 'active' | 'returned' | 'overdue';
+}
+
 class BorrowingService {
   private getHeaders(): Record<string, string> {
     const token = localStorage.getItem('token')
@@ -36,12 +42,12 @@ class BorrowingService {
     const query = searchParams.toString()
     const url = `${API_BASE_URL}/borrowings${query ? `?${query}` : ''}`
 
-    const data = await this.request<{ borrowings: BorrowingRecord[] }>(url, {
+    const data = await this.request<{ records: BorrowingRecord[] }>(url, {
       method: 'GET',
       headers: this.getHeaders(),
     })
 
-    return data.borrowings ?? []
+    return data.records ?? []
   }
 
   async borrowBook(bookId: string): Promise<BorrowingRecord> {
@@ -114,6 +120,23 @@ class BorrowingService {
       {
         method: 'PUT',
         headers: this.getHeaders(),
+      },
+    )
+
+    return data.borrowing
+  }
+
+  // 更新借阅记录
+  async updateBorrowingRecord(
+    borrowingId: string,
+    params: UpdateBorrowingParams
+  ): Promise<BorrowingRecord> {
+    const data = await this.request<{ borrowing: BorrowingRecord }>(
+      `${API_BASE_URL}/borrowings/${borrowingId}`,
+      {
+        method: 'PUT',
+        headers: this.getHeaders(),
+        body: JSON.stringify(params),
       },
     )
 

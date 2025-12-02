@@ -1,20 +1,21 @@
 import { Request, Response } from 'express';
 import { body, param, query, validationResult } from 'express-validator';
-import {
-  createBorrowingRecord,
-  getBorrowingRecordById,
-  getBorrowingRecordsByUser,
-  getBorrowingRecordsByBook,
-  getAllBorrowingRecords,
-  returnBook,
-  renewBorrowing,
-  checkOverdueBorrowings,
-  updateOverdueStatus
-} from '../models/borrowing';
+import { ApiResponse, AuthRequest, BorrowingRequest } from '../types';
+import { AppError, NotFoundError, ValidationError } from '../middleware/errorHandler';
 import { getBookById } from '../models/book';
 import { getUserById } from '../models/user';
-import { ApiResponse, BorrowingRequest, AuthRequest } from '../types';
-import { AppError, ValidationError, NotFoundError } from '../middleware/errorHandler';
+import {
+  checkOverdueBorrowings,
+  createBorrowingRecord,
+  getAllBorrowingRecords,
+  getBorrowingRecordById,
+  getBorrowingRecordsByBook,
+  getBorrowingRecordsByUser,
+  renewBorrowing,
+  returnBook,
+  updateBorrowingRecord as updateBorrowingRecordInDb,
+  updateOverdueStatus
+} from '../models/borrowing';
 
 export const validateCreateBorrowing = [
   body('bookId')
@@ -65,6 +66,105 @@ export const validateBorrowingQuery = [
     .isInt({ min: 0 })
     .withMessage('Offset must be a non-negative integer')
 ];
+
+// 验证更新借阅记录的请求参数
+export const validateUpdateBorrowing = [
+  param('id')
+    .trim()
+    .isLength({ min: 1 })
+    .withMessage('Borrowing record ID is required'),
+  body('borrowDate')
+    .optional()
+    .isISO8601()
+    .withMessage('Borrow date must be a valid date in ISO format'),
+  body('dueDate')
+    .optional()
+    .isISO8601()
+    .withMessage('Due date must be a valid date in ISO format'),
+  body('status')
+    .optional()
+    .isIn(['active', 'returned', 'overdue'])
+    .withMessage('Status must be one of: active, returned, overdue')
+];
+
+// 更新借阅记录处理函数
+export const updateBorrowingRecord = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      const firstError = errors.array()[0];
+      if (firstError && firstError.msg) {
+        throw new ValidationError(firstError.msg);
+      } else {
+        throw new ValidationError('Validation failed');
+      }
+    }
+
+    // 检查权限 - 只有图书管理员可以更新借阅记录
+    if (req.user?.role !== 'librarian') {
+      throw new AppError('Permission denied: only librarians can update borrowing records', 403);
+    }
+
+    const { id } = req.params;
+    if (!id) {
+      throw new ValidationError('Borrowing record ID is required');
+    }
+    const { borrowDate, dueDate, status } = req.body;
+
+    // 验证借阅记录是否存在
+    const existingRecord = await getBorrowingRecordById(id);
+    if (!existingRecord) {
+      throw new NotFoundError('Borrowing record not found');
+    }
+
+    // 构建更新对象
+    const updates: any = {};
+
+    // 对于borrowDate，如果提供了，直接使用（支持精确到秒）
+    if (borrowDate !== undefined) {
+      updates.borrow_date = borrowDate;
+    }
+
+    if (dueDate !== undefined) {
+      updates.due_date = dueDate;
+    }
+
+    if (status !== undefined) {
+      updates.status = status;
+      // 如果设置为returned，且没有return_date，则设置当前日期
+      if (status === 'returned' && !existingRecord.returnDate) {
+        updates.return_date = new Date().toISOString().split('T')[0];
+      }
+      // 如果设置为active，清除return_date
+      else if (status === 'active') {
+        updates.return_date = null;
+      }
+    }
+
+    // 调用模型更新记录
+    const updatedRecord = await updateBorrowingRecordInDb(id!, updates);
+
+    const response: ApiResponse = {
+      success: true,
+      message: 'Borrowing record updated successfully',
+      data: updatedRecord
+    };
+
+    res.status(200).json(response);
+  } catch (error) {
+    if (error instanceof AppError) {
+      res.status(error.statusCode).json({
+        success: false,
+        message: error.message
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  }
+};
 
 export const createBorrowing = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -269,7 +369,7 @@ export const getBorrowingRecords = async (req: Request, res: Response): Promise<
     const status = req.query.status as string;
 
     let records;
-    
+
     if (userId) {
       records = await getBorrowingRecordsByUser(userId, status, limit, offset);
     } else if (bookId) {
@@ -351,9 +451,9 @@ export const checkOverdue = async (req: Request, res: Response): Promise<void> =
     const response: ApiResponse = {
       success: true,
       message: 'Overdue check completed',
-      data: { 
+      data: {
         overdueCount: overdueRecords.length,
-        overdueRecords 
+        overdueRecords
       }
     };
 
