@@ -67,7 +67,7 @@ class UserService {
 
   async updateUser(
     id: string,
-    payload: Partial<Pick<AuthUser, 'name' | 'grade' | 'avatarColor' | 'membership'>>,
+    payload: Partial<Pick<AuthUser, 'name' | 'grade' | 'avatarColor' | 'membership' | 'role'>>,
   ): Promise<AuthUser> {
     const data = await this.request<{ user: AuthUser }>(`${API_BASE_URL}/users/${id}`, {
       method: 'PUT',
