@@ -14,7 +14,7 @@ volumes:
     driver_opts:
       o: bind
       type: none
-      device: ./server/database
+      device: ./backend/database
 
   # 添加node_modules卷以加速构建和缓存
   backend-node-modules:
@@ -24,7 +24,7 @@ services:
   # Backend service
   backend:
     build:
-      context: ./server
+      context: ./backend
       dockerfile: Dockerfile
       args:
         - NODE_IMAGE=${NODE_IMAGE:-node:20-alpine}
@@ -36,7 +36,7 @@ services:
     container_name: moonshot-library-backend
     volumes:
       # 只使用一个挂载点，确保数据库数据持久化
-      - ./server/database:/app/database:rw
+      - ./backend/database:/app/database:rw
     ports:
       - "3000:3000"
     environment:
@@ -63,7 +63,7 @@ services:
   # Frontend service - 使用Dockerfile构建
   frontend:
     build:
-      context: .
+      context: ./frontend
       dockerfile: Dockerfile
       args:
         - NODE_IMAGE=${NODE_IMAGE:-node:20-alpine}
@@ -79,7 +79,7 @@ services:
       - "443:443"
     volumes:
       # SSL证书卷挂载，需要确保./ssl目录存在且包含证书文件
-      - ./ssl:/etc/nginx/ssl:ro
+      - ./frontend/ssl:/etc/nginx/ssl:ro
     networks:
       moonshot-network:
         ipv4_address: 172.20.0.3

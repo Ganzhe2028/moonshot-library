@@ -1,6 +1,6 @@
 import type { BorrowingRecord } from '@/types/library'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api'
 
 class BorrowingService {
   private getHeaders(): Record<string, string> {
@@ -36,12 +36,12 @@ class BorrowingService {
     const query = searchParams.toString()
     const url = `${API_BASE_URL}/borrowings${query ? `?${query}` : ''}`
 
-    const data = await this.request<{ borrowings: BorrowingRecord[] }>(url, {
+    const data = await this.request<{ records: BorrowingRecord[] }>(url, {
       method: 'GET',
       headers: this.getHeaders(),
     })
 
-    return data.borrowings ?? []
+    return data.records ?? []
   }
 
   async borrowBook(bookId: string): Promise<BorrowingRecord> {
