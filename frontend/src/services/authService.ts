@@ -1,7 +1,7 @@
 import type { LoginRequest, RegisterRequest, AuthResponse, AuthUser } from '@/types/library'
 import msalService from './msalService'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api'
+const API_BASE_URL = '/api'
 
 class AuthService {
   private getHeaders(): Record<string, string> {
