@@ -4,17 +4,20 @@ const defaultLocale = (localStorage.getItem('locale') as 'zh' | 'en') || 'zh'
 
 export const messages = {
   zh: {
-    common: {
-      brand: 'Moonshot Library',
-      tagline: '保持每一次阅读的好奇心 📖',
-      admin: '管理后台',
-      home: '首页',
-      borrowings: '我的借阅',
-      community: '社区',
-      login: '登录',
-      register: '注册',
-      logout: '登出',
-      footer: 'Moonshot Library System · {year}',
+      common: {
+        brand: 'Moonshot Library',
+        tagline: '保持每一次阅读的好奇心 📖',
+        admin: '管理后台',
+        home: '首页',
+        borrowings: '我的借阅',
+        community: '社区',
+        login: '登录',
+        register: '注册',
+        logout: '登出',
+        edit: '编辑',
+        cancel: '取消编辑',
+        save: '保存编辑',
+        footer: 'Moonshot Library System · {year}',
     },
     language: {
       zh: '中文',
@@ -252,17 +255,20 @@ export const messages = {
     },
   },
   en: {
-    common: {
-      brand: 'Moonshot Library',
-      tagline: 'Keep every reading curiosity 📖',
-      admin: 'Admin Console',
-      home: 'Home',
-      borrowings: 'My Borrowings',
-      community: 'Community',
-      login: 'Login',
-      register: 'Register',
-      logout: 'Logout',
-      footer: 'Moonshot Library System · {year}',
+      common: {
+        brand: 'Moonshot Library',
+        tagline: 'Keep every reading curiosity 📖',
+        admin: 'Admin Console',
+        home: 'Home',
+        borrowings: 'My Borrowings',
+        community: 'Community',
+        login: 'Login',
+        register: 'Register',
+        logout: 'Logout',
+        edit: 'Edit',
+        cancel: 'Cancel',
+        save: 'Save',
+        footer: 'Moonshot Library System · {year}',
     },
     language: {
       zh: '中文',

@@ -2,6 +2,12 @@ import type { BorrowingRecord } from '@/types/library'
 
 const API_BASE_URL = '/api'
 
+export interface UpdateBorrowingParams {
+  borrowDate?: string; // ISO格式日期时间，支持精确到秒
+  dueDate?: string;
+  status?: 'active' | 'returned' | 'overdue';
+}
+
 class BorrowingService {
   private getHeaders(): Record<string, string> {
     const token = localStorage.getItem('token')
@@ -114,6 +120,23 @@ class BorrowingService {
       {
         method: 'PUT',
         headers: this.getHeaders(),
+      },
+    )
+
+    return data.borrowing
+  }
+
+  // 更新借阅记录
+  async updateBorrowingRecord(
+    borrowingId: string,
+    params: UpdateBorrowingParams
+  ): Promise<BorrowingRecord> {
+    const data = await this.request<{ borrowing: BorrowingRecord }>(
+      `${API_BASE_URL}/borrowings/${borrowingId}`,
+      {
+        method: 'PUT',
+        headers: this.getHeaders(),
+        body: JSON.stringify(params),
       },
     )
 

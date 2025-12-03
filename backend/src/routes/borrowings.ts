@@ -1,15 +1,17 @@
 import { Router } from 'express';
 import {
-  createBorrowing,
-  returnBookHandler,
-  renewBorrowingHandler,
-  getBorrowingRecords,
-  getBorrowingRecord,
   checkOverdue,
+  createBorrowing,
+  getBorrowingRecord,
+  getBorrowingRecords,
+  renewBorrowingHandler,
+  returnBookHandler,
+  updateBorrowingRecord,
+  validateBorrowingQuery,
   validateCreateBorrowing,
-  validateReturnBook,
   validateRenewBorrowing,
-  validateBorrowingQuery
+  validateReturnBook,
+  validateUpdateBorrowing
 } from '../controllers/borrowingController';
 import { authenticate, authorize } from '../middleware/auth';
 
@@ -339,6 +341,36 @@ router.get('/overdue', authenticate, authorize(['admin', 'librarian']), checkOve
  *         description: 借阅记录未找到
  */
 router.get('/:id', authenticate, getBorrowingRecord);
+
+/**
+ * @swagger
+ * /borrowings/{id}:
+ *   put:
+ *     summary: 更新借阅记录
+ *     description: 更新借阅记录（仅管理员）
+ *     tags: [Borrowings]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: 借阅记录ID
+ *     responses:
+ *       200:
+ *         description: 更新成功
+ *       400:
+ *         description: 请求参数错误
+ *       401:
+ *         description: 未认证
+ *       403:
+ *         description: 权限不足
+ *       404:
+ *         description: 借阅记录未找到
+ */
+router.put('/:id', authenticate, authorize(['librarian']), validateUpdateBorrowing, updateBorrowingRecord);
 
 /**
  * @swagger

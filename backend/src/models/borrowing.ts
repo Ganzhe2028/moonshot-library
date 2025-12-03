@@ -162,7 +162,8 @@ export const updateBorrowingRecord = async (
 ): Promise<BorrowingRecord> => {
   const db = getDatabase();
   
-  const allowedFields = ['due_date', 'return_date', 'status', 'renewals'];
+  // 扩展允许更新的字段，添加borrow_date以支持管理员修改借阅时间
+  const allowedFields = ['borrow_date', 'due_date', 'return_date', 'status', 'renewals'];
   const fields: string[] = [];
   const values: any[] = [];
 
