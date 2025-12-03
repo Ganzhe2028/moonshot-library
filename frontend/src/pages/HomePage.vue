@@ -28,6 +28,12 @@ const localizedAuthors = (book: Book) =>
 const localizedCategory = (book: Book) =>
   locale.value === 'en' && book.categoryEn ? book.categoryEn : book.category
 
+const localizedPublisher = (book: Book) =>
+  locale.value === 'en' && book.publisherEn ? book.publisherEn : book.publisher || ''
+
+const localizedDescription = (book: Book) =>
+  locale.value === 'en' && book.descriptionEn ? book.descriptionEn : book.description || ''
+
 const localizedTags = (book: Book) =>
   locale.value === 'en' && book.tagsEn?.length ? book.tagsEn : book.tags || []
 
@@ -43,6 +49,11 @@ const filteredBooks = computed(() => {
     const isbn = book.isbn?.toLowerCase() ?? ''
     const title = localizedTitle(book).toLowerCase()
     const category = localizedCategory(book).toLowerCase()
+    const publisher = localizedPublisher(book).toLowerCase()
+    const description = localizedDescription(book).toLowerCase()
+    const location = book.location?.toLowerCase() ?? ''
+    const publishedYear = book.publishedYear ? String(book.publishedYear) : ''
+    const status = book.status?.toLowerCase() ?? ''
     const tags = localizedTags(book).map((tag) => tag.toLowerCase())
     const matchesQuery =
       query.length === 0 ||
@@ -50,6 +61,11 @@ const filteredBooks = computed(() => {
       authors.includes(query) ||
       isbn.includes(query) ||
       category.includes(query) ||
+      publisher.includes(query) ||
+      description.includes(query) ||
+      location.includes(query) ||
+      publishedYear.includes(query) ||
+      status.includes(query) ||
       tags.some((tag) => tag.includes(query))
 
     const matchesStatus = statusFilter.value === 'all' || book.status === statusFilter.value
