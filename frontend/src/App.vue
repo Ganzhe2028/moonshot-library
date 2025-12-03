@@ -208,8 +208,10 @@ onMounted(async () => {
   width: 46px;
   height: 46px;
   border-radius: 14px;
-  background: linear-gradient(135deg, #312e81, #6366f1);
-  box-shadow: 0 8px 24px rgba(79, 70, 229, 0.35);
+  background-image: url('/logo75.png');
+  background-size: cover;
+  background-position: center;
+  box-shadow: 0 8px 24px rgba(183, 181, 235, 0.35);
 }
 
 .brand-title {
