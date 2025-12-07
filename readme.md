@@ -69,30 +69,43 @@ npm run dev        # http://localhost:3000
 
 ### 配置环境变量
 
-后端需要配置 `backend/.env` 文件：
+项目支持多环境配置（开发/测试/生产），环境配置文件位于：
 
-```env
-# 服务器
-PORT=3000
-NODE_ENV=development
-
-# 前端地址（CORS 和重定向用）
-FRONTEND_URL=http://localhost:5173
-
-# 数据库
-DB_PATH=./database/library.db
-
-# JWT
-JWT_SECRET=your-secret-key
-JWT_EXPIRES_IN=24h
-REFRESH_TOKEN_SECRET=your-refresh-secret
-REFRESH_TOKEN_EXPIRES_IN=7d
-
-# Microsoft 365 SSO（可选）
-MSAL_CLIENT_ID=your-client-id
-MSAL_CLIENT_SECRET=your-client-secret
-MSAL_REDIRECT_URI=http://localhost:3000/api/auth/msal/callback
 ```
+backend/
+├── .env.example      # 配置模板（必看）
+├── .env.development  # 开发环境
+├── .env.production   # 生产环境模板
+└── .env              # 实际使用的配置（从模板复制）
+
+frontend/
+├── .env.example      # 配置模板
+├── .env.development  # 开发环境
+├── .env.production   # 生产环境模板
+└── .env.local        # 实际使用的配置
+```
+
+**快速开始（开发环境）：**
+
+```bash
+# 后端
+cd backend
+cp .env.development .env
+
+# 前端（可选，开发环境有默认值）
+cd frontend
+cp .env.development .env.local
+```
+
+**主要配置项：**
+
+| 变量 | 说明 | 开发环境 | 生产环境 |
+|------|------|----------|----------|
+| `NODE_ENV` | 运行环境 | development | production |
+| `PORT` | 后端端口 | 3000 | 3000 |
+| `FRONTEND_URL` | 前端地址 | http://localhost:5173 | https://your-domain.com |
+| `JWT_SECRET` | JWT 密钥 | 开发用简单密钥 | **必须使用强随机字符串** |
+| `MSAL_*` | SSO 配置 | 可选（模拟模式） | Azure 门户获取 |
 
 ---
 
@@ -120,15 +133,29 @@ MSAL_REDIRECT_URI=http://localhost:3000/api/auth/msal/callback
 ### 1. 使用部署脚本
 
 ```bash
-# 完整部署（安装依赖 + 构建 + 启动）
+# 开发环境部署（默认）
 ./deploy.sh deploy
 
-# 或分步执行
-./deploy.sh install    # 安装依赖
-./deploy.sh build      # 构建项目
-./deploy.sh init-db    # 初始化数据库
-./deploy.sh start      # 启动服务
+# 生产环境部署
+./deploy.sh deploy --prod
+
+# 测试环境部署
+./deploy.sh deploy --test
+
+# 分步执行（带环境参数）
+./deploy.sh install           # 安装依赖
+./deploy.sh build --prod      # 生产环境构建
+./deploy.sh init-db           # 初始化数据库
+./deploy.sh start --prod      # 生产环境启动
+./deploy.sh restart --prod    # 重启生产环境
+./deploy.sh status            # 查看状态
+./deploy.sh logs              # 查看日志
 ```
+
+**环境参数：**
+- `--dev` / `--development` - 开发环境（默认）
+- `--test` - 测试环境（端口 3001）
+- `--prod` / `--production` - 生产环境
 
 ### 2. 配置 Nginx
 
