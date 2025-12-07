@@ -1,118 +1,238 @@
 # Moonshot Library System
 
-面向校园的前后端分离图书馆系统。代码已拆分为 `frontend/`（Vue 3 + Vite + TS）与 `backend/`（Express + TS + SQLite），根目录仅保留项目级脚本、Docker 配置与设计类文档。
+面向校园的前后端分离图书馆管理系统。
+
+- **前端**：Vue 3 + Vite + TypeScript（位于 `frontend/`）
+- **后端**：Express.js + TypeScript + SQLite（位于 `backend/`）
 
 ---
 
-## ⚠️注意：
-1. **每次开发前都需要 AI Agent** 阅读：`Documentation/README-BEFORE-DEV-EN.md`。
-2. 第一次以及往后若本文档有所变动，`README-BEFORE-DEV`的两个版本文档有所变动，以及在提交/更新说明/release等处声明时，也请您**再次仔细阅读**。
+## ⚠️ 开发前必读
+
+1. **每次开发前** AI Agent 需阅读：`Documentation/README-BEFORE-DEV-EN.md`
+2. 第一次开发请仔细阅读本文档和开发规范文档
 
 ---
 
-## 目录速览
+## 目录结构
+
 ```
 moonshot-library/
-├── frontend/           # 前端
-├── backend/            # 后端
-├── Documentation/      # 设计/复盘等非技术文档
-├── docker-compose.yml  # 项目级容器编排
-├── start.sh            # 一键本地前后端启动脚本
-└── deploy-docker.sh    # 生产部署脚本
+├── frontend/              # 前端 Vue 应用
+├── backend/               # 后端 Express API
+├── Documentation/         # 设计/复盘等非技术文档
+├── nginx/                 # Nginx 配置模板
+├── ecosystem.config.js    # PM2 配置文件
+├── deploy.sh              # 部署脚本
+└── readme.md              # 本文件
 ```
 
 ---
 
-## 运行前准备
-- Node.js 20+（建议统一前后端版本）
+## 技术栈
+
+| 部分 | 技术 | 说明 |
+|------|------|------|
+| 前端 | Vue 3, Pinia, Vue Router, Vite | 现代前端框架，热更新体验优秀 |
+| 后端 | Node.js, Express.js, TypeScript | API、认证、业务逻辑 |
+| 数据库 | SQLite3 | 轻量级数据库，适合校园项目 |
+| 认证 | JWT + Microsoft MSAL | 支持本地登录和 M365 SSO |
+| 工具 | ESLint, Prettier, PM2 | 代码质量与进程管理 |
+
+---
+
+## 快速开始
+
+### 环境要求
+
+- Node.js 20+
 - npm（或兼容的包管理器）
-- 若用 Docker 部署：Docker + Docker Compose
 
----
+### 本地开发
 
-## 本地快速启动
-**方式 1：一键脚本（推荐）**
 ```bash
-./start.sh                # 自动安装依赖、启动前后端（默认 5173/3000）
-# 环境变量：FRONT_PORT=5174 BACK_PORT=4000 HOST=0.0.0.0 AUTO_INSTALL=true
-```
+# 1. 克隆仓库
+git clone <repository-url>
+cd moonshot-library
 
-**方式 2：手动分终端**
-```bash
-cd frontend && npm install && npm run dev   # 终端1：前端 http://localhost:5173
-cd backend  && npm install && npm run dev   # 终端2：后端 http://localhost:3000
-```
+# 2. 安装前端依赖并启动（终端 1）
+cd frontend
+npm install
+npm run dev    # http://localhost:5173
 
----
-
-## 后端环境变量（backend/.env）
-```env
-PORT=3000
-FRONTEND_URL=http://localhost:5173
-DB_PATH=./database/library.db
-JWT_SECRET=please_change_me
-JWT_EXPIRES_IN=24h
-REFRESH_TOKEN_SECRET=please_change_me_too
-MSAL_CLIENT_ID=...
-MSAL_CLIENT_SECRET=...
-MSAL_REDIRECT_URI=http://localhost:3000/api/auth/msal/callback
-```
-> 模板参考 `backend/.env.example`（若缺失可自建）。
-
-数据库首次初始化：
-```bash
+# 3. 安装后端依赖并启动（终端 2）
 cd backend
-npm run init-db
+npm install
+npm run init-db    # 首次需要初始化数据库
+npm run dev        # http://localhost:3000
+```
+
+### 配置环境变量
+
+后端需要配置 `backend/.env` 文件：
+
+```env
+# 服务器
+PORT=3000
+NODE_ENV=development
+
+# 前端地址（CORS 和重定向用）
+FRONTEND_URL=http://localhost:5173
+
+# 数据库
+DB_PATH=./database/library.db
+
+# JWT
+JWT_SECRET=your-secret-key
+JWT_EXPIRES_IN=24h
+REFRESH_TOKEN_SECRET=your-refresh-secret
+REFRESH_TOKEN_EXPIRES_IN=7d
+
+# Microsoft 365 SSO（可选）
+MSAL_CLIENT_ID=your-client-id
+MSAL_CLIENT_SECRET=your-client-secret
+MSAL_REDIRECT_URI=http://localhost:3000/api/auth/msal/callback
 ```
 
 ---
 
 ## 常用命令
+
 | 位置 | 命令 | 说明 |
-| --- | --- | --- |
-| frontend/ | `npm run dev` | 前端开发服 |
-| frontend/ | `npm run build` | 生成 `frontend/dist` |
-| frontend/ | `npm run type-check` / `npm run lint` | TS 检查 / ESLint+Prettier |
-| backend/ | `npm run dev` | 后端热重载 |
-| backend/ | `npm run build && npm start` | 编译并运行生产版本 |
-| backend/ | `npm run init-db` | 初始化 SQLite 并灌入示例数据 |
-| backend/ | `npm run setup-test` / `npm test` | 预置测试数据 / 运行 API 测试 |
-| backend/ | `npm run lint` | 后端 ESLint |
-| 根目录 | `./start.sh` | 一键本地前后端 |
-| 根目录 | `docker compose up -d` | 按 `docker-compose.yml` 启动前后端容器 |
+|------|------|------|
+| frontend/ | `npm run dev` | 启动前端开发服务器 |
+| frontend/ | `npm run build` | 构建生产版本 |
+| frontend/ | `npm run type-check` | TypeScript 检查 |
+| frontend/ | `npm run lint` | ESLint + Prettier |
+| backend/ | `npm run dev` | 启动后端（热重载） |
+| backend/ | `npm run build` | 编译 TypeScript |
+| backend/ | `npm start` | 运行生产版本 |
+| backend/ | `npm run init-db` | 初始化数据库 |
+| backend/ | `npm run lint` | ESLint 检查 |
+| 根目录 | `./deploy.sh deploy` | 完整部署 |
+| 根目录 | `./deploy.sh start` | 启动服务 |
+| 根目录 | `./deploy.sh status` | 查看状态 |
 
 ---
 
-## Docker/部署要点
-- 根目录 `docker-compose.yml`：前端构建上下文 `./frontend`，后端 `./backend`，数据库挂载 `./backend/database`。
-- 生产部署：`deploy-docker.sh`（可选备份 SQLite、检测端口/资源）。
-- SSL 证书：若使用内置 Nginx，挂载 `./frontend/ssl` 到容器 `/etc/nginx/ssl`。
+## 生产部署（PM2 + Nginx）
+
+### 1. 使用部署脚本
+
+```bash
+# 完整部署（安装依赖 + 构建 + 启动）
+./deploy.sh deploy
+
+# 或分步执行
+./deploy.sh install    # 安装依赖
+./deploy.sh build      # 构建项目
+./deploy.sh init-db    # 初始化数据库
+./deploy.sh start      # 启动服务
+```
+
+### 2. 配置 Nginx
+
+```bash
+# 复制配置模板
+sudo cp nginx/moonshot-library.conf /etc/nginx/sites-available/
+
+# 编辑配置，修改域名和路径
+sudo nano /etc/nginx/sites-available/moonshot-library.conf
+
+# 创建软链接
+sudo ln -s /etc/nginx/sites-available/moonshot-library.conf /etc/nginx/sites-enabled/
+
+# 测试并重载
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+### 3. 配置 SSL（推荐 Certbot）
+
+```bash
+# 安装 Certbot
+sudo apt install certbot python3-certbot-nginx
+
+# 获取证书
+sudo certbot --nginx -d your-domain.com
+```
+
+### 4. PM2 管理
+
+```bash
+pm2 list              # 查看进程
+pm2 logs              # 查看日志
+pm2 restart all       # 重启所有
+pm2 stop all          # 停止所有
+pm2 save              # 保存进程列表
+pm2 startup           # 设置开机自启
+```
 
 ---
 
-## 文档与学习路径
-- API/数据库/技术文档：见 `backend/`（如 `backend/API_DOCUMENTATION.md`）。
-- 设计/复盘/需求：见 `Documentation/`。
-- 学习建议：
-  1) 观察前端请求 → 对照 `backend/src/routes`、`controllers`。
-  2) 阅读 `backend/src/models` 了解数据结构与索引。
-  3) 跑通 `npm run setup-test && npm test` 熟悉主流程。
-  4) 按需扩展：前端在 `src/services` 封装接口，后端添加路由+控制器。
+## 用户角色
+
+| 角色 | 说明 |
+|------|------|
+| student | 学生 - 浏览图书、借阅 |
+| teacher | 教师 - 浏览图书、借阅 |
+| librarian | 图书管理员 - 管理图书、用户、借阅 |
+
+---
+
+## 文档
+
+- **API 文档**：`backend/API_DOCUMENTATION.md`
+- **开发规范**：`Documentation/README-BEFORE-DEV-CN.md`
+- **M365 SSO 配置**：`Documentation/M365_AUTH_SETUP.md`
 
 ---
 
 ## 常见问题
-- 端口被占用：设置 `FRONT_PORT` / `BACK_PORT`，或关闭占用进程。
-- CORS 问题：确认 `backend/.env` 的 `FRONTEND_URL` 与实际前端地址一致。
-- 登录/JWT 失败：检查 `JWT_SECRET` / `REFRESH_TOKEN_SECRET`，重启后端。
-- 数据库找不到：确认 `backend/database/` 可写，必要时重新 `npm run init-db`。
+
+### 端口被占用
+
+```bash
+# 查看占用端口的进程
+lsof -i :3000
+lsof -i :5173
+
+# 或修改配置使用其他端口
+```
+
+### CORS 错误
+
+确保 `backend/.env` 中的 `FRONTEND_URL` 与前端实际地址一致。
+
+### 数据库问题
+
+```bash
+# 重新初始化数据库
+cd backend
+rm -rf database/library.db
+npm run init-db
+```
+
+### SSO 登录失败
+
+1. 检查 `MSAL_REDIRECT_URI` 是否与 Azure 门户配置一致
+2. 确保 `FRONTEND_URL` 与实际访问地址一致
+3. 查看后端日志获取详细错误信息
 
 ---
 
 ## 贡献指南
-1) Fork & 分支开发  
-2) 完善测试（前端：type-check/lint；后端：lint/test）  
-3) 提交前确保脚本通过  
-4) PR 时附上变更说明与测试结果
 
-欢迎你把 Moonshot Library 部署到校园环境继续打磨！ 🚀
+1. Fork → 创建分支 → 开发
+2. 运行 `npm run lint` 和 `npm run type-check`
+3. 提交 PR 并附上变更说明
+
+---
+
+## License
+
+MIT License
+
+---
+
+欢迎把 Moonshot Library 部署到校园环境继续打磨！ 🚀
