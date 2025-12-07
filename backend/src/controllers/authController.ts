@@ -275,13 +275,31 @@ export const msalLogin = async (req: Request, res: Response): Promise<void> => {
 // 处理Microsoft OAuth回调
 export const msalCallback = async (req: Request, res: Response): Promise<void> => {
   try {
+    const { code, state, error, error_description } = req.query;
+    
+    // 如果 Azure 返回了错误，直接处理错误
+    if (error) {
+      console.error('MSAL callback error from Azure:', {
+        error,
+        error_description: error_description ? decodeURIComponent(error_description as string) : undefined
+      });
+      
+      const frontendRedirectUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+      const errorRedirect = `${frontendRedirectUrl}/login?error=msal_failed&details=${encodeURIComponent(error as string)}`;
+      
+      return res.redirect(errorRedirect);
+    }
+    
+    // 验证必需参数
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       const firstError = errors.array()[0];
       throw new ValidationError(firstError?.msg || 'Validation failed');
     }
     
-    const { code, state } = req.query;
+    if (!code) {
+      throw new ValidationError('Authorization code is required');
+    }
     
     // 验证state参数，防止CSRF攻击
     if (req.session && typeof (req.session as any).msalState === 'string' && (req.session as any).msalState !== state) {

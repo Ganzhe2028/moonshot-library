@@ -1,7 +1,12 @@
 // 确保在导入其他模块前加载环境变量
+// 由于模块加载顺序，这里也需要加载 .env 以确保环境变量可用
 import dotenv from 'dotenv';
-// 明确从 backend 目录加载 .env 文件
-dotenv.config({ path: './.env' });
+import path from 'path';
+// 从 backend 目录加载 .env 文件
+// 使用 process.cwd() 获取项目根目录，然后定位到 backend/.env
+const backendDir = path.resolve(process.cwd());
+const envPath = path.join(backendDir, '.env');
+dotenv.config({ path: envPath });
 
 import { AuthorizationUrlRequest, ConfidentialClientApplication, Configuration } from '@azure/msal-node';
 // 为不支持的MSAL类型定义自定义类型
@@ -44,7 +49,7 @@ const msalConfig: Configuration = {
       piiLoggingEnabled: false,
       logLevel: 3
     }
-  },
+  }
 };
 
 // 检查MSAL凭据是否有效
@@ -72,13 +77,17 @@ console.log('开始MSAL客户端初始化...');
 if (isMsalConfigValid()) {
   try {
     console.log('尝试创建MSAL客户端实例...');
-    // 在开发模式下或凭据为空时，不创建真实的MSAL客户端
-    if (isDev || !msalConfig.auth.clientId || !msalConfig.auth.clientSecret) {
-      console.log('开发模式或凭据不完整，将使用模拟功能');
+    // 只有在凭据为空时才使用模拟功能
+    // 如果配置了有效的凭据，即使在开发模式下也使用真实的MSAL客户端
+    if (!msalConfig.auth.clientId || !msalConfig.auth.clientSecret) {
+      console.log('MSAL凭据不完整，将使用模拟功能');
       msalClient = null;
     } else {
       msalClient = new ConfidentialClientApplication(msalConfig);
       console.log('MSAL客户端初始化成功!');
+      if (isDev) {
+        console.log('注意：当前为开发模式，但已配置真实的MSAL凭据，将使用真实的Microsoft 365登录');
+      }
     }
   } catch (error) {
     console.warn('MSAL客户端初始化失败:', error);
@@ -166,7 +175,10 @@ export const getTokenByCode = async (code: string, redirectUri?: string): Promis
 };
 
 // 处理用户登录并创建/更新本地用户
-export const handleLogin = async (code: string, redirectUri?: string): Promise<{ user: User; token: string; refreshToken: string }> => {
+export const handleLogin = async (
+  code: string,
+  redirectUri?: string
+): Promise<{ user: User; token: string; refreshToken: string }> => {
   // 获取令牌
   const tokenResponse = await getTokenByCode(code, redirectUri);
 
