@@ -319,7 +319,7 @@ export const msalCallback = async (req: Request, res: Response): Promise<void> =
     
     // 重定向到前端页面，携带token信息
     const frontendRedirectUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    const redirectWithTokens = `${frontendRedirectUrl}/auth/callback?token=${token}&refreshToken=${refreshToken}`;
+    const redirectWithTokens = `${frontendRedirectUrl}/?token=${token}&refreshToken=${refreshToken}`;
     
     res.redirect(redirectWithTokens);
   } catch (error) {
