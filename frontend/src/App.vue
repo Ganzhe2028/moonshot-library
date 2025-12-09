@@ -70,7 +70,7 @@ onMounted(async () => {
 
       // 获取用户信息
       try {
-        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api'
+        const apiBaseUrl = '/api'
         const response = await fetch(`${apiBaseUrl}/auth/me`, {
           headers: {
             'Authorization': `Bearer ${token}`,
