@@ -220,10 +220,14 @@ start_backend() {
     # 检查是否已有运行的实例
     if pm2 list | grep -q "moonshot-backend"; then
         print_info "重启后端服务..."
-        pm2 restart moonshot-backend $pm2_env
+        if [ -n "$pm2_env" ]; then
+            pm2 restart ecosystem.config.js --only moonshot-backend $pm2_env
+        else
+            pm2 restart moonshot-backend
+        fi
     else
         print_info "启动后端服务..."
-        pm2 start ecosystem.config.js $pm2_env
+        pm2 start ecosystem.config.js $pm2_env --only moonshot-backend
     fi
     
     # 保存 PM2 进程列表
