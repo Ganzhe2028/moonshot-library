@@ -39,26 +39,26 @@ const changeLocale = (value: string) => {
   display: flex;
   align-items: center;
   gap: 0.35rem;
-  font-size: 0.9rem;
+  font-size: var(--text-sm);
 }
 
 .label {
-  color: #4c4f59;
+  color: var(--color-subtle);
 }
 
 .pill {
-  border: 1px solid rgba(15, 17, 21, 0.1);
-  background: #fff;
-  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  border-radius: var(--radius-sm);
   padding: 0.35rem 0.65rem;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
 }
 
 .pill.active {
-  background: rgba(99, 102, 241, 0.12);
-  border-color: rgba(99, 102, 241, 0.4);
-  color: #312e81;
+  background: var(--color-primary-soft);
+  border-color: var(--color-primary);
+  color: var(--color-ink);
 }
 </style>

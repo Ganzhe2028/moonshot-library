@@ -62,7 +62,7 @@ const userInitials = computed(() => {
 })
 
 const avatarStyle = computed(() => ({
-  backgroundColor: currentUser.value?.avatarColor || '#8b5cf6',
+  backgroundColor: currentUser.value?.avatarColor || 'var(--color-primary)',
   color: '#fff',
 }))
 
@@ -263,14 +263,23 @@ watch(
   gap: 2rem;
 }
 
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: var(--text-xs);
+  color: var(--color-subtle);
+  margin: 0;
+}
+
 .profile {
   display: flex;
   gap: 1rem;
-  background: #fff;
+  background: var(--color-surface);
   padding: 1.5rem;
-  border-radius: 24px;
-  border: 1px solid rgba(15, 17, 21, 0.05);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--color-border);
   align-items: center;
+  box-shadow: var(--shadow-soft);
 }
 
 .profile.not-logged {
@@ -281,7 +290,7 @@ watch(
 .avatar {
   width: 58px;
   height: 58px;
-  border-radius: 18px;
+  border-radius: var(--radius-lg);
   color: #fff;
   display: grid;
   place-items: center;
@@ -290,7 +299,7 @@ watch(
 }
 
 .meta {
-  color: #4c4f59;
+  color: var(--color-muted);
   margin: 0.4rem 0 0;
 }
 
@@ -301,16 +310,16 @@ watch(
 }
 
 .summary-card {
-  background: #fff;
-  border-radius: 20px;
+  background: var(--color-surface);
+  border-radius: var(--radius-xl);
   padding: 1.2rem;
-  border: 1px solid rgba(15, 17, 21, 0.05);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-soft);
 }
 
 .summary-card .label {
-  font-size: 0.85rem;
-  color: #6c6f78;
-  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-subtle);
 }
 
 .summary-card .value {
@@ -319,8 +328,7 @@ watch(
 }
 
 .summary-card .hint {
-  margin: 0;
-  color: #8a8e99;
+  color: var(--color-subtle);
 }
 
 .action-message {
@@ -330,21 +338,22 @@ watch(
 }
 
 .action-message.success {
-  background: rgba(16, 185, 129, 0.12);
-  color: #047857;
+  background: var(--color-success-soft);
+  color: var(--color-success-strong);
 }
 
 .action-message.error {
-  background: rgba(251, 191, 36, 0.2);
-  color: #92400e;
+  background: var(--color-danger-soft);
+  color: var(--color-danger-strong);
 }
 
 .borrowings,
 .history {
-  background: #fff;
-  border-radius: 24px;
+  background: var(--color-surface);
+  border-radius: var(--radius-xl);
   padding: 1.5rem;
-  border: 1px solid rgba(15, 17, 21, 0.05);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-soft);
 }
 
 .section-header {
@@ -361,9 +370,10 @@ watch(
 }
 
 .borrowing-card {
-  border: 1px solid rgba(15, 17, 21, 0.05);
-  border-radius: 20px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
   padding: 1.2rem;
+  background: var(--color-surface-soft);
 }
 
 .card-head {
@@ -375,30 +385,30 @@ watch(
 
 .book-title {
   margin: 0;
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
 }
 
 .book-author {
   margin: 0.2rem 0;
-  color: #4c4f59;
+  color: var(--color-muted);
 }
 
 .book-meta {
   margin: 0;
-  color: #8a8e99;
+  color: var(--color-subtle);
 }
 
 .due {
   padding: 0.2rem 0.6rem;
   border-radius: 999px;
   font-size: 0.8rem;
-  background: rgba(99, 102, 241, 0.12);
-  color: #312e81;
+  background: var(--color-primary-soft);
+  color: var(--color-primary-strong);
 }
 
 .due.warning {
-  background: rgba(248, 113, 113, 0.16);
-  color: #991b1b;
+  background: var(--color-warning-soft);
+  color: var(--color-warning-strong);
 }
 
 .actions {
@@ -412,29 +422,33 @@ watch(
 .secondary {
   border-radius: 14px;
   padding: 0.65rem 1rem;
+  font-weight: var(--font-weight-semibold);
 }
 
 .primary {
-  background: linear-gradient(120deg, #4338ca, #6366f1);
-  color: white;
+  background: var(--cta-gradient);
+  color: #fff;
+  box-shadow: 0 12px 28px var(--color-primary-soft);
 }
 
 .secondary {
-  background: rgba(15, 17, 21, 0.06);
-  color: #1f1f25;
+  background: var(--chip-bg);
+  color: var(--color-ink);
+  border: 1px solid var(--color-border);
 }
 
 .renewals {
   margin: 0.8rem 0 0;
-  font-size: 0.9rem;
-  color: #6c6f78;
+  font-size: var(--text-sm);
+  color: var(--color-subtle);
 }
 
 .empty-state {
   text-align: center;
   padding: 2rem;
   border-radius: 18px;
-  background: rgba(249, 250, 255, 0.8);
+  background: var(--color-surface-soft);
+  color: var(--color-muted);
 }
 
 .history-list {
@@ -450,7 +464,7 @@ watch(
   flex-wrap: wrap;
   gap: 0.5rem;
   padding-bottom: 0.8rem;
-  border-bottom: 1px solid rgba(15, 17, 21, 0.05);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .history-list article:last-child {
@@ -460,10 +474,10 @@ watch(
 .status-pill {
   padding: 0.2rem 0.8rem;
   border-radius: 999px;
-  background: rgba(16, 185, 129, 0.12);
-  color: #047857;
-  font-size: 0.85rem;
-  font-weight: 600;
+  background: var(--status-available-bg);
+  color: var(--status-available-text);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
 }
 
 @media (max-width: 768px) {

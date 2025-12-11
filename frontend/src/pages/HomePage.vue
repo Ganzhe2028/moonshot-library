@@ -9,6 +9,7 @@ import { useAuthStore } from '@/stores/auth'
 import type { Book, BorrowingRecord } from '@/types/library'
 
 type StatusFilter = 'all' | 'available' | 'borrowed' | 'reserved'
+type PaletteKey = 'a' | 'b'
 type NextDuePayload = { record: BorrowingRecord; book: Book } | null
 
 const authStore = useAuthStore()
@@ -18,6 +19,10 @@ const { t, locale } = useI18n()
 const searchQuery = ref('')
 const statusFilter = ref<StatusFilter>('all')
 const filters: StatusFilter[] = ['all', 'available', 'borrowed', 'reserved']
+const paletteList: Array<{ key: PaletteKey; title: string; colors: string[] }> = [
+  { key: 'a', title: 'A: Mirage / Blaze Orange', colors: ['#1E3741', '#FF5B04'] },
+  { key: 'b', title: 'B: Deep Sea Green / Wild Sand', colors: ['#075056', '#E4EEF0'] },
+]
 
 const localizedTitle = (book: Book) =>
   locale.value === 'en' && book.titleEn ? book.titleEn : book.title
@@ -40,6 +45,25 @@ const localizedTags = (book: Book) =>
 const availableCount = computed(
   () => libraryStore.books.filter((book) => book.status === 'available').length,
 )
+
+const savedPalette =
+  (typeof window !== 'undefined'
+    ? (localStorage.getItem('preferredPalette') as PaletteKey | null)
+    : null) || 'a'
+const activePalette = ref<PaletteKey>(savedPalette === 'b' ? 'b' : 'a')
+
+const applyPalette = (palette: PaletteKey) => {
+  if (typeof document === 'undefined') return
+  document.documentElement.setAttribute('data-palette', palette)
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('preferredPalette', palette)
+  }
+}
+
+const setPalette = (palette: PaletteKey) => {
+  activePalette.value = palette
+  applyPalette(palette)
+}
 
 const filteredBooks = computed(() => {
   const query = searchQuery.value.trim().toLowerCase()
@@ -107,6 +131,7 @@ const daysUntil = (dateString: string) => {
 onMounted(() => {
   libraryStore.fetchBooks()
   libraryStore.fetchBorrowings()
+  applyPalette(activePalette.value)
 })
 
 watch(
@@ -125,6 +150,32 @@ watch(
       <p class="subtitle">
         {{ t('home.subtitle') }}
       </p>
+
+      <div class="palette-toggle" role="group" aria-label="Color palette">
+        <div class="palette-copy">
+          <p class="palette-label">Palette</p>
+          <p class="palette-description">Mirage + Blaze Orange / Deep Sea Green + Wild Sand</p>
+        </div>
+        <div class="palette-actions">
+          <button
+            v-for="palette in paletteList"
+            :key="palette.key"
+            type="button"
+            :class="{ active: activePalette === palette.key }"
+            @click="setPalette(palette.key)"
+          >
+            <span class="swatches" aria-hidden="true">
+              <span
+                v-for="color in palette.colors"
+                :key="color"
+                class="swatch"
+                :style="{ backgroundColor: color }"
+              />
+            </span>
+            <span class="palette-title">{{ palette.title }}</span>
+          </button>
+        </div>
+      </div>
 
       <div class="search-card">
         <div class="search-input">
@@ -216,28 +267,111 @@ watch(
 .eyebrow {
   text-transform: uppercase;
   letter-spacing: 0.18em;
-  font-size: 0.75rem;
-  color: #8a8e99;
+  font-size: var(--text-xs);
+  color: var(--color-subtle);
   margin-bottom: 0.5rem;
 }
 
 .hero h1 {
-  font-size: clamp(2.2rem, 4vw, 3rem);
+  font-size: var(--text-display);
   margin: 0;
+  color: var(--color-ink);
 }
 
 .subtitle {
   max-width: 640px;
-  color: #4c4f59;
-  margin-bottom: 1.8rem;
+  color: var(--color-muted);
+  margin-bottom: 1.6rem;
+  font-size: var(--text-md);
+}
+
+.palette-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.2rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-soft);
+  margin-bottom: 1rem;
+}
+
+.palette-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 200px;
+}
+
+.palette-label {
+  margin: 0;
+  font-size: 0.75rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-subtle);
+}
+
+.palette-description {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.95rem;
+}
+
+.palette-actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.palette-actions button {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.65rem 0.9rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-soft);
+  color: var(--color-ink);
+  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.02);
+  transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.palette-actions button:hover {
+  transform: translateY(-1px);
+}
+
+.palette-actions button.active {
+  border-color: var(--color-primary);
+  background: var(--color-surface);
+  box-shadow: 0 14px 32px var(--color-primary-soft);
+  transform: translateY(-1px);
+}
+
+.swatches {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+  border: 1px solid var(--color-border-strong);
+}
+
+.palette-title {
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .search-card {
-  background: #fff;
-  border-radius: 24px;
+  background: var(--color-surface);
+  border-radius: var(--radius-xl);
   padding: 1.5rem;
-  border: 1px solid rgba(15, 17, 21, 0.05);
-  box-shadow: 0 20px 55px rgba(15, 17, 21, 0.08);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-soft);
   display: flex;
   flex-direction: column;
   gap: 1.2rem;
@@ -251,16 +385,18 @@ watch(
 .search-input input {
   flex: 1;
   padding: 0.9rem 1.2rem;
-  border-radius: 14px;
-  border: 1px solid rgba(15, 17, 21, 0.08);
-  background: rgba(244, 244, 248, 0.7);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-soft);
+  color: var(--color-ink);
 }
 
 .search-input button {
-  background: linear-gradient(135deg, #4338ca, #6366f1);
+  background: var(--cta-gradient);
   color: #fff;
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   padding: 0 1.5rem;
+  box-shadow: 0 12px 28px var(--color-primary-soft);
 }
 
 .search-meta {
@@ -271,8 +407,8 @@ watch(
 }
 
 .meta-eyebrow {
-  font-size: 0.75rem;
-  color: #8a8e99;
+  font-size: var(--text-xs);
+  color: var(--color-subtle);
   margin: 0;
 }
 
@@ -282,42 +418,43 @@ watch(
 }
 
 .link {
-  color: #4338ca;
+  color: var(--color-primary);
   font-weight: 600;
 }
 
 .status-panel {
-  background: linear-gradient(120deg, #eef2ff, #f5f3ff);
-  border-radius: 24px;
+  background: var(--panel-gradient);
+  border-radius: var(--radius-xl);
   padding: 1.4rem 1.8rem;
   display: flex;
   align-items: center;
   gap: 1.2rem;
-  border: 1px solid rgba(99, 102, 241, 0.2);
+  border: 1px solid var(--color-border);
 }
 
 .status-badge {
-  background: #fff;
+  background: var(--color-surface);
   padding: 0.4rem 0.9rem;
   border-radius: 999px;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   font-weight: 600;
 }
 
 .status-title {
   margin: 0;
   font-weight: 600;
+  color: var(--color-ink);
 }
 
 .status-meta {
   margin: 0.2rem 0 0;
-  color: #4c4f59;
+  color: var(--color-muted);
 }
 
 .status-action {
   margin-left: auto;
   font-weight: 600;
-  color: #4338ca;
+  color: var(--color-primary);
 }
 
 .filters {
@@ -336,15 +473,16 @@ watch(
 .chips button {
   padding: 0.35rem 0.9rem;
   border-radius: 999px;
-  border: 1px solid rgba(15, 17, 21, 0.08);
-  background: #fff;
-  color: #4c4f59;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-muted);
+  transition: all 0.2s ease;
 }
 
 .chips button.active {
-  border-color: rgba(99, 102, 241, 0.6);
-  color: #1f1f25;
-  background: rgba(99, 102, 241, 0.12);
+  border-color: var(--color-primary);
+  color: var(--color-ink);
+  background: var(--chip-active);
 }
 
 .book-grid {
@@ -357,21 +495,24 @@ watch(
   grid-column: 1 / -1;
   padding: 2rem;
   border-radius: 20px;
-  background: rgba(249, 250, 255, 0.8);
+  background: var(--color-surface-soft);
   text-align: center;
+  color: var(--color-muted);
 }
 
 .tags {
-  background: #fff;
-  border-radius: 24px;
+  background: var(--color-surface);
+  border-radius: var(--radius-xl);
   padding: 1.5rem;
-  border: 1px solid rgba(15, 17, 21, 0.05);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-soft);
 }
 
 .tags-title {
   margin-top: 0;
   margin-bottom: 1rem;
   font-weight: 600;
+  color: var(--color-ink);
 }
 
 .tag-grid {
@@ -383,12 +524,26 @@ watch(
 .tag-grid span {
   padding: 0.35rem 0.9rem;
   border-radius: 999px;
-  background: rgba(15, 17, 21, 0.05);
-  font-size: 0.85rem;
-  color: #1f1f25;
+  background: var(--tag-bg);
+  font-size: var(--text-sm);
+  color: var(--tag-text);
 }
 
 @media (max-width: 768px) {
+  .palette-toggle {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .palette-actions {
+    width: 100%;
+  }
+
+  .palette-actions button {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
   .search-input {
     flex-direction: column;
   }

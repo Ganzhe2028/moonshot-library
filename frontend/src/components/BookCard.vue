@@ -89,21 +89,21 @@ const coverImageUrl = computed(
 }
 
 .status.available {
-  background: rgba(16, 185, 129, 0.2);
-  color: #047857;
-  border: 1px solid rgba(16, 185, 129, 0.3);
+  background: var(--status-available-bg);
+  color: var(--status-available-text);
+  border: 1px solid var(--status-available-text);
 }
 
 .status.borrowed {
-  background: rgba(248, 113, 113, 0.2);
-  color: #b91c1c;
-  border: 1px solid rgba(248, 113, 113, 0.3);
+  background: var(--status-danger-bg);
+  color: var(--status-danger-text);
+  border: 1px solid var(--status-danger-text);
 }
 
 .status.reserved {
-  background: rgba(251, 191, 36, 0.2);
-  color: #92400e;
-  border: 1px solid rgba(251, 191, 36, 0.3);
+  background: var(--status-warning-bg);
+  color: var(--status-warning-text);
+  border: 1px solid var(--status-warning-text);
 }
 
 .card {
@@ -113,15 +113,15 @@ const coverImageUrl = computed(
   gap: 0.8rem;
   padding: 1rem;
   border-radius: 20px;
-  border: 1px solid rgba(15, 17, 21, 0.05);
-  background: #fff;
-  box-shadow: 0 20px 35px rgba(15, 17, 21, 0.05);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-soft);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .card:hover {
   transform: translateY(-6px);
-  box-shadow: 0 24px 45px rgba(15, 17, 21, 0.12);
+  box-shadow: var(--shadow-strong);
 }
 
 .cover {
@@ -138,7 +138,7 @@ const coverImageUrl = computed(
 
 .category {
   font-size: 0.75rem;
-  color: #8a8e99;
+  color: var(--color-subtle);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   margin: 0;
@@ -146,7 +146,7 @@ const coverImageUrl = computed(
 
 .author {
   margin: 0;
-  color: #5b5d63;
+  color: var(--color-muted);
 }
 
 .tags {
@@ -157,8 +157,8 @@ const coverImageUrl = computed(
 }
 
 .tags span {
-  background: rgba(99, 102, 241, 0.08);
-  color: #3b3f55;
+  background: var(--tag-bg);
+  color: var(--tag-text);
   padding: 0.2rem 0.6rem;
   border-radius: 999px;
   font-size: 0.75rem;
