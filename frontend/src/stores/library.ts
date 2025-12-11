@@ -1,8 +1,9 @@
 import { defineStore } from 'pinia'
-import type { Book, BookImportResult, BorrowingRecord, Rating, Comment } from '@/types/library'
+import type { Book, BookImportResult, BorrowingRecord, Rating, Comment, Favorite } from '@/types/library'
 import { bookService } from '@/services/bookService'
 import { borrowingService } from '@/services/borrowingService'
 import { ratingService } from '@/services/ratingService'
+import { favoriteService } from '@/services/favoriteService'
 import { i18n } from '@/i18n'
 import { useAuthStore } from './auth'
 
@@ -19,6 +20,9 @@ interface LibraryState {
   commentsLoading: boolean
   ratingError: string
   commentError: string
+  favorites: Favorite[]
+  favoritesLoading: boolean
+  favoritesError: string
 }
 
 export const useLibraryStore = defineStore('library', {
@@ -35,6 +39,9 @@ export const useLibraryStore = defineStore('library', {
     commentsLoading: false,
     ratingError: '',
     commentError: '',
+    favorites: [],
+    favoritesLoading: false,
+    favoritesError: '',
   }),
   getters: {
     activeBorrowings: (state): BorrowingRecord[] =>
@@ -47,6 +54,7 @@ export const useLibraryStore = defineStore('library', {
     isBookBorrowedByUser(): (bookId: string) => boolean {
       return (bookId: string) => this.activeBorrowings.some((record) => record.bookId === bookId)
     },
+    favoriteBookIds: (state): string[] => state.favorites.map((fav) => fav.bookId),
   },
   actions: {
     async fetchBooks(force = false) {
@@ -156,6 +164,7 @@ export const useLibraryStore = defineStore('library', {
       const authStore = useAuthStore()
       if (!authStore.user) {
         this.borrowings = []
+        this.favorites = []
         return
       }
 
@@ -170,6 +179,54 @@ export const useLibraryStore = defineStore('library', {
         this.borrowingsError = err instanceof Error ? err.message : '无法加载借阅记录'
       } finally {
         this.borrowingsLoading = false
+      }
+    },
+    async fetchFavorites(force = false) {
+      const authStore = useAuthStore()
+      if (!authStore.user) {
+        this.favorites = []
+        return
+      }
+      if (this.favorites.length && !force) return
+      this.favoritesLoading = true
+      this.favoritesError = ''
+      try {
+        const favorites = await favoriteService.fetchFavorites(authStore.user.id)
+        this.favorites = favorites
+      } catch (err) {
+        this.favoritesError = err instanceof Error ? err.message : '无法加载收藏列表'
+      } finally {
+        this.favoritesLoading = false
+      }
+    },
+    async addFavorite(bookId: string) {
+      const authStore = useAuthStore()
+      if (!authStore.user) {
+        return { success: false, message: '请先登录后再收藏。' }
+      }
+      try {
+        const favorite = await favoriteService.addFavorite(authStore.user.id, bookId)
+        this.favorites.unshift(favorite)
+        return { success: true, message: i18n.global.t('borrowings.favorites.added') }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : i18n.global.t('borrowings.favorites.duplicate')
+        this.favoritesError = message
+        return { success: false, message }
+      }
+    },
+    async removeFavorite(bookId: string) {
+      const authStore = useAuthStore()
+      if (!authStore.user) {
+        return { success: false, message: '请先登录后再取消收藏。' }
+      }
+      try {
+        await favoriteService.removeFavorite(authStore.user.id, bookId)
+        this.favorites = this.favorites.filter((fav) => fav.bookId !== bookId)
+        return { success: true, message: i18n.global.t('borrowings.favorites.removed') }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : i18n.global.t('borrowings.favorites.removed')
+        this.favoritesError = message
+        return { success: false, message }
       }
     },
     async borrowBook(bookId: string) {

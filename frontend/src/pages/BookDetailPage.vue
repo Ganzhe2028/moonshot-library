@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 
 import { useLibraryStore } from '@/stores/library'
+import { useAuthStore } from '@/stores/auth'
 import RatingStars from '@/components/RatingStars.vue'
 import CommentSection from '@/components/CommentSection.vue'
 import type { Comment } from '@/types/library'
@@ -11,6 +12,7 @@ import type { Comment } from '@/types/library'
 const route = useRoute()
 const router = useRouter()
 const libraryStore = useLibraryStore()
+const authStore = useAuthStore()
 const { t, locale } = useI18n()
 
 watch(
@@ -25,12 +27,34 @@ watch(
 
 onMounted(() => {
   libraryStore.fetchBorrowings()
+  libraryStore.fetchFavorites()
 })
 
 const book = computed(() => libraryStore.getBookById(route.params.id as string))
 const hasBorrowed = computed(() =>
   book.value ? libraryStore.isBookBorrowedByUser(book.value.id) : false,
 )
+
+const isFavorite = computed(() =>
+  book.value ? libraryStore.favoriteBookIds.includes(book.value.id) : false,
+)
+
+const toggleFavorite = async () => {
+  if (!authStore.user || !book.value) {
+    feedbackVariant.value = 'error'
+    feedback.value = t('borrowings.loginHint')
+    return
+  }
+  if (isFavorite.value) {
+    await libraryStore.removeFavorite(book.value.id)
+    feedbackVariant.value = 'success'
+    feedback.value = t('bookDetail.favoriteRemoved')
+  } else {
+    const result = await libraryStore.addFavorite(book.value.id)
+    feedbackVariant.value = result.success ? 'success' : 'error'
+    feedback.value = result.message || t('bookDetail.favoriteAdded')
+  }
+}
 
 const displayTitle = computed(() => {
   if (!book.value) return ''
@@ -227,6 +251,15 @@ const coverImage = computed(
           <button type="button" class="secondary" @click="router.push('/borrowings')">
             {{ t('bookDetail.viewBorrowings') }}
           </button>
+          <button
+            v-if="authStore.user"
+            type="button"
+            class="ghost"
+            :class="{ active: isFavorite }"
+            @click="toggleFavorite"
+          >
+            {{ isFavorite ? t('bookDetail.favorited') : t('bookDetail.favorite') }}
+          </button>
         </div>
 
         <p v-if="feedback" :class="['feedback', feedbackVariant]">{{ feedback }}</p>
@@ -298,8 +331,9 @@ const coverImage = computed(
   align-self: flex-start;
   border-radius: 999px;
   padding: 0.3rem 0.9rem;
-  background: rgba(15, 17, 21, 0.05);
-  color: #333;
+  background: var(--chip-bg);
+  color: var(--color-ink);
+  border: 1px solid var(--color-border);
 }
 
 .header {
@@ -309,26 +343,27 @@ const coverImage = computed(
 }
 
 .cover {
-  border-radius: 30px;
+  border-radius: var(--radius-xl);
   background-size: cover;
   background-position: center;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-strong);
 }
 
 .category {
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: #8a8e99;
+  color: var(--color-subtle);
   margin-bottom: 0.6rem;
 }
 
 h1 {
   margin: 0;
-  font-size: clamp(2rem, 3vw, 2.7rem);
+  font-size: var(--text-display);
+  color: var(--color-ink);
 }
 
 .author {
-  color: #4c4f59;
+  color: var(--color-muted);
   margin: 0.4rem 0 1rem;
 }
 
@@ -336,33 +371,55 @@ h1 {
   display: flex;
   align-items: center;
   margin-bottom: 1rem;
+  gap: 0.4rem;
 }
 
 .rating-count {
   margin-left: 8px;
-  color: #6b7280;
-  font-size: 0.9rem;
+  color: var(--color-subtle);
+  font-size: var(--text-sm);
 }
 
 .rating-feedback {
   margin-bottom: 1rem;
   padding: 0.5rem 1rem;
-  border-radius: 12px;
-  font-size: 0.9rem;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
 }
 
 .rating-feedback.success {
-  background: rgba(16, 185, 129, 0.12);
-  color: #047857;
+  background: var(--status-available-bg);
+  color: var(--status-available-text);
 }
 
 .rating-feedback.error {
-  background: rgba(239, 68, 68, 0.12);
-  color: #b91c1c;
+  background: var(--status-danger-bg);
+  color: var(--status-danger-text);
+}
+
+.ghost {
+  background: var(--color-surface);
+  color: var(--color-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0.65rem 1rem;
+  font-weight: var(--font-weight-semibold);
+  transition: all 0.2s ease;
+}
+
+.ghost.active {
+  background: var(--color-primary-soft);
+  color: var(--color-primary-strong);
+  border-color: var(--color-primary);
+}
+
+.ghost:hover {
+  color: var(--color-primary-strong);
+  border-color: var(--color-primary);
 }
 
 .summary {
-  color: #3b3f55;
+  color: var(--color-muted);
   line-height: 1.7;
 }
 
@@ -374,11 +431,11 @@ h1 {
 }
 
 .tags span {
-  background: rgba(99, 102, 241, 0.12);
-  color: #312e81;
+  background: var(--tag-bg);
+  color: var(--tag-text);
   padding: 0.3rem 0.9rem;
   border-radius: 999px;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
 }
 
 .actions {
@@ -389,43 +446,46 @@ h1 {
 
 .primary,
 .secondary {
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   padding: 0.85rem 1.4rem;
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
 }
 
 .primary {
-  background: linear-gradient(120deg, #4338ca, #6366f1);
+  background: var(--cta-gradient);
   color: white;
   min-width: 160px;
+  box-shadow: 0 16px 32px var(--color-primary-soft);
 }
 
 .primary:disabled {
-  background: rgba(99, 102, 241, 0.2);
+  background: var(--color-primary-soft);
   cursor: not-allowed;
-  color: #434559;
+  color: var(--color-muted);
+  box-shadow: none;
 }
 
 .secondary {
-  background: rgba(15, 17, 21, 0.05);
-  color: #1f1f25;
+  background: var(--chip-bg);
+  color: var(--color-ink);
+  border: 1px solid var(--color-border);
 }
 
 .feedback {
   margin-top: 0.8rem;
   padding: 0.7rem 1rem;
-  border-radius: 12px;
-  font-size: 0.9rem;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
 }
 
 .feedback.success {
-  background: rgba(16, 185, 129, 0.12);
-  color: #047857;
+  background: var(--status-available-bg);
+  color: var(--status-available-text);
 }
 
 .feedback.error {
-  background: rgba(239, 68, 68, 0.12);
-  color: #b91c1c;
+  background: var(--status-danger-bg);
+  color: var(--status-danger-text);
 }
 
 .details {
@@ -435,15 +495,17 @@ h1 {
 }
 
 .card {
-  background: #fff;
-  border-radius: 24px;
+  background: var(--color-surface);
+  border-radius: var(--radius-xl);
   padding: 1.5rem;
-  border: 1px solid rgba(15, 17, 21, 0.06);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-soft);
 }
 
 .card-title {
   margin-top: 0;
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-ink);
 }
 
 dl {
@@ -454,10 +516,10 @@ dl {
 }
 
 dt {
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #8a8e99;
+  color: var(--color-subtle);
   margin-bottom: 0.3rem;
 }
 
@@ -467,13 +529,13 @@ dd {
 }
 
 .card-body {
-  color: #4c4f59;
+  color: var(--color-muted);
   margin-top: 0.2rem;
 }
 
 .card-list {
   padding-left: 1.1rem;
-  color: #4c4f59;
+  color: var(--color-muted);
 }
 
 .missing {
@@ -483,9 +545,9 @@ dd {
 
 .missing button {
   margin-top: 1rem;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 0.8rem 1.5rem;
-  background: #4338ca;
+  background: var(--cta-gradient);
   color: white;
 }
 

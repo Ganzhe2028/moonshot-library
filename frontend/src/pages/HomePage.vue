@@ -131,6 +131,7 @@ const daysUntil = (dateString: string) => {
 onMounted(() => {
   libraryStore.fetchBooks()
   libraryStore.fetchBorrowings()
+  libraryStore.fetchFavorites()
   applyPalette(activePalette.value)
 })
 
@@ -138,6 +139,7 @@ watch(
   () => authStore.user?.id,
   () => {
     libraryStore.fetchBorrowings(true)
+    libraryStore.fetchFavorites(true)
   },
 )
 </script>

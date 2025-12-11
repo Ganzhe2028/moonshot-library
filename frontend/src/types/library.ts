@@ -54,6 +54,14 @@ export interface BorrowingRecord {
   updatedAt?: string
 }
 
+export interface Favorite {
+  id: string
+  userId: string
+  bookId: string
+  createdAt?: string
+  updatedAt?: string
+}
+
 export interface Announcement {
   id: string
   title: string

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { RouterLink } from 'vue-router'
 
 import { useAuthStore } from '@/stores/auth'
 import { useLibraryStore } from '@/stores/library'
@@ -14,6 +15,28 @@ const currentUser = computed(() => authStore.user)
 const isLoggedIn = computed(() => !!currentUser.value)
 const actionMessage = ref('')
 const actionVariant = ref<'success' | 'error'>('success')
+
+const favoritesLoading = computed(() => libraryStore.favoritesLoading)
+
+const favoriteBooks = computed(() => {
+  if (!libraryStore.favorites.length) return []
+  return libraryStore.favorites
+    .map((fav) => libraryStore.getBookById(fav.bookId))
+    .filter((book): book is Book => Boolean(book))
+})
+
+const creditSummary = computed(() => {
+  const overdueCount = libraryStore.borrowings.filter((b) => b.status === 'overdue').length
+  const membership =
+    currentUser.value?.membership === 'active'
+      ? t('borrowings.credit.membership') + ' · ' + t('admin.users.membershipActive')
+      : t('borrowings.credit.membership') + ' · ' + t('admin.users.membershipSuspended')
+  const level =
+    overdueCount > 0 ? t('borrowings.credit.levelWarn') : t('borrowings.credit.levelGood')
+  const tip = overdueCount > 0 ? t('borrowings.credit.tipWarn') : t('borrowings.credit.tipGood')
+  const levelKey = overdueCount > 0 ? 'warn' : 'good'
+  return { overdueCount, membership, level, tip, levelKey }
+})
 
 const activeBorrowings = computed(() =>
   libraryStore.activeBorrowings.map((record: BorrowingRecord) => ({
@@ -46,9 +69,9 @@ const summaryCards = computed(() => [
     hint: t('borrowings.noHistory'),
   },
   {
-    label: '总阅读字数',
+    label: t('borrowings.stats.totalWords'),
     value: currentUser.value?.total_words_read || 0,
-    hint: '累计阅读',
+    hint: t('borrowings.stats.totalWordsHint'),
   },
 ])
 
@@ -132,14 +155,23 @@ const handleReturn = async (recordId: string) => {
 onMounted(() => {
   libraryStore.fetchBooks()
   libraryStore.fetchBorrowings()
+  libraryStore.fetchFavorites()
 })
 
 watch(
   () => currentUser.value?.id,
   () => {
     libraryStore.fetchBorrowings(true)
+    libraryStore.fetchFavorites(true)
   },
 )
+
+const handleRemoveFavorite = async (bookId: string) => {
+  if (!requireAuth()) return
+  const result = await libraryStore.removeFavorite(bookId)
+  actionVariant.value = result.success ? 'success' : 'error'
+  actionMessage.value = result.message
+}
 </script>
 
 <template>
@@ -252,6 +284,52 @@ watch(
         <router-link class="primary" to="/login">{{ t('auth.login') }}</router-link>
       </div>
     </section>
+
+    <section v-if="isLoggedIn" class="credit">
+      <div>
+        <p class="eyebrow">{{ t('borrowings.credit.title') }}</p>
+        <h2>{{ t('borrowings.credit.title') }}：{{ creditSummary.level }}</h2>
+        <p class="meta">
+          {{ creditSummary.membership }} · {{ t('borrowings.credit.overdue') }}：{{ creditSummary.overdueCount }}
+        </p>
+        <p class="hint">{{ creditSummary.tip }}</p>
+      </div>
+      <div class="credit-pill" :class="creditSummary.levelKey === 'good' ? 'good' : 'warning'">
+        {{ creditSummary.level }}
+      </div>
+    </section>
+
+    <section v-if="isLoggedIn" class="favorites">
+      <div class="section-header">
+        <div>
+          <p class="eyebrow">{{ t('borrowings.favorites.title') }}</p>
+          <h2>{{ t('borrowings.favorites.subtitle') }}</h2>
+          <p class="meta small">{{ t('borrowings.favorites.hint') }}</p>
+        </div>
+      </div>
+
+      <div v-if="favoritesLoading" class="empty-state">
+        <p>{{ t('borrowings.favorites.loading') }}</p>
+      </div>
+      <div v-else-if="favoriteBooks.length" class="favorite-grid">
+        <div v-for="book in favoriteBooks" :key="book.id" class="favorite-row">
+          <div>
+            <p class="fav-title">{{ localizedTitle(book) }}</p>
+            <p class="fav-author">{{ formatAuthors(book) }}</p>
+            <p class="fav-meta">
+              {{ t('bookDetail.category') }}：{{ book.category }} ·
+              {{ t('bookDetail.currentStatus') }}：{{ book.status }}
+            </p>
+          </div>
+          <button class="remove-fav" type="button" @click="handleRemoveFavorite(book.id)">
+            {{ t('borrowings.favorites.remove') }}
+          </button>
+        </div>
+      </div>
+      <div v-else class="empty-state">
+        <p>{{ t('borrowings.favorites.empty') }}，<RouterLink to="/">{{ t('borrowings.favorites.goHome') }}</RouterLink>。</p>
+      </div>
+    </section>
   </div>
 </template>
 
@@ -303,6 +381,10 @@ watch(
   margin: 0.4rem 0 0;
 }
 
+.meta.small {
+  font-size: var(--text-sm);
+  margin-top: 0.2rem;
+}
 .summary {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -478,6 +560,106 @@ watch(
   color: var(--status-available-text);
   font-size: var(--text-sm);
   font-weight: var(--font-weight-semibold);
+}
+
+.credit {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: 1.2rem 1.5rem;
+  box-shadow: var(--shadow-soft);
+}
+
+.credit .meta {
+  color: var(--color-muted);
+}
+
+.credit .hint {
+  margin-top: 0.4rem;
+  color: var(--color-subtle);
+}
+
+.credit-pill {
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-pill);
+  font-weight: var(--font-weight-semibold);
+  border: 1px solid var(--color-border);
+}
+
+.credit-pill.good {
+  background: var(--color-success-soft);
+  color: var(--color-success-strong);
+  border-color: var(--color-success-strong);
+}
+
+.credit-pill.warning {
+  background: var(--color-warning-soft);
+  color: var(--color-warning-strong);
+  border-color: var(--color-warning-strong);
+}
+
+.favorites {
+  background: var(--color-surface);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--color-border);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-soft);
+}
+
+.favorite-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.favorite-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.2rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.fav-title {
+  margin: 0;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-ink);
+}
+
+.fav-author {
+  margin: 0.2rem 0;
+  color: var(--color-muted);
+}
+
+.fav-meta {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-subtle);
+}
+
+.remove-fav {
+  border-radius: var(--radius-pill);
+  padding: 0.45rem 0.9rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-muted);
+  font-weight: var(--font-weight-semibold);
+  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+}
+
+.remove-fav:hover {
+  color: var(--color-danger-strong);
+  border-color: var(--color-danger-strong);
+  box-shadow: 0 12px 22px var(--color-danger-soft);
 }
 
 @media (max-width: 768px) {

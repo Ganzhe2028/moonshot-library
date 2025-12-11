@@ -60,6 +60,14 @@ export interface Reservation {
   updatedAt: string;
 }
 
+export interface Favorite {
+  id: string;
+  userId: string;
+  bookId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 import { Request } from 'express';
 
 export interface AuthRequest extends Request {

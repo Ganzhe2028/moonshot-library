@@ -149,6 +149,18 @@ export const initDatabase = (): Promise<void> => {
         FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE
       );
 
+      -- 收藏表
+      CREATE TABLE IF NOT EXISTS favorites (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        book_id TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE,
+        UNIQUE (user_id, book_id)
+      );
+
       -- 创建索引
       CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
       CREATE INDEX IF NOT EXISTS idx_books_category ON books(category);
@@ -159,6 +171,8 @@ export const initDatabase = (): Promise<void> => {
       CREATE INDEX IF NOT EXISTS idx_reservation_user_id ON reservations(user_id);
       CREATE INDEX IF NOT EXISTS idx_reservation_book_id ON reservations(book_id);
       CREATE INDEX IF NOT EXISTS idx_reservation_status ON reservations(status);
+      CREATE INDEX IF NOT EXISTS idx_favorites_user_id ON favorites(user_id);
+      CREATE INDEX IF NOT EXISTS idx_favorites_book_id ON favorites(book_id);
 
       -- 创建触发器，自动更新 updated_at
       CREATE TRIGGER IF NOT EXISTS update_users_timestamp 
@@ -187,6 +201,13 @@ export const initDatabase = (): Promise<void> => {
       FOR EACH ROW
       BEGIN
         UPDATE reservations SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
+      END;
+
+      CREATE TRIGGER IF NOT EXISTS update_favorites_timestamp
+      AFTER UPDATE ON favorites
+      FOR EACH ROW
+      BEGIN
+        UPDATE favorites SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
       END;
     `;
 
