@@ -267,13 +267,13 @@ watch(
 .eyebrow {
   text-transform: uppercase;
   letter-spacing: 0.18em;
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   color: var(--color-subtle);
   margin-bottom: 0.5rem;
 }
 
 .hero h1 {
-  font-size: clamp(2.2rem, 4vw, 3rem);
+  font-size: var(--text-display);
   margin: 0;
   color: var(--color-ink);
 }
@@ -282,6 +282,7 @@ watch(
   max-width: 640px;
   color: var(--color-muted);
   margin-bottom: 1.6rem;
+  font-size: var(--text-md);
 }
 
 .palette-toggle {
@@ -290,7 +291,7 @@ watch(
   justify-content: space-between;
   gap: 1rem;
   padding: 1rem 1.2rem;
-  border-radius: 18px;
+  border-radius: var(--radius-lg);
   border: 1px solid var(--color-border);
   background: var(--color-surface);
   box-shadow: var(--shadow-soft);
@@ -329,7 +330,7 @@ watch(
   align-items: center;
   gap: 0.55rem;
   padding: 0.65rem 0.9rem;
-  border-radius: 12px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--color-border);
   background: var(--color-surface-soft);
   color: var(--color-ink);
@@ -367,7 +368,7 @@ watch(
 
 .search-card {
   background: var(--color-surface);
-  border-radius: 24px;
+  border-radius: var(--radius-xl);
   padding: 1.5rem;
   border: 1px solid var(--color-border);
   box-shadow: var(--shadow-soft);
@@ -384,7 +385,7 @@ watch(
 .search-input input {
   flex: 1;
   padding: 0.9rem 1.2rem;
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--color-border);
   background: var(--color-surface-soft);
   color: var(--color-ink);
@@ -393,7 +394,7 @@ watch(
 .search-input button {
   background: var(--cta-gradient);
   color: #fff;
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   padding: 0 1.5rem;
   box-shadow: 0 12px 28px var(--color-primary-soft);
 }
@@ -406,7 +407,7 @@ watch(
 }
 
 .meta-eyebrow {
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   color: var(--color-subtle);
   margin: 0;
 }
@@ -423,7 +424,7 @@ watch(
 
 .status-panel {
   background: var(--panel-gradient);
-  border-radius: 24px;
+  border-radius: var(--radius-xl);
   padding: 1.4rem 1.8rem;
   display: flex;
   align-items: center;
@@ -435,7 +436,7 @@ watch(
   background: var(--color-surface);
   padding: 0.4rem 0.9rem;
   border-radius: 999px;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   font-weight: 600;
 }
 
@@ -481,7 +482,7 @@ watch(
 .chips button.active {
   border-color: var(--color-primary);
   color: var(--color-ink);
-  background: var(--color-chip-active);
+  background: var(--chip-active);
 }
 
 .book-grid {
@@ -501,7 +502,7 @@ watch(
 
 .tags {
   background: var(--color-surface);
-  border-radius: 24px;
+  border-radius: var(--radius-xl);
   padding: 1.5rem;
   border: 1px solid var(--color-border);
   box-shadow: var(--shadow-soft);
@@ -524,7 +525,7 @@ watch(
   padding: 0.35rem 0.9rem;
   border-radius: 999px;
   background: var(--tag-bg);
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   color: var(--tag-text);
 }
 

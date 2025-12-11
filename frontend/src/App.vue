@@ -155,7 +155,10 @@ onMounted(async () => {
 
       <div class="auth-section">
         <template v-if="authStore.user">
-          <div class="user-pill" :style="{ backgroundColor: authStore.user.avatarColor || '#8b5cf6' }">
+          <div
+            class="user-pill"
+            :style="{ backgroundColor: authStore.user.avatarColor || 'var(--color-primary)' }"
+          >
             {{ userInitials }}
           </div>
           <button @click="handleLogout" class="logout-button">{{ t('common.logout') }}</button>
@@ -274,8 +277,8 @@ onMounted(async () => {
 
 .logout-button {
   background: transparent;
-  color: #dc2626;
-  border: 1px solid #dc2626;
+  color: var(--color-danger);
+  border: 1px solid var(--color-danger);
   padding: 0.4rem 0.9rem;
   border-radius: 999px;
   font-size: 0.95rem;
@@ -284,8 +287,8 @@ onMounted(async () => {
 }
 
 .logout-button:hover {
-  background-color: #dc2626;
-  color: white;
+  background-color: var(--color-danger);
+  color: #fff;
 }
 
 .user-pill {

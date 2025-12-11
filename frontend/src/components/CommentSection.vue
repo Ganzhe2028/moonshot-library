@@ -192,26 +192,26 @@ onMounted(() => {
 }
 
 .section-title {
-  font-size: 1.5rem;
+  font-size: var(--text-xl);
   margin-bottom: 1.5rem;
-  color: #1f1f25;
+  color: var(--color-ink);
 }
 
 .comment-form {
-  background: #fff;
-  border-radius: 16px;
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
   padding: 1.5rem;
   margin-bottom: 2rem;
-  border: 1px solid rgba(15, 17, 21, 0.06);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-soft);
 }
 
 .comment-input {
   width: 100%;
-  border: 1px solid rgba(15, 17, 21, 0.1);
-  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
   padding: 0.8rem 1rem;
-  font-size: 1rem;
+  font-size: var(--text-base);
   resize: vertical;
   min-height: 80px;
   font-family: inherit;
@@ -220,8 +220,8 @@ onMounted(() => {
 
 .comment-input:focus {
   outline: none;
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-soft);
 }
 
 .form-actions {
@@ -231,40 +231,41 @@ onMounted(() => {
 }
 
 .submit-button {
-  background: linear-gradient(120deg, #4338ca, #6366f1);
+  background: var(--cta-gradient);
   color: white;
   border: none;
-  border-radius: 12px;
+  border-radius: var(--radius-sm);
   padding: 0.7rem 1.5rem;
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   cursor: pointer;
   transition: background 0.2s ease;
+  box-shadow: 0 12px 24px var(--color-primary-soft);
 }
 
 .submit-button:hover:not(:disabled) {
-  background: linear-gradient(120deg, #3730a3, #4f46e5);
+  filter: brightness(0.96);
 }
 
 .submit-button:disabled {
-  background: rgba(99, 102, 241, 0.2);
+  background: var(--color-primary-soft);
   cursor: not-allowed;
 }
 
 .submit-feedback {
   margin-top: 0.8rem;
   padding: 0.6rem 1rem;
-  border-radius: 10px;
-  font-size: 0.9rem;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
 }
 
 .submit-feedback.success {
-  background: rgba(16, 185, 129, 0.12);
-  color: #047857;
+  background: var(--color-success-soft);
+  color: var(--color-success-strong);
 }
 
 .submit-feedback.error {
-  background: rgba(239, 68, 68, 0.12);
-  color: #b91c1c;
+  background: var(--color-danger-soft);
+  color: var(--color-danger-strong);
 }
 
 .comments-container {
@@ -280,10 +281,10 @@ onMounted(() => {
 }
 
 .comment-item {
-  background: #fff;
-  border-radius: 16px;
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
   padding: 1.2rem;
-  border: 1px solid rgba(15, 17, 21, 0.06);
+  border: 1px solid var(--color-border);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
@@ -309,30 +310,30 @@ onMounted(() => {
 .delete-comment-btn {
   background: none;
   border: none;
-  color: #ef4444;
-  font-size: 0.875rem;
+  color: var(--color-danger);
+  font-size: var(--text-sm);
   cursor: pointer;
   padding: 0.25rem 0.5rem;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   transition: background-color 0.2s ease;
 }
 
 .delete-comment-btn:hover {
-  background-color: rgba(239, 68, 68, 0.1);
+  background-color: var(--color-danger-soft);
 }
 
 .comment-author {
-  font-weight: 600;
-  color: #1f1f25;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-ink);
 }
 
 .comment-date {
-  font-size: 0.8rem;
-  color: #8a8e99;
+  font-size: var(--text-xs);
+  color: var(--color-subtle);
 }
 
 .comment-content {
-  color: #4c4f59;
+  color: var(--color-muted);
   line-height: 1.6;
   word-wrap: break-word;
 }
@@ -341,10 +342,10 @@ onMounted(() => {
 .loading-comments {
   text-align: center;
   padding: 2rem;
-  color: #8a8e99;
-  background: #fff;
-  border-radius: 16px;
-  border: 1px dashed rgba(15, 17, 21, 0.1);
+  color: var(--color-subtle);
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  border: 1px dashed var(--color-border);
 }
 
 /* 响应式设计 */

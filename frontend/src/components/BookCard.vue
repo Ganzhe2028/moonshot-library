@@ -89,21 +89,21 @@ const coverImageUrl = computed(
 }
 
 .status.available {
-  background: rgba(16, 185, 129, 0.2);
-  color: #047857;
-  border: 1px solid rgba(16, 185, 129, 0.3);
+  background: var(--status-available-bg);
+  color: var(--status-available-text);
+  border: 1px solid var(--status-available-text);
 }
 
 .status.borrowed {
-  background: rgba(248, 113, 113, 0.2);
-  color: #b91c1c;
-  border: 1px solid rgba(248, 113, 113, 0.3);
+  background: var(--status-danger-bg);
+  color: var(--status-danger-text);
+  border: 1px solid var(--status-danger-text);
 }
 
 .status.reserved {
-  background: rgba(251, 191, 36, 0.2);
-  color: #92400e;
-  border: 1px solid rgba(251, 191, 36, 0.3);
+  background: var(--status-warning-bg);
+  color: var(--status-warning-text);
+  border: 1px solid var(--status-warning-text);
 }
 
 .card {

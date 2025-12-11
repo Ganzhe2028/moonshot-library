@@ -1,10 +1,48 @@
 :root {
+  --font-sans: 'Inter', 'SF Pro Display', 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Helvetica Neue',
+    sans-serif;
+  --font-display: var(--font-sans);
+  --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.9rem;
+  --text-base: 1rem;
+  --text-md: 1.05rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.5rem;
+  --text-display: clamp(2.3rem, 4vw, 3.2rem);
+  --line-tight: 1.2;
+  --line-snug: 1.35;
+  --line-relaxed: 1.55;
+
+  --radius-xs: 10px;
+  --radius-sm: 12px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  --radius-pill: 999px;
+
   --color-ink: #1e3741;
   --color-muted: #4f5f66;
   --color-subtle: #6b7a82;
   --color-primary: #ff5b04;
   --color-primary-strong: #e24d00;
   --color-primary-soft: rgba(255, 91, 4, 0.16);
+  --color-success: #0b8a68;
+  --color-success-strong: #086d52;
+  --color-success-soft: rgba(11, 138, 104, 0.16);
+  --color-warning: #c26b05;
+  --color-warning-strong: #9c5504;
+  --color-warning-soft: rgba(194, 107, 5, 0.18);
+  --color-danger: #c7362f;
+  --color-danger-strong: #a02b26;
+  --color-danger-soft: rgba(199, 54, 47, 0.18);
+  --color-info: #1f6aa5;
+  --color-info-strong: #185482;
+  --color-info-soft: rgba(31, 106, 165, 0.16);
   --color-surface: #ffffff;
   --color-surface-soft: #f1f4f6;
   --color-border: rgba(30, 55, 65, 0.16);
@@ -15,6 +53,14 @@
   --chip-active: rgba(255, 91, 4, 0.18);
   --tag-bg: rgba(30, 55, 65, 0.08);
   --tag-text: #1e3741;
+  --status-available-bg: var(--color-success-soft);
+  --status-available-text: var(--color-success-strong);
+  --status-warning-bg: var(--color-warning-soft);
+  --status-warning-text: var(--color-warning-strong);
+  --status-danger-bg: var(--color-danger-soft);
+  --status-danger-text: var(--color-danger-strong);
+  --status-info-bg: var(--color-info-soft);
+  --status-info-text: var(--color-info-strong);
   --logo-glow: rgba(255, 91, 4, 0.3);
   --app-background: radial-gradient(
       circle at 14% 20%,
@@ -26,8 +72,7 @@
   --panel-gradient: linear-gradient(120deg, rgba(255, 91, 4, 0.12), rgba(30, 55, 65, 0.08));
   --cta-gradient: linear-gradient(135deg, #ff7b2f, #ff5b04);
 
-  font-family: 'Inter', 'SF Pro Display', 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Helvetica Neue',
-    sans-serif;
+  font-family: var(--font-sans);
   color: var(--color-ink);
   background-color: var(--color-surface-soft);
   line-height: 1.5;
@@ -74,6 +119,8 @@ body {
   min-height: 100vh;
   background: var(--app-background);
   color: var(--color-ink);
+  font-size: var(--text-base);
+  line-height: var(--line-relaxed);
 }
 
 a {
@@ -99,4 +146,19 @@ textarea {
 
 ::selection {
   background-color: var(--color-primary-soft);
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  line-height: var(--line-tight);
+  color: var(--color-ink);
+  margin: 0;
+}
+
+p {
+  margin: 0;
+  color: var(--color-muted);
+  line-height: var(--line-relaxed);
 }

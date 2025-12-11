@@ -21,12 +21,11 @@
 
 .loading-spinner {
   text-align: center;
-  color: #6366f1;
-  font-size: 1rem;
+  color: var(--color-primary);
+  font-size: var(--text-base);
 }
 
 .loading-spinner p {
   margin: 0;
 }
 </style>
-
