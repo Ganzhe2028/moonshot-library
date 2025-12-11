@@ -79,35 +79,6 @@
   font-weight: 400;
 }
 
-:root[data-palette='b'] {
-  --color-ink: #07383f;
-  --color-muted: #2f6167;
-  --color-subtle: #4c7478;
-  --color-primary: #075056;
-  --color-primary-strong: #064349;
-  --color-primary-soft: rgba(7, 80, 86, 0.16);
-  --color-surface: #ffffff;
-  --color-surface-soft: #e4eef0;
-  --color-border: rgba(7, 80, 86, 0.17);
-  --color-border-strong: rgba(7, 80, 86, 0.26);
-  --shadow-soft: 0 20px 55px rgba(7, 80, 86, 0.1);
-  --shadow-strong: 0 24px 45px rgba(7, 80, 86, 0.16);
-  --chip-bg: rgba(7, 80, 86, 0.08);
-  --chip-active: rgba(7, 80, 86, 0.16);
-  --tag-bg: rgba(7, 80, 86, 0.12);
-  --tag-text: #064349;
-  --logo-glow: rgba(7, 80, 86, 0.28);
-  --app-background: radial-gradient(
-      circle at 14% 20%,
-      rgba(7, 80, 86, 0.15) 0,
-      rgba(7, 80, 86, 0) 32%
-    ),
-    radial-gradient(circle at 80% 0%, rgba(7, 80, 86, 0.1) 0, rgba(7, 80, 86, 0) 32%),
-    linear-gradient(180deg, #e4eef0 0%, #d8e5e7 100%);
-  --panel-gradient: linear-gradient(120deg, rgba(7, 80, 86, 0.12), rgba(7, 80, 86, 0.08));
-  --cta-gradient: linear-gradient(135deg, #0a6d73, #075056);
-}
-
 *,
 *::before,
 *::after {

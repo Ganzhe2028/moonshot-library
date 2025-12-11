@@ -74,6 +74,43 @@ const ensureBookColumns = (database: Database): Promise<void> => {
   });
 };
 
+const ensureCreditColumns = (database: Database): Promise<void> => {
+  const requiredColumns = [{ name: 'last_recovered_at', type: 'DATETIME' }];
+
+  return new Promise((resolve, reject) => {
+    database.all('PRAGMA table_info(user_credit);', [], (err, rows) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+
+      const existing = new Set((rows || []).map((row: any) => row.name));
+      const missing = requiredColumns.filter((col) => !existing.has(col.name));
+
+      if (!missing.length) {
+        resolve();
+        return;
+      }
+
+      Promise.all(
+        missing.map(
+          (col) =>
+            new Promise<void>((res, rej) => {
+              database.run(`ALTER TABLE user_credit ADD COLUMN ${col.name} ${col.type}`, (alterErr) => {
+                if (alterErr && !String(alterErr.message || alterErr).includes('duplicate column name')) {
+                  rej(alterErr);
+                } else {
+                  res();
+                }
+              });
+            })
+        )
+      )
+        .then(() => resolve())
+        .catch(reject);
+    });
+  });
+};
 export const initDatabase = (): Promise<void> => {
   return new Promise((resolve, reject) => {
     const database = getDatabase();
@@ -149,6 +186,32 @@ export const initDatabase = (): Promise<void> => {
         FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE
       );
 
+      -- 收藏表
+      CREATE TABLE IF NOT EXISTS favorites (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        book_id TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE,
+        UNIQUE (user_id, book_id)
+      );
+
+      -- 用户信用表
+      CREATE TABLE IF NOT EXISTS user_credit (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL UNIQUE,
+        score INTEGER NOT NULL DEFAULT 100,
+        level TEXT NOT NULL DEFAULT 'good',
+        status TEXT NOT NULL DEFAULT 'active',
+        remarks TEXT,
+        last_recovered_at DATETIME,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      );
+
       -- 创建索引
       CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
       CREATE INDEX IF NOT EXISTS idx_books_category ON books(category);
@@ -159,6 +222,9 @@ export const initDatabase = (): Promise<void> => {
       CREATE INDEX IF NOT EXISTS idx_reservation_user_id ON reservations(user_id);
       CREATE INDEX IF NOT EXISTS idx_reservation_book_id ON reservations(book_id);
       CREATE INDEX IF NOT EXISTS idx_reservation_status ON reservations(status);
+      CREATE INDEX IF NOT EXISTS idx_favorites_user_id ON favorites(user_id);
+      CREATE INDEX IF NOT EXISTS idx_favorites_book_id ON favorites(book_id);
+      CREATE INDEX IF NOT EXISTS idx_user_credit_user_id ON user_credit(user_id);
 
       -- 创建触发器，自动更新 updated_at
       CREATE TRIGGER IF NOT EXISTS update_users_timestamp 
@@ -188,6 +254,20 @@ export const initDatabase = (): Promise<void> => {
       BEGIN
         UPDATE reservations SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
       END;
+
+      CREATE TRIGGER IF NOT EXISTS update_favorites_timestamp
+      AFTER UPDATE ON favorites
+      FOR EACH ROW
+      BEGIN
+        UPDATE favorites SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
+      END;
+
+      CREATE TRIGGER IF NOT EXISTS update_user_credit_timestamp
+      AFTER UPDATE ON user_credit
+      FOR EACH ROW
+      BEGIN
+        UPDATE user_credit SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
+      END;
     `;
 
     database.exec(createTablesSQL, (err) => {
@@ -196,6 +276,7 @@ export const initDatabase = (): Promise<void> => {
         reject(err);
       } else {
         ensureBookColumns(database)
+          .then(() => ensureCreditColumns(database))
           .then(() => {
             console.log('✅ Database tables initialized successfully');
             resolve();

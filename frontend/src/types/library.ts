@@ -54,6 +54,25 @@ export interface BorrowingRecord {
   updatedAt?: string
 }
 
+export interface Favorite {
+  id: string
+  userId: string
+  bookId: string
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface Credit {
+  id: string
+  userId: string
+  score: number
+  level: 'excellent' | 'good' | 'warn' | 'suspended'
+  status: 'active' | 'restricted' | 'suspended'
+  remarks?: string
+  createdAt?: string
+  updatedAt?: string
+}
+
 export interface Announcement {
   id: string
   title: string
