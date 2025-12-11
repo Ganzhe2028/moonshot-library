@@ -1,9 +1,10 @@
 import { defineStore } from 'pinia'
-import type { Book, BookImportResult, BorrowingRecord, Rating, Comment, Favorite } from '@/types/library'
+import type { Book, BookImportResult, BorrowingRecord, Rating, Comment, Favorite, Credit } from '@/types/library'
 import { bookService } from '@/services/bookService'
 import { borrowingService } from '@/services/borrowingService'
 import { ratingService } from '@/services/ratingService'
 import { favoriteService } from '@/services/favoriteService'
+import { creditService } from '@/services/creditService'
 import { i18n } from '@/i18n'
 import { useAuthStore } from './auth'
 
@@ -23,6 +24,9 @@ interface LibraryState {
   favorites: Favorite[]
   favoritesLoading: boolean
   favoritesError: string
+  credit: Credit | null
+  creditLoading: boolean
+  creditError: string
 }
 
 export const useLibraryStore = defineStore('library', {
@@ -42,6 +46,9 @@ export const useLibraryStore = defineStore('library', {
     favorites: [],
     favoritesLoading: false,
     favoritesError: '',
+    credit: null,
+    creditLoading: false,
+    creditError: '',
   }),
   getters: {
     activeBorrowings: (state): BorrowingRecord[] =>
@@ -165,6 +172,7 @@ export const useLibraryStore = defineStore('library', {
       if (!authStore.user) {
         this.borrowings = []
         this.favorites = []
+        this.credit = null
         return
       }
 
@@ -185,6 +193,7 @@ export const useLibraryStore = defineStore('library', {
       const authStore = useAuthStore()
       if (!authStore.user) {
         this.favorites = []
+        this.credit = null
         return
       }
       if (this.favorites.length && !force) return
@@ -197,6 +206,24 @@ export const useLibraryStore = defineStore('library', {
         this.favoritesError = err instanceof Error ? err.message : '无法加载收藏列表'
       } finally {
         this.favoritesLoading = false
+      }
+    },
+    async fetchCredit(force = false) {
+      const authStore = useAuthStore()
+      if (!authStore.user) {
+        this.credit = null
+        return
+      }
+      if (this.credit && !force) return
+      this.creditLoading = true
+      this.creditError = ''
+      try {
+        const credit = await creditService.fetchCredit(authStore.user.id)
+        this.credit = credit
+      } catch (err) {
+        this.creditError = err instanceof Error ? err.message : i18n.global.t('borrowings.credit.tipWarn')
+      } finally {
+        this.creditLoading = false
       }
     },
     async addFavorite(bookId: string) {

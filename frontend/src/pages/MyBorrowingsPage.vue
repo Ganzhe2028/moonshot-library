@@ -25,17 +25,46 @@ const favoriteBooks = computed(() => {
     .filter((book): book is Book => Boolean(book))
 })
 
+const credit = computed(() => libraryStore.credit)
+
+const scoreToLevel = (score: number) => {
+  if (score >= 90) return 'excellent'
+  if (score >= 70) return 'good'
+  if (score >= 50) return 'warn'
+  return 'suspended'
+}
+
 const creditSummary = computed(() => {
   const overdueCount = libraryStore.borrowings.filter((b) => b.status === 'overdue').length
-  const membership =
+  const membershipLabel =
     currentUser.value?.membership === 'active'
-      ? t('borrowings.credit.membership') + ' · ' + t('admin.users.membershipActive')
-      : t('borrowings.credit.membership') + ' · ' + t('admin.users.membershipSuspended')
-  const level =
-    overdueCount > 0 ? t('borrowings.credit.levelWarn') : t('borrowings.credit.levelGood')
-  const tip = overdueCount > 0 ? t('borrowings.credit.tipWarn') : t('borrowings.credit.tipGood')
-  const levelKey = overdueCount > 0 ? 'warn' : 'good'
-  return { overdueCount, membership, level, tip, levelKey }
+      ? t('admin.users.membershipActive')
+      : t('admin.users.membershipSuspended')
+
+  const score = credit.value?.score ?? 100
+  const levelKey = credit.value?.level ?? scoreToLevel(score)
+  const levelText =
+    levelKey === 'excellent'
+      ? t('borrowings.credit.levelExcellent')
+      : levelKey === 'good'
+        ? t('borrowings.credit.levelGood')
+        : levelKey === 'warn'
+          ? t('borrowings.credit.levelWarn')
+          : t('borrowings.credit.status.suspended')
+  const tip =
+    levelKey === 'warn' || levelKey === 'suspended'
+      ? t('borrowings.credit.tipWarn')
+      : t('borrowings.credit.tipGood')
+
+  return {
+    score,
+    levelKey,
+    levelText,
+    overdueCount,
+    membership: `${t('borrowings.credit.membership')} · ${membershipLabel}`,
+    tip,
+    status: credit.value?.status || 'active',
+  }
 })
 
 const activeBorrowings = computed(() =>
@@ -156,6 +185,7 @@ onMounted(() => {
   libraryStore.fetchBooks()
   libraryStore.fetchBorrowings()
   libraryStore.fetchFavorites()
+  libraryStore.fetchCredit()
 })
 
 watch(
@@ -163,6 +193,7 @@ watch(
   () => {
     libraryStore.fetchBorrowings(true)
     libraryStore.fetchFavorites(true)
+    libraryStore.fetchCredit(true)
   },
 )
 
@@ -171,6 +202,11 @@ const handleRemoveFavorite = async (bookId: string) => {
   const result = await libraryStore.removeFavorite(bookId)
   actionVariant.value = result.success ? 'success' : 'error'
   actionMessage.value = result.message
+  if (result.success) {
+    setTimeout(() => {
+      actionMessage.value = ''
+    }, 2400)
+  }
 }
 </script>
 
@@ -288,14 +324,15 @@ const handleRemoveFavorite = async (bookId: string) => {
     <section v-if="isLoggedIn" class="credit">
       <div>
         <p class="eyebrow">{{ t('borrowings.credit.title') }}</p>
-        <h2>{{ t('borrowings.credit.title') }}：{{ creditSummary.level }}</h2>
+        <h2>{{ t('borrowings.credit.title') }}：{{ creditSummary.levelText }}</h2>
         <p class="meta">
           {{ creditSummary.membership }} · {{ t('borrowings.credit.overdue') }}：{{ creditSummary.overdueCount }}
+          · {{ t('borrowings.credit.status.' + creditSummary.status) }}
         </p>
         <p class="hint">{{ creditSummary.tip }}</p>
       </div>
-      <div class="credit-pill" :class="creditSummary.levelKey === 'good' ? 'good' : 'warning'">
-        {{ creditSummary.level }}
+      <div class="credit-pill" :class="creditSummary.levelKey === 'good' ? 'good' : creditSummary.levelKey">
+        {{ creditSummary.score }} / {{ creditSummary.levelText }}
       </div>
     </section>
 
@@ -596,10 +633,29 @@ const handleRemoveFavorite = async (bookId: string) => {
   border-color: var(--color-success-strong);
 }
 
+.credit-pill.excellent {
+  background: var(--color-success-soft);
+  color: var(--color-success-strong);
+  border-color: var(--color-success-strong);
+}
+
 .credit-pill.warning {
   background: var(--color-warning-soft);
   color: var(--color-warning-strong);
   border-color: var(--color-warning-strong);
+}
+
+.credit-pill.warn,
+.credit-pill.warn {
+  background: var(--color-warning-soft);
+  color: var(--color-warning-strong);
+  border-color: var(--color-warning-strong);
+}
+
+.credit-pill.suspended {
+  background: var(--color-danger-soft);
+  color: var(--color-danger-strong);
+  border-color: var(--color-danger-strong);
 }
 
 .favorites {

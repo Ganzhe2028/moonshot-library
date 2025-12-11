@@ -11,6 +11,10 @@ import {
   getUserFavorites,
   removeUserFavorite
 } from '../controllers/favoriteController';
+import {
+  getUserCredit,
+  updateUserCredit
+} from '../controllers/creditController';
 import { authenticate, authorize } from '../middleware/auth';
 import { handleValidationErrors } from '../middleware/validation';
 import { validatePagination } from '../middleware/validation';
@@ -380,6 +384,86 @@ router.delete(
   ],
   handleValidationErrors,
   removeUserFavorite
+);
+
+/**
+ * @swagger
+ * /users/{id}/credit:
+ *   get:
+ *     summary: 获取用户信用信息
+ *     description: 返回指定用户的信用分、等级与状态（用户本人或管理员/图书管理员可查看）
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: 用户ID
+ *     responses:
+ *       200:
+ *         description: 信用信息获取成功
+ *       401:
+ *         description: 未认证
+ *       403:
+ *         description: 无权限
+ */
+router.get('/:id/credit', ensureSelfOrStaff, getUserCredit);
+
+/**
+ * @swagger
+ * /users/{id}/credit:
+ *   put:
+ *     summary: 更新用户信用信息
+ *     description: 仅管理员/图书管理员可以更新信用分、等级、状态
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: 用户ID
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               score:
+ *                 type: integer
+ *                 minimum: 0
+ *                 maximum: 1000
+ *               level:
+ *                 type: string
+ *                 enum: [excellent, good, warn, suspended]
+ *               status:
+ *                 type: string
+ *                 enum: [active, restricted, suspended]
+ *               remarks:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: 信用信息更新成功
+ *       401:
+ *         description: 未认证
+ *       403:
+ *         description: 无权限
+ */
+router.put(
+  '/:id/credit',
+  authorize(['admin', 'librarian']),
+  [
+    body('score').optional().isInt({ min: 0, max: 100 }).withMessage('Score must be between 0 and 100'),
+    body('remarks').optional().isString().isLength({ max: 255 }).withMessage('Remarks too long')
+  ],
+  handleValidationErrors,
+  updateUserCredit
 );
 
 /**

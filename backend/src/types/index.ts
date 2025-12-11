@@ -68,6 +68,17 @@ export interface Favorite {
   updatedAt: string;
 }
 
+export interface Credit {
+  id: string;
+  userId: string;
+  score: number;
+  level: 'excellent' | 'good' | 'warn' | 'suspended';
+  status: 'active' | 'restricted' | 'suspended';
+  remarks?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 import { Request } from 'express';
 
 export interface AuthRequest extends Request {

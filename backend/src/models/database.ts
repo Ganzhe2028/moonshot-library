@@ -161,6 +161,19 @@ export const initDatabase = (): Promise<void> => {
         UNIQUE (user_id, book_id)
       );
 
+      -- 用户信用表
+      CREATE TABLE IF NOT EXISTS user_credit (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL UNIQUE,
+        score INTEGER NOT NULL DEFAULT 700,
+        level TEXT NOT NULL DEFAULT 'good',
+        status TEXT NOT NULL DEFAULT 'active',
+        remarks TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      );
+
       -- 创建索引
       CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
       CREATE INDEX IF NOT EXISTS idx_books_category ON books(category);
@@ -173,6 +186,7 @@ export const initDatabase = (): Promise<void> => {
       CREATE INDEX IF NOT EXISTS idx_reservation_status ON reservations(status);
       CREATE INDEX IF NOT EXISTS idx_favorites_user_id ON favorites(user_id);
       CREATE INDEX IF NOT EXISTS idx_favorites_book_id ON favorites(book_id);
+      CREATE INDEX IF NOT EXISTS idx_user_credit_user_id ON user_credit(user_id);
 
       -- 创建触发器，自动更新 updated_at
       CREATE TRIGGER IF NOT EXISTS update_users_timestamp 
@@ -208,6 +222,13 @@ export const initDatabase = (): Promise<void> => {
       FOR EACH ROW
       BEGIN
         UPDATE favorites SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
+      END;
+
+      CREATE TRIGGER IF NOT EXISTS update_user_credit_timestamp
+      AFTER UPDATE ON user_credit
+      FOR EACH ROW
+      BEGIN
+        UPDATE user_credit SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
       END;
     `;
 

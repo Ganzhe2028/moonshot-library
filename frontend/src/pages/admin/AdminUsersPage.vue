@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, reactive } from 'vue'
+import { computed, onMounted, ref, reactive, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useAdminStore } from '@/stores/admin'
 import { userService } from '@/services/userService'
+import { creditService } from '@/services/creditService'
 import type { AuthUser } from '@/types/library'
 
 const adminStore = useAdminStore()
@@ -14,6 +15,33 @@ const showEditDialog = ref(false)
 const editingUser = reactive<Partial<AuthUser>>({})
 const isSaving = ref(false)
 const saveError = ref('')
+
+const showCreditDialog = ref(false)
+const creditLoading = ref(false)
+const creditError = ref('')
+const creditForm = reactive({
+  score: 80,
+  level: 'good' as 'excellent' | 'good' | 'warn' | 'suspended',
+  status: 'active' as 'active' | 'restricted' | 'suspended',
+  remarks: '',
+})
+const creditUserId = ref<string>('')
+
+const scoreToLevel = (score: number) => {
+  if (score >= 90) return 'excellent'
+  if (score >= 70) return 'good'
+  if (score >= 50) return 'warn'
+  return 'suspended'
+}
+
+watch(
+  () => creditForm.score,
+  (score) => {
+    if (Number.isFinite(score)) {
+      creditForm.level = scoreToLevel(score)
+    }
+  },
+)
 
 const users = computed(() => {
   if (roleFilter.value === 'all') return adminStore.users
@@ -42,6 +70,55 @@ const openEditDialog = (user: AuthUser) => {
   Object.assign(editingUser, userCopy)
   showEditDialog.value = true
   saveError.value = ''
+}
+
+const openCreditDialog = async (user: AuthUser) => {
+  showCreditDialog.value = true
+  creditError.value = ''
+  creditLoading.value = true
+  creditUserId.value = user.id
+  try {
+    const credit = await creditService.fetchCredit(user.id)
+    creditForm.score = credit.score ?? 80
+    creditForm.level = credit.level ?? 'good'
+    creditForm.status = credit.status ?? 'active'
+    creditForm.remarks = credit.remarks || ''
+  } catch (error) {
+    creditError.value =
+      error instanceof Error ? error.message : (t('admin.users.creditError') as string)
+  } finally {
+    creditLoading.value = false
+  }
+}
+
+const closeCreditDialog = () => {
+  showCreditDialog.value = false
+  creditError.value = ''
+  creditUserId.value = ''
+}
+
+const saveCredit = async () => {
+  if (!creditUserId.value) return
+  creditLoading.value = true
+  creditError.value = ''
+  try {
+    const updated = await creditService.updateCredit(creditUserId.value, {
+      score: creditForm.score,
+      level: creditForm.level,
+      status: creditForm.status,
+      remarks: creditForm.remarks || undefined,
+    })
+    creditForm.score = updated.score
+    creditForm.level = updated.level
+    creditForm.status = updated.status
+    creditForm.remarks = updated.remarks || ''
+    showCreditDialog.value = false
+  } catch (error) {
+    creditError.value =
+      error instanceof Error ? error.message : (t('admin.users.creditError') as string)
+  } finally {
+    creditLoading.value = false
+  }
 }
 
 const closeEditDialog = () => {
@@ -193,6 +270,9 @@ onMounted(() => {
         <button type="button" class="ghost small" @click="openEditDialog(user)">
           {{ t('admin.edit') }}
         </button>
+        <button type="button" class="ghost small" @click="openCreditDialog(user)">
+          {{ t('admin.users.editCredit') }}
+        </button>
       </div>
       <p v-if="!users.length" class="hint">{{ t('empty.noData') }}</p>
     </div>
@@ -252,14 +332,61 @@ onMounted(() => {
       </div>
     </div>
   </div>
+
+  <!-- 信用对话框 -->
+  <div v-if="showCreditDialog" class="modal-overlay" @click.self="closeCreditDialog">
+    <div class="dialog">
+      <div class="dialog-header">
+        <h3>{{ t('admin.users.editCredit') }}</h3>
+        <button type="button" class="close-button" @click="closeCreditDialog">×</button>
+      </div>
+      <div class="dialog-content">
+        <div v-if="creditError" class="alert error">{{ creditError }}</div>
+        <div v-else-if="creditLoading" class="hint">{{ t('admin.users.loadingCredit') }}</div>
+        <template v-else>
+          <div class="form-group">
+            <label>{{ t('admin.users.creditScore') }}</label>
+            <input
+              type="number"
+              min="0"
+              max="1000"
+              v-model.number="creditForm.score"
+              :disabled="creditLoading"
+            />
+            <small class="readonly-hint">{{ t('admin.users.creditLevel') }}: {{ creditForm.level }}</small>
+          </div>
+          <div class="form-group">
+            <label>{{ t('admin.users.creditLevel') }}</label>
+            <div class="form-group-readonly">
+              <span class="role-display">{{ t('admin.users.creditLevel') }}: {{ creditForm.level }}</span>
+              <small class="readonly-hint">{{ t('admin.users.creditStatus') }}: {{ creditForm.status }}</small>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>{{ t('admin.users.creditRemarks') }}</label>
+            <textarea v-model="creditForm.remarks" rows="3" :disabled="creditLoading"></textarea>
+          </div>
+        </template>
+      </div>
+      <div class="dialog-actions">
+        <button type="button" class="ghost" @click="closeCreditDialog" :disabled="creditLoading">
+          {{ t('admin.cancel') }}
+        </button>
+        <button type="button" @click="saveCredit" :disabled="creditLoading || !!creditError">
+          {{ creditLoading ? t('admin.saving') : t('admin.users.creditSave') }}
+        </button>
+      </div>
+    </div>
+  </div>
 </template>
 
 <style scoped>
 .panel {
-  border: 1px solid rgba(15, 17, 21, 0.05);
-  border-radius: 18px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
   padding: 1rem;
-  background: #fff;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-soft);
 }
 
 .panel-head {
@@ -273,8 +400,8 @@ onMounted(() => {
 .eyebrow {
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  font-size: 0.75rem;
-  color: #8a8e99;
+  font-size: var(--text-xs);
+  color: var(--color-subtle);
   margin: 0 0 0.25rem;
 }
 
@@ -471,20 +598,21 @@ select {
 }
 
 .form-group select,
-.form-group input {
+.form-group input,
+.form-group textarea {
   width: 100%;
   padding: 0.7rem;
-  border: 1px solid rgba(15, 17, 21, 0.1);
-  border-radius: 8px;
-  font-size: 0.95rem;
-  background: white;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-base);
+  background: var(--color-surface);
 }
 
 .form-group-readonly {
   padding: 0.7rem;
-  background-color: rgba(15, 17, 21, 0.05);
-  border-radius: 8px;
-  border: 1px solid rgba(15, 17, 21, 0.1);
+  background-color: var(--color-surface-soft);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
 }
 
 .role-display {
@@ -493,8 +621,8 @@ select {
 }
 
 .readonly-hint {
-  color: #6c6f78;
-  font-size: 0.8rem;
+  color: var(--color-subtle);
+  font-size: var(--text-xs);
   display: block;
   margin-top: 0.25rem;
 }
@@ -502,7 +630,7 @@ select {
 .form-group select:focus,
 .form-group input:focus {
   outline: none;
-  border-color: rgba(15, 17, 21, 0.3);
+  border-color: var(--color-primary);
 }
 
 .dialog-actions {
@@ -510,13 +638,13 @@ select {
   justify-content: flex-end;
   gap: 0.75rem;
   padding: 1rem 1.25rem;
-  border-top: 1px solid rgba(15, 17, 21, 0.05);
+  border-top: 1px solid var(--color-border);
 }
 
 .dialog-actions button {
   padding: 0.6rem 1.2rem;
-  border-radius: 8px;
-  font-size: 0.95rem;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-base);
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -527,12 +655,13 @@ select {
 }
 
 .dialog-actions button:not(.ghost) {
-  background: #1f1f25;
+  background: var(--cta-gradient);
   color: white;
   border: none;
+  box-shadow: 0 12px 24px var(--color-primary-soft);
 }
 
 .dialog-actions button:not(.ghost):hover:not(:disabled) {
-  background: #374151;
+  filter: brightness(0.96);
 }
 </style>
