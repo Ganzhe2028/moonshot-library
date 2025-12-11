@@ -74,6 +74,43 @@ const ensureBookColumns = (database: Database): Promise<void> => {
   });
 };
 
+const ensureCreditColumns = (database: Database): Promise<void> => {
+  const requiredColumns = [{ name: 'last_recovered_at', type: 'DATETIME' }];
+
+  return new Promise((resolve, reject) => {
+    database.all('PRAGMA table_info(user_credit);', [], (err, rows) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+
+      const existing = new Set((rows || []).map((row: any) => row.name));
+      const missing = requiredColumns.filter((col) => !existing.has(col.name));
+
+      if (!missing.length) {
+        resolve();
+        return;
+      }
+
+      Promise.all(
+        missing.map(
+          (col) =>
+            new Promise<void>((res, rej) => {
+              database.run(`ALTER TABLE user_credit ADD COLUMN ${col.name} ${col.type}`, (alterErr) => {
+                if (alterErr && !String(alterErr.message || alterErr).includes('duplicate column name')) {
+                  rej(alterErr);
+                } else {
+                  res();
+                }
+              });
+            })
+        )
+      )
+        .then(() => resolve())
+        .catch(reject);
+    });
+  });
+};
 export const initDatabase = (): Promise<void> => {
   return new Promise((resolve, reject) => {
     const database = getDatabase();
@@ -165,10 +202,11 @@ export const initDatabase = (): Promise<void> => {
       CREATE TABLE IF NOT EXISTS user_credit (
         id TEXT PRIMARY KEY,
         user_id TEXT NOT NULL UNIQUE,
-        score INTEGER NOT NULL DEFAULT 700,
+        score INTEGER NOT NULL DEFAULT 100,
         level TEXT NOT NULL DEFAULT 'good',
         status TEXT NOT NULL DEFAULT 'active',
         remarks TEXT,
+        last_recovered_at DATETIME,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -238,6 +276,7 @@ export const initDatabase = (): Promise<void> => {
         reject(err);
       } else {
         ensureBookColumns(database)
+          .then(() => ensureCreditColumns(database))
           .then(() => {
             console.log('✅ Database tables initialized successfully');
             resolve();

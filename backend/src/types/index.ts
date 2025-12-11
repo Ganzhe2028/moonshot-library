@@ -77,6 +77,7 @@ export interface Credit {
   remarks?: string;
   createdAt: string;
   updatedAt: string;
+  lastRecoveredAt?: string;
 }
 
 import { Request } from 'express';

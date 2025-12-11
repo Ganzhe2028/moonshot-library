@@ -9,7 +9,8 @@ const deserializeCredit = (row: any): Credit => ({
   status: row.status,
   remarks: row.remarks || undefined,
   createdAt: row.created_at,
-  updatedAt: row.updated_at
+  updatedAt: row.updated_at,
+  lastRecoveredAt: row.last_recovered_at
 });
 
 const generateCreditId = (): string => `cred-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
@@ -31,18 +32,45 @@ export const getCreditByUserId = async (userId: string): Promise<Credit> => {
         return;
       }
       if (row) {
-        resolve(deserializeCredit(row));
+        const credit = deserializeCredit(row);
+        const recovered = await recoverCreditIfNeeded(credit);
+        resolve(recovered);
         return;
       }
 
       try {
         const created = await createCredit(userId);
-        resolve(created);
+        const recovered = await recoverCreditIfNeeded(created);
+        resolve(recovered);
       } catch (createErr) {
         reject(createErr);
       }
     });
   });
+};
+
+const recoverCreditIfNeeded = async (credit: Credit): Promise<Credit> => {
+  const now = new Date();
+  const last = credit.lastRecoveredAt ? new Date(credit.lastRecoveredAt) : new Date(credit.updatedAt);
+  const diffDays = Math.floor((now.getTime() - last.getTime()) / (1000 * 60 * 60 * 24));
+  const batches = Math.floor(diffDays / 3);
+  if (batches <= 0) return credit;
+
+  const increment = batches * 10;
+  const newScore = Math.min(100, credit.score + increment);
+  if (newScore === credit.score) return credit;
+
+  const nextLevel = computeLevel(newScore);
+  const nextStatus: Credit['status'] = nextLevel === 'suspended' ? 'restricted' : 'active';
+  await updateCredit(credit.userId, { score: newScore, remarks: credit.remarks });
+
+  return {
+    ...credit,
+    score: newScore,
+    level: nextLevel,
+    status: nextStatus,
+    lastRecoveredAt: now.toISOString()
+  };
 };
 
 export const createCredit = async (userId: string, score: number = 80): Promise<Credit> => {
@@ -86,6 +114,8 @@ export const updateCredit = async (
     values.push(nextLevel);
     fields.push('status = ?');
     values.push(nextStatus);
+    fields.push('last_recovered_at = ?');
+    values.push(new Date().toISOString());
   }
 
   if (updates.remarks !== undefined) {

@@ -4,6 +4,7 @@ import { ApiResponse, AuthRequest, BorrowingRequest } from '../types';
 import { AppError, NotFoundError, ValidationError } from '../middleware/errorHandler';
 import { getBookById } from '../models/book';
 import { getUserById } from '../models/user';
+import { getCreditByUserId } from '../models/credit';
 import {
   checkOverdueBorrowings,
   createBorrowingRecord,
@@ -201,6 +202,12 @@ export const createBorrowing = async (req: AuthRequest, res: Response): Promise<
       throw new NotFoundError('User not found');
     }
 
+    // 验证信用分：低于50禁止借阅
+    const credit = await getCreditByUserId(userId);
+    if (credit.score < 50) {
+      throw new AppError('Credit score too low to borrow books', 403);
+    }
+
     // 检查用户是否已有未归还的相同图书
     const existingBorrowings = await getBorrowingRecordsByUser(userId);
     const hasActiveBorrowing = existingBorrowings.some(
@@ -324,6 +331,11 @@ export const renewBorrowingHandler = async (req: Request, res: Response): Promis
 
     if (borrowingRecord.status === 'overdue') {
       throw new AppError('Cannot renew an overdue book', 400);
+    }
+
+    const credit = await getCreditByUserId(borrowingRecord.userId);
+    if (credit.score < 70) {
+      throw new AppError('Credit score too low to renew', 403);
     }
 
     const updatedRecord = await renewBorrowing(id);
