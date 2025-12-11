@@ -9,7 +9,7 @@
 
 ## ⚠️ 开发前必读
 
-1. **每次开发前** AI Agent 需阅读：`Documentation/README-BEFORE-DEV-EN.md`
+1. **每次开发前** AI Agent 需阅读：`README-BEFORE-DEV-EN.md`
 2. 第一次开发请仔细阅读本文档和开发规范文档
 
 ---
