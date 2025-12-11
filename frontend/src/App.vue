@@ -211,7 +211,7 @@ onMounted(async () => {
   background-image: url('/logo75.png');
   background-size: cover;
   background-position: center;
-  box-shadow: 0 8px 24px rgba(183, 181, 235, 0.35);
+  box-shadow: 0 8px 24px var(--logo-glow);
 }
 
 .brand-title {
@@ -222,7 +222,7 @@ onMounted(async () => {
 .brand-subtitle {
   margin: 0;
   font-size: 0.85rem;
-  color: #5b5d63;
+  color: var(--color-muted);
 }
 
 .app-nav {
@@ -234,15 +234,15 @@ onMounted(async () => {
   padding: 0.4rem 0.9rem;
   border-radius: 999px;
   font-size: 0.95rem;
-  color: #4c4f59;
+  color: var(--color-muted);
   border: 1px solid transparent;
   transition: all 0.2s ease;
 }
 
 .app-nav a.active {
-  background-color: rgba(99, 102, 241, 0.1);
-  border-color: rgba(99, 102, 241, 0.4);
-  color: #1f1f25;
+  background-color: var(--color-primary-soft);
+  border-color: var(--color-primary);
+  color: var(--color-ink);
 }
 
 .auth-section {
@@ -260,16 +260,16 @@ onMounted(async () => {
   padding: 0.4rem 0.9rem;
   border-radius: 999px;
   font-size: 0.95rem;
-  color: #4c4f59;
+  color: var(--color-muted);
   border: 1px solid transparent;
   transition: all 0.2s ease;
   text-decoration: none;
 }
 
 .auth-links a.active {
-  background-color: rgba(99, 102, 241, 0.1);
-  border-color: rgba(99, 102, 241, 0.4);
-  color: #1f1f25;
+  background-color: var(--color-primary-soft);
+  border-color: var(--color-primary);
+  color: var(--color-ink);
 }
 
 .logout-button {
@@ -308,7 +308,7 @@ main {
 .app-footer {
   text-align: center;
   font-size: 0.85rem;
-  color: #6c6f78;
+  color: var(--color-subtle);
   padding: 2.5rem 0;
 }
 

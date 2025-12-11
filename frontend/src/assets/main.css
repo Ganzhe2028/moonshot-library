@@ -1,10 +1,66 @@
 :root {
+  --color-ink: #1e3741;
+  --color-muted: #4f5f66;
+  --color-subtle: #6b7a82;
+  --color-primary: #ff5b04;
+  --color-primary-strong: #e24d00;
+  --color-primary-soft: rgba(255, 91, 4, 0.16);
+  --color-surface: #ffffff;
+  --color-surface-soft: #f1f4f6;
+  --color-border: rgba(30, 55, 65, 0.16);
+  --color-border-strong: rgba(30, 55, 65, 0.26);
+  --shadow-soft: 0 20px 55px rgba(30, 55, 65, 0.1);
+  --shadow-strong: 0 24px 45px rgba(30, 55, 65, 0.16);
+  --chip-bg: rgba(30, 55, 65, 0.06);
+  --chip-active: rgba(255, 91, 4, 0.18);
+  --tag-bg: rgba(30, 55, 65, 0.08);
+  --tag-text: #1e3741;
+  --logo-glow: rgba(255, 91, 4, 0.3);
+  --app-background: radial-gradient(
+      circle at 14% 20%,
+      rgba(255, 91, 4, 0.18) 0,
+      rgba(255, 91, 4, 0) 32%
+    ),
+    radial-gradient(circle at 80% 0%, rgba(30, 55, 65, 0.12) 0, rgba(30, 55, 65, 0) 32%),
+    linear-gradient(180deg, #f3f6f7 0%, #eef1f3 100%);
+  --panel-gradient: linear-gradient(120deg, rgba(255, 91, 4, 0.12), rgba(30, 55, 65, 0.08));
+  --cta-gradient: linear-gradient(135deg, #ff7b2f, #ff5b04);
+
   font-family: 'Inter', 'SF Pro Display', 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Helvetica Neue',
     sans-serif;
-  color: #0f1115;
-  background-color: #f5f5f8;
+  color: var(--color-ink);
+  background-color: var(--color-surface-soft);
   line-height: 1.5;
   font-weight: 400;
+}
+
+:root[data-palette='b'] {
+  --color-ink: #07383f;
+  --color-muted: #2f6167;
+  --color-subtle: #4c7478;
+  --color-primary: #075056;
+  --color-primary-strong: #064349;
+  --color-primary-soft: rgba(7, 80, 86, 0.16);
+  --color-surface: #ffffff;
+  --color-surface-soft: #e4eef0;
+  --color-border: rgba(7, 80, 86, 0.17);
+  --color-border-strong: rgba(7, 80, 86, 0.26);
+  --shadow-soft: 0 20px 55px rgba(7, 80, 86, 0.1);
+  --shadow-strong: 0 24px 45px rgba(7, 80, 86, 0.16);
+  --chip-bg: rgba(7, 80, 86, 0.08);
+  --chip-active: rgba(7, 80, 86, 0.16);
+  --tag-bg: rgba(7, 80, 86, 0.12);
+  --tag-text: #064349;
+  --logo-glow: rgba(7, 80, 86, 0.28);
+  --app-background: radial-gradient(
+      circle at 14% 20%,
+      rgba(7, 80, 86, 0.15) 0,
+      rgba(7, 80, 86, 0) 32%
+    ),
+    radial-gradient(circle at 80% 0%, rgba(7, 80, 86, 0.1) 0, rgba(7, 80, 86, 0) 32%),
+    linear-gradient(180deg, #e4eef0 0%, #d8e5e7 100%);
+  --panel-gradient: linear-gradient(120deg, rgba(7, 80, 86, 0.12), rgba(7, 80, 86, 0.08));
+  --cta-gradient: linear-gradient(135deg, #0a6d73, #075056);
 }
 
 *,
@@ -16,7 +72,8 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background: radial-gradient(circle at top, #f8fafe 0%, #f1f1f5 35%, #f7f7fb 100%);
+  background: var(--app-background);
+  color: var(--color-ink);
 }
 
 a {
@@ -41,5 +98,5 @@ textarea {
 }
 
 ::selection {
-  background-color: rgba(99, 102, 241, 0.2);
+  background-color: var(--color-primary-soft);
 }
