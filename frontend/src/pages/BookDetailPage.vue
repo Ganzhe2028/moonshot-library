@@ -237,13 +237,18 @@ const coverImage = computed(
           <button
             type="button"
             class="primary"
-            :disabled="hasBorrowed || book.status !== 'available'"
+            :disabled="
+              hasBorrowed ||
+              !book.availableCopies ||
+              book.status === 'maintenance' ||
+              book.status === 'reserved'
+            "
             @click="handleBorrow"
           >
             {{
               hasBorrowed
                 ? t('bookDetail.alreadyBorrowed')
-                : book.status === 'available'
+                : book.availableCopies && book.status !== 'maintenance' && book.status !== 'reserved'
                   ? t('bookDetail.borrowNow')
                   : t('bookDetail.unavailable')
             }}

@@ -263,13 +263,21 @@ export const useLibraryStore = defineStore('library', {
       }
 
       const targetBook = this.getBookById(bookId)
-      if (targetBook && targetBook.status !== 'available') {
+      if (
+        targetBook &&
+        (targetBook.availableCopies <= 0 || targetBook.status === 'maintenance' || targetBook.status === 'reserved')
+      ) {
         return { success: false, message: '该图书暂不可借阅。' }
       }
 
       try {
         const targetBook = this.getBookById(bookId)
-        if (!targetBook || targetBook.status !== 'available') {
+        if (
+          !targetBook ||
+          targetBook.availableCopies <= 0 ||
+          targetBook.status === 'maintenance' ||
+          targetBook.status === 'reserved'
+        ) {
           return { success: false, message: '该图书暂不可借阅。' }
         }
 

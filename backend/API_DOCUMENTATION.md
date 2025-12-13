@@ -33,7 +33,7 @@
 - `GET /books/categories` 分类列表
 - `POST /books/import` 批量导入（表格上传）
 
-> 实际可借判断依赖 `available_copies` 与 `status`。当前实现：当 `available_copies < total_copies` 时状态会变为 `borrowed`，即使仍有剩余副本。
+> 可借判断依赖 `available_copies` 与 `status`。当前实现：只要 `available_copies > 0` 且状态不是 `maintenance/reserved` 就视为可借；当余量为 0 时状态标记为 `borrowed`（维护状态保持不变）。
 
 ### 3) 借阅 Borrowings (`/borrowings/*`)
 - `GET /borrowings` 列表，支持 `userId/bookId/status/limit/offset`（需登录；管理员可查看任意用户）
@@ -49,6 +49,7 @@
 - `PUT /borrowings/:id` 管理端更新借阅记录（仅 `librarian`，可改借期/状态）
 - `GET /borrowings/overdue` 逾期检查
   - 先查询 `due_date < today AND status=active`，再批量标记 `status=overdue`
+- 返回约定：借阅/归还/续借/更新接口统一返回 `data.borrowing`
 
 ### 4) 用户 Users (`/users/*`)
 - `GET /users` / `GET /users/role/:role` 用户列表（`librarian`/`admin`）

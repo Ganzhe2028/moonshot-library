@@ -244,10 +244,8 @@ export const updateBookAvailability = async (bookId: string, change: number): Pr
   let nextStatus: Book['status']
   if (book.status === 'maintenance') {
     nextStatus = 'maintenance'
-  } else if (book.status === 'reserved' && nextAvailable > 0) {
-    nextStatus = 'reserved'
-  } else if (nextAvailable < book.totalCopies) {
-    nextStatus = 'borrowed'
+  } else if (nextAvailable === 0) {
+    nextStatus = book.status === 'reserved' ? 'reserved' : 'borrowed'
   } else {
     nextStatus = 'available'
   }
