@@ -210,6 +210,7 @@ pm2 startup           # 设置开机自启
 ## 文档
 
 - **API 文档**：`backend/API_DOCUMENTATION.md`
+- **前端概览**：`Documentation/FRONTEND_OVERVIEW.md`
 - **开发规范**：`Documentation/README-BEFORE-DEV-CN.md`
 - **M365 SSO 配置**：`Documentation/M365_AUTH_SETUP.md`
 
