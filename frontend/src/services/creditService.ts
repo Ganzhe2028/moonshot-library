@@ -33,7 +33,7 @@ class CreditService {
 
   async updateCredit(
     userId: string,
-    payload: Partial<Pick<Credit, 'score' | 'remarks'>>,
+    payload: Partial<Pick<Credit, 'score' | 'level' | 'status' | 'remarks'>>,
   ): Promise<Credit> {
     const data = await this.request<{ credit: Credit }>(`${API_BASE_URL}/users/${userId}/credit`, {
       method: 'PUT',

@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { RouterLink } from 'vue-router'
 
+import BaseAlert from '@/components/base/BaseAlert.vue'
+import BaseButton from '@/components/base/BaseButton.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useLibraryStore } from '@/stores/library'
 import type { Book, BorrowingRecord } from '@/types/library'
@@ -230,7 +231,7 @@ const handleRemoveFavorite = async (bookId: string) => {
       <div>
         <p class="eyebrow">{{ t('borrowings.loginHintTitle') }}</p>
         <h1>{{ t('borrowings.loginHint') }}</h1>
-        <router-link class="primary" to="/login">{{ t('auth.login') }}</router-link>
+        <BaseButton to="/login" variant="primary" size="lg">{{ t('auth.login') }}</BaseButton>
       </div>
     </section>
 
@@ -242,7 +243,7 @@ const handleRemoveFavorite = async (bookId: string) => {
       </div>
     </section>
 
-    <p v-if="actionMessage" :class="['action-message', actionVariant]">{{ actionMessage }}</p>
+    <BaseAlert v-if="actionMessage" :variant="actionVariant">{{ actionMessage }}</BaseAlert>
 
     <section class="borrowings" v-if="isLoggedIn">
       <div class="section-header">
@@ -266,12 +267,12 @@ const handleRemoveFavorite = async (bookId: string) => {
             {{ formatDate(item.record.dueDate) }}
           </p>
           <div class="actions">
-            <button type="button" class="secondary" @click="handleReturn(item.record.id)">
+            <BaseButton type="button" variant="secondary" @click="handleReturn(item.record.id)">
               {{ t('borrowings.return') }}
-            </button>
-            <button type="button" class="primary" @click="handleRenew(item.record.id)">
+            </BaseButton>
+            <BaseButton type="button" variant="primary" @click="handleRenew(item.record.id)">
               {{ t('borrowings.renew') }}
-            </button>
+            </BaseButton>
           </div>
           <p class="renewals">
             {{ t('borrowings.renewTip') }} ({{ item.record.renewals }} / 2)
@@ -285,7 +286,7 @@ const handleRemoveFavorite = async (bookId: string) => {
     <section v-else class="borrowings">
       <div class="empty-state">
         <p>{{ t('borrowings.loginHint') }}</p>
-        <router-link class="primary" to="/login">{{ t('auth.login') }}</router-link>
+        <BaseButton to="/login" variant="primary" size="lg">{{ t('auth.login') }}</BaseButton>
       </div>
     </section>
 
@@ -317,7 +318,7 @@ const handleRemoveFavorite = async (bookId: string) => {
     <section v-else class="history">
       <div class="empty-state">
         <p>{{ t('borrowings.loginHint') }}</p>
-        <router-link class="primary" to="/login">{{ t('auth.login') }}</router-link>
+        <BaseButton to="/login" variant="primary" size="lg">{{ t('auth.login') }}</BaseButton>
       </div>
     </section>
 
@@ -450,22 +451,6 @@ const handleRemoveFavorite = async (bookId: string) => {
   color: var(--color-subtle);
 }
 
-.action-message {
-  padding: 0.8rem 1rem;
-  border-radius: 16px;
-  text-align: center;
-}
-
-.action-message.success {
-  background: var(--color-success-soft);
-  color: var(--color-success-strong);
-}
-
-.action-message.error {
-  background: var(--color-danger-soft);
-  color: var(--color-danger-strong);
-}
-
 .borrowings,
 .history {
   background: var(--color-surface);
@@ -535,25 +520,6 @@ const handleRemoveFavorite = async (bookId: string) => {
   gap: 0.6rem;
   flex-wrap: wrap;
   margin-top: 0.9rem;
-}
-
-.primary,
-.secondary {
-  border-radius: 14px;
-  padding: 0.65rem 1rem;
-  font-weight: var(--font-weight-semibold);
-}
-
-.primary {
-  background: var(--cta-gradient);
-  color: #fff;
-  box-shadow: 0 12px 28px var(--color-primary-soft);
-}
-
-.secondary {
-  background: var(--chip-bg);
-  color: var(--color-ink);
-  border: 1px solid var(--color-border);
 }
 
 .renewals {

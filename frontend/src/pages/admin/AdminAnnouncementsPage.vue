@@ -2,6 +2,11 @@
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
+import BaseAlert from '@/components/base/BaseAlert.vue'
+import BaseButton from '@/components/base/BaseButton.vue'
+import BaseCard from '@/components/base/BaseCard.vue'
+import BaseInput from '@/components/base/BaseInput.vue'
+import BaseModal from '@/components/base/BaseModal.vue'
 import type { Announcement } from '@/types/library'
 import * as announcementService from '@/services/announcementService'
 
@@ -147,15 +152,15 @@ onMounted(() => {
     </div>
 
     <template v-else>
-      <p v-if="actionMessage" :class="['action-message', actionVariant]">{{ actionMessage }}</p>
+      <BaseAlert v-if="actionMessage" :variant="actionVariant">{{ actionMessage }}</BaseAlert>
 
       <div class="actions-bar">
-        <button type="button" class="primary" @click="openCreateForm" :disabled="loading">
+        <BaseButton type="button" variant="primary" size="sm" @click="openCreateForm" :disabled="loading">
           {{ t('admin.create') || '创建公告' }}
-        </button>
+        </BaseButton>
       </div>
 
-      <div class="announcements-grid">
+      <BaseCard class="announcements-grid" padding="md" radius="lg" shadow="none">
         <div v-if="loading" class="loading">
           <p>{{ t('admin.loading') || '加载中...' }}</p>
         </div>
@@ -169,12 +174,12 @@ onMounted(() => {
             <div class="card-header">
               <h3 class="announcement-title">{{ announcement.title }}</h3>
               <div class="card-actions">
-                <button type="button" class="secondary" @click="openEditForm(announcement)">
+                <BaseButton type="button" variant="ghost" size="sm" @click="openEditForm(announcement)">
                   {{ t('admin.edit') || '编辑' }}
-                </button>
-                <button type="button" class="danger" @click="deleteAnnouncement(announcement.id)">
+                </BaseButton>
+                <BaseButton type="button" variant="danger" size="sm" @click="deleteAnnouncement(announcement.id)">
                   {{ t('admin.delete') || '删除' }}
-                </button>
+                </BaseButton>
               </div>
             </div>
             <p class="announcement-content">{{ announcement.content }}</p>
@@ -184,54 +189,44 @@ onMounted(() => {
             </div>
           </div>
         </div>
-      </div>
+      </BaseCard>
 
       <!-- 创建/编辑公告表单 -->
-      <div v-if="showCreateForm" class="form-overlay" @click.self="showCreateForm = false">
-        <div class="form-container">
-          <h2>{{ editingAnnouncement ? '编辑公告' : '创建公告' }}</h2>
-
-          <div class="form-group">
-            <label for="title">{{ t('admin.title') || '标题' }}</label>
-            <input
-              id="title"
-              v-model="form.title"
-              type="text"
-              placeholder="请输入公告标题"
-            >
-          </div>
-
-          <div class="form-group">
-            <label for="content">{{ t('admin.content') || '内容' }}</label>
-            <textarea
-              id="content"
-              v-model="form.content"
-              rows="6"
-              placeholder="请输入公告内容"
-            ></textarea>
-          </div>
-
-          <div class="form-group">
-            <label for="author">{{ t('admin.author') || '作者' }}</label>
-            <input
-              id="author"
-              v-model="form.author"
-              type="text"
-              placeholder="请输入作者名称"
-              :disabled="isAdmin"
-            >
-          </div>
-
-          <div class="form-actions">
-            <button type="button" class="secondary" @click="showCreateForm = false">
-              {{ t('admin.cancel') || '取消' }}
-            </button>
-            <button type="button" class="primary" @click="submitForm" :disabled="loading">
-              {{ loading ? '保存中...' : (t('admin.save') || '保存') }}
-            </button>
-          </div>
+      <BaseModal
+        :open="showCreateForm"
+        :title="editingAnnouncement ? '编辑公告' : '创建公告'"
+        @close="showCreateForm = false"
+      >
+        <div class="form-group">
+          <label for="title">{{ t('admin.title') || '标题' }}</label>
+          <BaseInput id="title" v-model="form.title" type="text" placeholder="请输入公告标题" />
         </div>
-      </div>
+
+        <div class="form-group">
+          <label for="content">{{ t('admin.content') || '内容' }}</label>
+          <textarea id="content" v-model="form.content" rows="6" placeholder="请输入公告内容"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="author">{{ t('admin.author') || '作者' }}</label>
+          <BaseInput
+            id="author"
+            v-model="form.author"
+            type="text"
+            placeholder="请输入作者名称"
+            :disabled="isAdmin"
+          />
+        </div>
+
+        <template #footer>
+          <BaseButton type="button" variant="secondary" @click="showCreateForm = false">
+            {{ t('admin.cancel') || '取消' }}
+          </BaseButton>
+          <BaseButton type="button" variant="primary" :disabled="loading" @click="submitForm">
+            {{ loading ? '保存中...' : (t('admin.save') || '保存') }}
+          </BaseButton>
+        </template>
+      </BaseModal>
     </template>
   </div>
 </template>
@@ -264,86 +259,10 @@ onMounted(() => {
   color: #ef4444;
 }
 
-.action-message {
-  padding: 0.8rem 1rem;
-  border-radius: 12px;
-  margin-bottom: 1.5rem;
-  text-align: center;
-}
-
-.action-message.success {
-  background: rgba(16, 185, 129, 0.1);
-  color: #047857;
-  border: 1px solid rgba(16, 185, 129, 0.2);
-}
-
-.action-message.error {
-  background: rgba(239, 68, 68, 0.1);
-  color: #b91c1c;
-  border: 1px solid rgba(239, 68, 68, 0.2);
-}
-
-.action-message.info {
-  background: rgba(59, 130, 246, 0.1);
-  color: #1e40af;
-  border: 1px solid rgba(59, 130, 246, 0.2);
-}
-
 .actions-bar {
   margin-bottom: 1.5rem;
   display: flex;
   justify-content: flex-end;
-}
-
-.primary,
-.secondary,
-.danger {
-  border-radius: 12px;
-  padding: 0.65rem 1.2rem;
-  border: none;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.primary {
-  background: linear-gradient(120deg, #4338ca, #6366f1);
-  color: white;
-}
-
-.primary:hover:not(:disabled) {
-  opacity: 0.9;
-  transform: translateY(-1px);
-}
-
-.primary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.secondary {
-  background: rgba(15, 17, 21, 0.06);
-  color: #1f1f25;
-}
-
-.secondary:hover {
-  background: rgba(15, 17, 21, 0.08);
-}
-
-.danger {
-  background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
-}
-
-.danger:hover {
-  background: rgba(239, 68, 68, 0.2);
-}
-
-.announcements-grid {
-  background: #fff;
-  border-radius: 24px;
-  padding: 1.5rem;
-  border: 1px solid rgba(15, 17, 21, 0.05);
 }
 
 .loading,
@@ -404,34 +323,6 @@ onMounted(() => {
 }
 
 /* 表单样式 */
-.form-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 1rem;
-}
-
-.form-container {
-  background: #fff;
-  border-radius: 24px;
-  padding: 2rem;
-  width: 100%;
-  max-width: 600px;
-  max-height: 90vh;
-  overflow-y: auto;
-}
-
-.form-container h2 {
-  margin: 0 0 1.5rem 0;
-  font-size: 1.5rem;
-}
 
 .form-group {
   margin-bottom: 1.2rem;
@@ -444,7 +335,6 @@ onMounted(() => {
   color: #1f2937;
 }
 
-.form-group input,
 .form-group textarea {
   width: 100%;
   border: 1px solid rgba(15, 17, 21, 0.1);
@@ -455,23 +345,10 @@ onMounted(() => {
   background: rgba(249, 250, 255, 0.6);
 }
 
-.form-group input:focus,
 .form-group textarea:focus {
   outline: none;
   border-color: #6366f1;
   box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
-}
-
-.form-group input:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.form-actions {
-  display: flex;
-  gap: 1rem;
-  justify-content: flex-end;
-  margin-top: 2rem;
 }
 
 @media (max-width: 768px) {
@@ -490,12 +367,5 @@ onMounted(() => {
     gap: 0.3rem;
   }
 
-  .form-actions {
-    flex-direction: column;
-  }
-
-  .form-actions button {
-    width: 100%;
-  }
 }
 </style>

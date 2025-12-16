@@ -2,6 +2,12 @@
 import { computed, onMounted, ref, reactive, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import BaseAlert from '@/components/base/BaseAlert.vue'
+import BaseBadge from '@/components/base/BaseBadge.vue'
+import BaseButton from '@/components/base/BaseButton.vue'
+import BaseCard from '@/components/base/BaseCard.vue'
+import BaseInput from '@/components/base/BaseInput.vue'
+import BaseModal from '@/components/base/BaseModal.vue'
 import { useAdminStore } from '@/stores/admin'
 import { userService } from '@/services/userService'
 import { creditService } from '@/services/creditService'
@@ -51,11 +57,11 @@ const users = computed(() => {
 const membershipBadge = (status?: string) => {
   switch (status) {
     case 'active':
-      return { text: t('admin.users.membershipActive'), className: 'green' }
+      return { text: t('admin.users.membershipActive'), variant: 'success' as const }
     case 'suspended':
-      return { text: t('admin.users.membershipSuspended'), className: 'red' }
+      return { text: t('admin.users.membershipSuspended'), variant: 'error' as const }
     default:
-      return { text: status || t('empty.noData'), className: 'gray' }
+      return { text: status || t('empty.noData'), variant: 'neutral' as const }
   }
 }
 
@@ -230,7 +236,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <section class="panel">
+  <BaseCard padding="sm" radius="lg" shadow="none">
     <div class="panel-head">
       <div>
         <p class="eyebrow">{{ t('admin.users.title') }}</p>
@@ -244,12 +250,16 @@ onMounted(() => {
           <option value="librarian">{{ t('auth.librarian') }}</option>
           <option value="admin">Admin</option>
         </select>
-        <button type="button" class="ghost" @click="reload">{{ t('admin.users.refresh') }}</button>
+        <BaseButton type="button" variant="ghost" size="sm" @click="reload">
+          {{ t('admin.users.refresh') }}
+        </BaseButton>
       </div>
     </div>
 
     <div v-if="adminStore.usersLoading" class="hint">{{ t('admin.users.loading') }}</div>
-    <p v-else-if="adminStore.usersError" class="alert error">{{ adminStore.usersError }}</p>
+    <BaseAlert v-else-if="adminStore.usersError" variant="error">
+      {{ adminStore.usersError }}
+    </BaseAlert>
     <div v-else class="table">
       <div class="table-head">
         <span>{{ t('auth.name') }} / {{ t('auth.email') }}</span>
@@ -262,133 +272,116 @@ onMounted(() => {
           <p class="title">{{ user.name }}</p>
           <p class="meta">{{ user.email }}</p>
         </div>
-        <span class="pill gray">{{ user.role }}</span>
-        <span :class="['pill', membershipBadge(user.membership).className]">
+        <BaseBadge variant="neutral" size="sm">{{ user.role }}</BaseBadge>
+        <BaseBadge :variant="membershipBadge(user.membership).variant" size="sm">
           {{ membershipBadge(user.membership).text }}
-        </span>
+        </BaseBadge>
         <span>{{ user.grade || '--' }}</span>
-        <button type="button" class="ghost small" @click="openEditDialog(user)">
-          {{ t('admin.edit') }}
-        </button>
-        <button type="button" class="ghost small" @click="openCreditDialog(user)">
-          {{ t('admin.users.editCredit') }}
-        </button>
+        <div class="row-actions">
+          <BaseButton type="button" variant="ghost" size="sm" @click="openEditDialog(user)">
+            {{ t('admin.edit') }}
+          </BaseButton>
+          <BaseButton type="button" variant="ghost" size="sm" @click="openCreditDialog(user)">
+            {{ t('admin.users.editCredit') }}
+          </BaseButton>
+        </div>
       </div>
       <p v-if="!users.length" class="hint">{{ t('empty.noData') }}</p>
     </div>
-  </section>
+  </BaseCard>
 
   <!-- 编辑用户对话框 -->
-  <div v-if="showEditDialog" class="modal-overlay" @click.self="closeEditDialog">
-    <div class="dialog">
-      <div class="dialog-header">
-        <h3>{{ t('admin.editUser') }}: {{ editingUser.name }}</h3>
-        <button type="button" class="close-button" @click="closeEditDialog">×</button>
+  <BaseModal
+    :open="showEditDialog"
+    :title="`${t('admin.editUser')}: ${editingUser.name || ''}`"
+    @close="closeEditDialog"
+  >
+    <BaseAlert v-if="saveError" variant="error">{{ saveError }}</BaseAlert>
+
+    <div class="form-group">
+      <label>{{ t('auth.role') }}</label>
+      <div v-if="editingUser.role === 'admin'" class="form-group-readonly">
+        <span class="role-display">{{ t('auth.role') }}: Admin</span>
+        <small class="readonly-hint">{{
+          t('admin.users.cannotEditAdminRole') || '管理员角色不能被修改'
+        }}</small>
       </div>
-
-      <div class="dialog-content">
-        <div v-if="saveError" class="alert error">{{ saveError }}</div>
-
-        <div class="form-group">
-          <label>{{ t('auth.role') }}</label>
-          <!-- 为admin用户显示特殊选项，但不允许修改 -->
-          <div v-if="editingUser.role === 'admin'" class="form-group-readonly">
-            <span class="role-display">{{ t('auth.role') }}: Admin</span>
-            <small class="readonly-hint">{{ t('admin.users.cannotEditAdminRole') || '管理员角色不能被修改' }}</small>
-          </div>
-          <select v-else v-model="editingUser.role" :disabled="isSaving">
-            <option value="student">{{ t('auth.student') }}</option>
-            <option value="teacher">{{ t('auth.teacher') }}</option>
-            <option value="librarian">{{ t('auth.librarian') }}</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label>{{ t('admin.users.membership') }}</label>
-          <select v-model="editingUser.membership" :disabled="isSaving">
-            <option value="active">{{ t('admin.users.membershipActive') }}</option>
-            <option value="suspended">{{ t('admin.users.membershipSuspended') }}</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label>{{ t('auth.grade') }}</label>
-          <input
-            type="text"
-            v-model="editingUser.grade"
-            :disabled="isSaving"
-            placeholder="{{ t('admin.users.gradePlaceholder') || '如：1-12' }}"
-          />
-        </div>
-      </div>
-
-      <div class="dialog-actions">
-        <button type="button" class="ghost" @click="closeEditDialog" :disabled="isSaving">
-          {{ t('admin.cancel') }}
-        </button>
-        <button type="button" @click="saveUserChanges" :disabled="isSaving">
-          {{ isSaving ? t('admin.saving') : t('admin.save') }}
-        </button>
-      </div>
+      <select v-else v-model="editingUser.role" :disabled="isSaving">
+        <option value="student">{{ t('auth.student') }}</option>
+        <option value="teacher">{{ t('auth.teacher') }}</option>
+        <option value="librarian">{{ t('auth.librarian') }}</option>
+      </select>
     </div>
-  </div>
+
+    <div class="form-group">
+      <label>{{ t('admin.users.membership') }}</label>
+      <select v-model="editingUser.membership" :disabled="isSaving">
+        <option value="active">{{ t('admin.users.membershipActive') }}</option>
+        <option value="suspended">{{ t('admin.users.membershipSuspended') }}</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>{{ t('auth.grade') }}</label>
+      <BaseInput
+        type="text"
+        v-model="editingUser.grade"
+        :disabled="isSaving"
+        :placeholder="t('admin.users.gradePlaceholder') || '如：1-12'"
+      />
+    </div>
+
+    <template #footer>
+      <BaseButton type="button" variant="secondary" :disabled="isSaving" @click="closeEditDialog">
+        {{ t('admin.cancel') }}
+      </BaseButton>
+      <BaseButton type="button" variant="primary" :disabled="isSaving" @click="saveUserChanges">
+        {{ isSaving ? t('admin.saving') : t('admin.save') }}
+      </BaseButton>
+    </template>
+  </BaseModal>
 
   <!-- 信用对话框 -->
-  <div v-if="showCreditDialog" class="modal-overlay" @click.self="closeCreditDialog">
-    <div class="dialog">
-      <div class="dialog-header">
-        <h3>{{ t('admin.users.editCredit') }}</h3>
-        <button type="button" class="close-button" @click="closeCreditDialog">×</button>
+  <BaseModal :open="showCreditDialog" :title="t('admin.users.editCredit')" @close="closeCreditDialog">
+    <BaseAlert v-if="creditError" variant="error">{{ creditError }}</BaseAlert>
+    <div v-else-if="creditLoading" class="hint">{{ t('admin.users.loadingCredit') }}</div>
+    <template v-else>
+      <div class="form-group">
+        <label>{{ t('admin.users.creditScore') }}</label>
+        <BaseInput
+          type="number"
+          min="0"
+          max="1000"
+          v-model.number="creditForm.score"
+          :disabled="creditLoading"
+        />
+        <small class="readonly-hint">{{ t('admin.users.creditLevel') }}: {{ creditForm.level }}</small>
       </div>
-      <div class="dialog-content">
-        <div v-if="creditError" class="alert error">{{ creditError }}</div>
-        <div v-else-if="creditLoading" class="hint">{{ t('admin.users.loadingCredit') }}</div>
-        <template v-else>
-          <div class="form-group">
-            <label>{{ t('admin.users.creditScore') }}</label>
-            <input
-              type="number"
-              min="0"
-              max="1000"
-              v-model.number="creditForm.score"
-              :disabled="creditLoading"
-            />
-            <small class="readonly-hint">{{ t('admin.users.creditLevel') }}: {{ creditForm.level }}</small>
-          </div>
-          <div class="form-group">
-            <label>{{ t('admin.users.creditLevel') }}</label>
-            <div class="form-group-readonly">
-              <span class="role-display">{{ t('admin.users.creditLevel') }}: {{ creditForm.level }}</span>
-              <small class="readonly-hint">{{ t('admin.users.creditStatus') }}: {{ creditForm.status }}</small>
-            </div>
-          </div>
-          <div class="form-group">
-            <label>{{ t('admin.users.creditRemarks') }}</label>
-            <textarea v-model="creditForm.remarks" rows="3" :disabled="creditLoading"></textarea>
-          </div>
-        </template>
+      <div class="form-group">
+        <label>{{ t('admin.users.creditLevel') }}</label>
+        <div class="form-group-readonly">
+          <span class="role-display">{{ t('admin.users.creditLevel') }}: {{ creditForm.level }}</span>
+          <small class="readonly-hint">{{ t('admin.users.creditStatus') }}: {{ creditForm.status }}</small>
+        </div>
       </div>
-      <div class="dialog-actions">
-        <button type="button" class="ghost" @click="closeCreditDialog" :disabled="creditLoading">
-          {{ t('admin.cancel') }}
-        </button>
-        <button type="button" @click="saveCredit" :disabled="creditLoading || !!creditError">
-          {{ creditLoading ? t('admin.saving') : t('admin.users.creditSave') }}
-        </button>
+      <div class="form-group">
+        <label>{{ t('admin.users.creditRemarks') }}</label>
+        <textarea v-model="creditForm.remarks" rows="3" :disabled="creditLoading"></textarea>
       </div>
-    </div>
-  </div>
+    </template>
+
+    <template #footer>
+      <BaseButton type="button" variant="secondary" :disabled="creditLoading" @click="closeCreditDialog">
+        {{ t('admin.cancel') }}
+      </BaseButton>
+      <BaseButton type="button" variant="primary" :disabled="creditLoading || !!creditError" @click="saveCredit">
+        {{ creditLoading ? t('admin.saving') : t('admin.users.creditSave') }}
+      </BaseButton>
+    </template>
+  </BaseModal>
 </template>
 
 <style scoped>
-.panel {
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: 1rem;
-  background: var(--color-surface);
-  box-shadow: var(--shadow-soft);
-}
-
 .panel-head {
   display: flex;
   justify-content: space-between;
@@ -405,7 +398,7 @@ onMounted(() => {
   margin: 0 0 0.25rem;
 }
 
-.panel h2 {
+.panel-head h2 {
   margin: 0;
 }
 
@@ -415,30 +408,17 @@ onMounted(() => {
   align-items: center;
 }
 
+.row-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
 select {
   border: 1px solid rgba(15, 17, 21, 0.1);
   border-radius: 10px;
   padding: 0.5rem;
   background: rgba(249, 250, 255, 0.8);
-}
-
-.ghost {
-  background: rgba(15, 17, 21, 0.05);
-  border: 1px solid rgba(15, 17, 21, 0.06);
-  border-radius: 10px;
-  padding: 0.5rem 0.8rem;
-  color: #1f1f25;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.ghost:hover {
-  background: rgba(15, 17, 21, 0.08);
-}
-
-.ghost.small {
-  padding: 0.3rem 0.6rem;
-  font-size: 0.85rem;
 }
 
 .table {
@@ -477,40 +457,6 @@ select {
   font-size: 0.9rem;
 }
 
-.pill {
-  padding: 0.25rem 0.7rem;
-  border-radius: 999px;
-  font-size: 0.85rem;
-  text-align: center;
-}
-
-.pill.green {
-  background: rgba(16, 185, 129, 0.12);
-  color: #047857;
-}
-
-.pill.red {
-  background: rgba(239, 68, 68, 0.12);
-  color: #b91c1c;
-}
-
-.pill.gray {
-  background: rgba(107, 114, 128, 0.15);
-  color: #374151;
-}
-
-.alert {
-  margin-top: 0.5rem;
-  padding: 0.65rem 0.8rem;
-  border-radius: 10px;
-  font-size: 0.95rem;
-}
-
-.alert.error {
-  background: rgba(239, 68, 68, 0.12);
-  color: #b91c1c;
-}
-
 .hint {
   color: #6c6f78;
   font-size: 0.95rem;
@@ -524,68 +470,6 @@ select {
 }
 
 /* 模态框样式 */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.dialog {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-  width: 90%;
-  max-width: 500px;
-  max-height: 90vh;
-  overflow-y: auto;
-}
-
-.dialog-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 1.25rem;
-  border-bottom: 1px solid rgba(15, 17, 21, 0.05);
-}
-
-.dialog-header h3 {
-  margin: 0;
-  font-size: 1.1rem;
-}
-
-.close-button {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  line-height: 1;
-  cursor: pointer;
-  color: #6c6f78;
-  padding: 0.2rem;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-  transition: all 0.2s;
-}
-
-.close-button:hover {
-  background: rgba(15, 17, 21, 0.05);
-  color: #1f1f25;
-}
-
-.dialog-content {
-  padding: 1.25rem;
-}
-
 .form-group {
   margin-bottom: 1rem;
 }
@@ -598,7 +482,6 @@ select {
 }
 
 .form-group select,
-.form-group input,
 .form-group textarea {
   width: 100%;
   padding: 0.7rem;
@@ -628,40 +511,8 @@ select {
 }
 
 .form-group select:focus,
-.form-group input:focus {
+.form-group textarea:focus {
   outline: none;
   border-color: var(--color-primary);
-}
-
-.dialog-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
-  padding: 1rem 1.25rem;
-  border-top: 1px solid var(--color-border);
-}
-
-.dialog-actions button {
-  padding: 0.6rem 1.2rem;
-  border-radius: var(--radius-sm);
-  font-size: var(--text-base);
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.dialog-actions button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.dialog-actions button:not(.ghost) {
-  background: var(--cta-gradient);
-  color: white;
-  border: none;
-  box-shadow: 0 12px 24px var(--color-primary-soft);
-}
-
-.dialog-actions button:not(.ghost):hover:not(:disabled) {
-  filter: brightness(0.96);
 }
 </style>

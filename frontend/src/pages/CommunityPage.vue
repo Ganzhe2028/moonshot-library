@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
+import BaseButton from '@/components/base/BaseButton.vue'
 import { useAuthStore } from '@/stores/auth'
 import type { Comment } from '@/types/library'
 import type { CommunityPost } from '@/services/communityService'
@@ -485,14 +486,16 @@ watch(currentUser, () => {
               style="display: none"
               @change="handleImageUpload"
             >
-            <button
+            <BaseButton
               type="button"
-              class="primary"
+              variant="primary"
+              size="sm"
+              class="publish"
               @click="publishPost"
               :disabled="(!newPostContent.trim() && newPostImages.length === 0) || loadingPosts"
             >
               {{ loadingPosts ? '发布中...' : '发布' }}
-            </button>
+            </BaseButton>
           </div>
         </section>
 
@@ -598,6 +601,10 @@ watch(currentUser, () => {
 
 <style scoped>
 .community-page {
+  --color-primary: #6366f1;
+  --color-primary-strong: #4f46e5;
+  --color-primary-soft: rgba(99, 102, 241, 0.16);
+  --cta-gradient: linear-gradient(120deg, #4338ca, #6366f1);
   padding: 1rem 0 3rem;
 }
 
@@ -840,25 +847,8 @@ textarea:focus {
   margin-top: 1rem;
 }
 
-.primary {
-  background: linear-gradient(120deg, #4338ca, #6366f1);
-  color: white;
-  border: none;
-  border-radius: 14px;
-  padding: 0.65rem 1.2rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.primary:hover:not(:disabled) {
-  opacity: 0.9;
-  transform: translateY(-1px);
-}
-
-.primary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+.publish {
+  flex-shrink: 0;
 }
 
 .posts {
