@@ -246,17 +246,17 @@ onMounted(() => {
 }
 
 .subtitle {
-  color: #6b7280;
+  color: var(--color-subtle);
   margin-top: 0.5rem;
 }
 
 .not-authorized {
-  background: rgba(248, 113, 113, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.2);
-  border-radius: 16px;
+  background: var(--color-danger-soft);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
   padding: 2rem;
   text-align: center;
-  color: #ef4444;
+  color: var(--color-danger-strong);
 }
 
 .actions-bar {
@@ -269,7 +269,7 @@ onMounted(() => {
 .empty {
   text-align: center;
   padding: 3rem;
-  color: #6b7280;
+  color: var(--color-subtle);
 }
 
 .announcement-list {
@@ -279,10 +279,10 @@ onMounted(() => {
 }
 
 .announcement-card {
-  border: 1px solid rgba(15, 17, 21, 0.05);
-  border-radius: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
   padding: 1.2rem;
-  background: rgba(249, 250, 255, 0.4);
+  background: var(--color-surface-soft);
 }
 
 .card-header {
@@ -308,7 +308,7 @@ onMounted(() => {
 .announcement-content {
   margin: 0 0 0.8rem 0;
   line-height: 1.6;
-  color: #4b5563;
+  color: var(--color-muted);
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
@@ -319,7 +319,7 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   font-size: 0.85rem;
-  color: #9ca3af;
+  color: var(--color-subtle);
 }
 
 /* 表单样式 */
@@ -332,23 +332,24 @@ onMounted(() => {
   display: block;
   margin-bottom: 0.4rem;
   font-weight: 500;
-  color: #1f2937;
+  color: var(--color-ink);
 }
 
 .form-group textarea {
   width: 100%;
-  border: 1px solid rgba(15, 17, 21, 0.1);
-  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
   padding: 0.8rem;
   font-size: 1rem;
   font-family: inherit;
-  background: rgba(249, 250, 255, 0.6);
+  background: var(--color-surface-soft);
+  color: var(--color-ink);
 }
 
 .form-group textarea:focus {
   outline: none;
-  border-color: #6366f1;
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-soft);
 }
 
 @media (max-width: 768px) {

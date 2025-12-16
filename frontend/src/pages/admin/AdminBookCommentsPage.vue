@@ -1,5 +1,9 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
+import BaseAlert from '@/components/base/BaseAlert.vue'
+import BaseButton from '@/components/base/BaseButton.vue'
+import BaseCard from '@/components/base/BaseCard.vue'
+import BaseInput from '@/components/base/BaseInput.vue'
 import { ratingService } from '@/services/ratingService'
 import type { Comment } from '@/types/library'
 
@@ -110,10 +114,7 @@ const updateFilter = () => {
   }
 }
 
-// 监听过滤文本变化
-const handleFilterChange = () => {
-  updateFilter()
-}
+watch([filterText, allComments], updateFilter, { immediate: true })
 
 onMounted(() => {
   fetchAllBookComments()
@@ -128,24 +129,21 @@ onMounted(() => {
     </header>
 
     <!-- 操作消息 -->
-    <div v-if="actionMessage" :class="['action-message', actionVariant]">
-      {{ actionMessage }}
-    </div>
+    <BaseAlert v-if="actionMessage" :variant="actionVariant">{{ actionMessage }}</BaseAlert>
 
     <!-- 搜索过滤 -->
     <div class="filter-section">
-      <input
+      <BaseInput
         v-model="filterText"
         type="text"
         placeholder="搜索评论内容、用户名或书籍名称..."
         class="search-input"
-        @input="handleFilterChange"
-      >
+      />
       <p class="comment-count">共 {{ allComments.length }} 条评论，过滤后显示 {{ filteredComments.length }} 条</p>
     </div>
 
     <!-- 评论列表 -->
-    <div class="comments-container">
+    <BaseCard class="comments-container" padding="none" radius="lg" shadow="none">
       <div v-if="loading" class="loading">加载中...</div>
       <div v-else-if="filteredComments.length === 0" class="empty">
         {{ filterText ? '没有找到匹配的评论' : '暂无评论' }}
@@ -161,14 +159,15 @@ onMounted(() => {
               <span class="comment-author">{{ comment.userName }}</span>
               <span class="comment-date">{{ formatDate(comment.createdAt) }}</span>
             </div>
-            <button
+            <BaseButton
               type="button"
-              class="delete-button"
+              variant="danger"
+              size="sm"
               :disabled="deleting"
               @click="deleteComment(comment.id)"
             >
               {{ deleting ? '删除中...' : '删除' }}
-            </button>
+            </BaseButton>
           </div>
 
           <div class="book-reference">
@@ -178,14 +177,15 @@ onMounted(() => {
           <div class="comment-content">{{ comment.content }}</div>
         </div>
       </div>
-    </div>
+    </BaseCard>
   </div>
 </template>
 
 <style scoped>
 .admin-book-comments-page {
-  max-width: 1200px;
-  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
 .page-header {
@@ -196,37 +196,12 @@ onMounted(() => {
   margin: 0;
   font-size: 1.8rem;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--color-ink);
 }
 
 .subtitle {
   margin: 0.5rem 0 0;
-  color: #6b7280;
-}
-
-.action-message {
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
-  margin-bottom: 1.5rem;
-  font-weight: 500;
-}
-
-.action-message.success {
-  background-color: #dcfce7;
-  color: #166534;
-  border: 1px solid #bbf7d0;
-}
-
-.action-message.error {
-  background-color: #fee2e2;
-  color: #b91c1c;
-  border: 1px solid #fecaca;
-}
-
-.action-message.info {
-  background-color: #dbeafe;
-  color: #1e40af;
-  border: 1px solid #bfdbfe;
+  color: var(--color-subtle);
 }
 
 .filter-section {
@@ -241,29 +216,15 @@ onMounted(() => {
 .search-input {
   flex: 1;
   min-width: 300px;
-  padding: 0.75rem 1rem;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  font-size: 1rem;
-  transition: border-color 0.2s;
-}
-
-.search-input:focus {
-  outline: none;
-  border-color: #6366f1;
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
 }
 
 .comment-count {
   margin: 0;
-  color: #6b7280;
-  font-size: 0.9rem;
+  color: var(--color-subtle);
+  font-size: var(--text-sm);
 }
 
 .comments-container {
-  background: #fff;
-  border-radius: 12px;
-  border: 1px solid #e5e7eb;
   overflow: hidden;
 }
 
@@ -271,7 +232,7 @@ onMounted(() => {
 .empty {
   padding: 3rem;
   text-align: center;
-  color: #6b7280;
+  color: var(--color-subtle);
 }
 
 .comments-list {
@@ -280,7 +241,7 @@ onMounted(() => {
 
 .comment-card {
   padding: 1.5rem;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .comment-card:last-child {
@@ -302,33 +263,12 @@ onMounted(() => {
 
 .comment-author {
   font-weight: 600;
-  color: #1f2937;
+  color: var(--color-ink);
 }
 
 .comment-date {
-  color: #6b7280;
-  font-size: 0.875rem;
-}
-
-.delete-button {
-  background: #fee2e2;
-  color: #b91c1c;
-  border: 1px solid #fecaca;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.delete-button:hover:not(:disabled) {
-  background: #fecaca;
-}
-
-.delete-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+  color: var(--color-subtle);
+  font-size: var(--text-sm);
 }
 
 .book-reference {
@@ -336,22 +276,22 @@ onMounted(() => {
 }
 
 .book-title {
-  background-color: #f9fafb;
-  color: #4b5563;
+  background-color: var(--color-surface-soft);
+  color: var(--color-muted);
   padding: 0.375rem 0.75rem;
-  border-radius: 6px;
-  font-size: 0.875rem;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
   font-weight: 500;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-border);
 }
 
 .comment-content {
   line-height: 1.6;
-  color: #374151;
+  color: var(--color-muted);
   padding: 1rem;
-  background-color: #f9fafb;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
+  background-color: var(--color-surface-soft);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
 }
 
 @media (max-width: 768px) {
@@ -370,7 +310,7 @@ onMounted(() => {
     gap: 1rem;
   }
 
-  .delete-button {
+  .base-button {
     width: 100%;
   }
 }

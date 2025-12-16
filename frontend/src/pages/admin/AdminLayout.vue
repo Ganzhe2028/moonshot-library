@@ -78,8 +78,8 @@ const tabs = computed(() => [
 .eyebrow {
   text-transform: uppercase;
   letter-spacing: 0.18em;
-  font-size: 0.8rem;
-  color: #8a8e99;
+  font-size: var(--text-xs);
+  color: var(--color-subtle);
   margin: 0 0 0.2rem;
 }
 
@@ -89,15 +89,15 @@ h1 {
 
 .subtitle {
   margin: 0.3rem 0 0;
-  color: #4c4f59;
+  color: var(--color-muted);
 }
 
 .back-home {
   padding: 0.4rem 0.8rem;
-  border-radius: 12px;
-  border: 1px solid rgba(15, 17, 21, 0.08);
-  background: #fff;
-  color: #4338ca;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-primary);
 }
 
 .admin-nav {
@@ -108,23 +108,24 @@ h1 {
 
 .admin-nav a {
   padding: 0.5rem 1rem;
-  border-radius: 999px;
-  border: 1px solid rgba(15, 17, 21, 0.08);
-  background: #fff;
-  color: #3b3f55;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-muted);
 }
 
 .admin-nav a.active {
-  border-color: rgba(99, 102, 241, 0.5);
-  background: rgba(99, 102, 241, 0.12);
-  color: #1f1f25;
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+  color: var(--color-ink);
 }
 
 .admin-body {
-  background: #fff;
-  border-radius: 24px;
+  background: var(--color-surface);
+  border-radius: var(--radius-xl);
   padding: 1.5rem;
-  border: 1px solid rgba(15, 17, 21, 0.05);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-soft);
 }
 
 @media (max-width: 768px) {

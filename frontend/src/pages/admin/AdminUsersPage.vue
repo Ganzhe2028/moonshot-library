@@ -415,10 +415,11 @@ onMounted(() => {
 }
 
 select {
-  border: 1px solid rgba(15, 17, 21, 0.1);
-  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xs);
   padding: 0.5rem;
-  background: rgba(249, 250, 255, 0.8);
+  background: var(--color-surface-soft);
+  color: var(--color-ink);
 }
 
 .table {
@@ -437,13 +438,13 @@ select {
 
 .table-head {
   font-weight: 600;
-  color: #4c4f59;
+  color: var(--color-muted);
 }
 
 .table-row {
   padding: 0.7rem;
-  border: 1px solid rgba(15, 17, 21, 0.05);
-  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
 }
 
 .title {
@@ -453,13 +454,13 @@ select {
 
 .meta {
   margin: 0.1rem 0 0;
-  color: #6c6f78;
-  font-size: 0.9rem;
+  color: var(--color-subtle);
+  font-size: var(--text-sm);
 }
 
 .hint {
-  color: #6c6f78;
-  font-size: 0.95rem;
+  color: var(--color-subtle);
+  font-size: var(--text-sm);
 }
 
 @media (max-width: 768px) {
@@ -478,7 +479,7 @@ select {
   display: block;
   margin-bottom: 0.5rem;
   font-weight: 500;
-  color: #374151;
+  color: var(--color-ink);
 }
 
 .form-group select,

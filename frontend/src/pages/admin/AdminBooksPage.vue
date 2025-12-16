@@ -537,8 +537,8 @@ onMounted(() => {
 .eyebrow {
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  font-size: 0.75rem;
-  color: #8a8e99;
+  font-size: var(--text-xs);
+  color: var(--color-subtle);
   margin: 0 0 0.25rem;
 }
 
@@ -562,13 +562,13 @@ onMounted(() => {
 
 .table-head {
   font-weight: 600;
-  color: #4c4f59;
+  color: var(--color-muted);
 }
 
 .table-row {
   padding: 0.7rem;
-  border: 1px solid rgba(15, 17, 21, 0.05);
-  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
 }
 
 .book-title {
@@ -578,8 +578,8 @@ onMounted(() => {
 
 .book-meta {
   margin: 0.1rem 0 0;
-  color: #6c6f78;
-  font-size: 0.9rem;
+  color: var(--color-subtle);
+  font-size: var(--text-sm);
 }
 
 .actions-col {
@@ -609,16 +609,17 @@ label {
   flex-direction: column;
   gap: 0.35rem;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--color-ink);
 }
 
 input,
 textarea,
 select {
-  border: 1px solid rgba(15, 17, 21, 0.1);
-  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xs);
   padding: 0.65rem;
-  background: rgba(249, 250, 255, 0.8);
+  background: var(--color-surface-soft);
+  color: var(--color-ink);
 }
 
 .two-cols {
@@ -630,9 +631,9 @@ select {
 .import-strip {
   margin-bottom: 0.8rem;
   padding: 0.75rem;
-  border: 1px dashed rgba(67, 56, 202, 0.3);
-  border-radius: 12px;
-  background: rgba(67, 56, 202, 0.05);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--panel-gradient);
 }
 
 .import-actions {
@@ -653,7 +654,7 @@ select {
 .error-list {
   margin: 0.35rem 0 0;
   padding-left: 1.2rem;
-  color: #92400e;
+  color: var(--color-warning-strong);
 }
 
 .sr-only {
@@ -669,8 +670,8 @@ select {
 }
 
 .hint {
-  color: #6c6f78;
-  font-size: 0.95rem;
+  color: var(--color-subtle);
+  font-size: var(--text-sm);
 }
 
 .note {

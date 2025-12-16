@@ -231,8 +231,8 @@ onMounted(() => {
 .eyebrow {
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  font-size: 0.75rem;
-  color: #8a8e99;
+  font-size: var(--text-xs);
+  color: var(--color-subtle);
   margin: 0 0 0.25rem;
 }
 
@@ -247,10 +247,11 @@ onMounted(() => {
 }
 
 select {
-  border: 1px solid rgba(15, 17, 21, 0.1);
-  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xs);
   padding: 0.5rem;
-  background: rgba(249, 250, 255, 0.8);
+  background: var(--color-surface-soft);
+  color: var(--color-ink);
 }
 
 .table {
@@ -275,23 +276,23 @@ select {
   display: block;
   margin-bottom: 0.4rem;
   font-weight: 500;
-  color: #1f1f25;
+  color: var(--color-ink);
 }
 
 .form-group select {
   width: 100%;
-  border: 1px solid rgba(15, 17, 21, 0.1);
-  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xs);
   padding: 0.7rem;
-  background: rgba(249, 250, 255, 0.8);
+  background: var(--color-surface-soft);
   font-size: 1rem;
 }
 
 .form-group small {
   display: block;
   margin-top: 0.2rem;
-  color: #6c6f78;
-  font-size: 0.85rem;
+  color: var(--color-subtle);
+  font-size: var(--text-sm);
 }
 
 @media (max-width: 768px) {
@@ -303,18 +304,18 @@ select {
 
 .table-head {
   font-weight: 600;
-  color: #4c4f59;
+  color: var(--color-muted);
 }
 
 .table-row {
   padding: 0.7rem;
-  border: 1px solid rgba(15, 17, 21, 0.05);
-  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
 }
 
 .hint {
-  color: #6c6f78;
-  font-size: 0.95rem;
+  color: var(--color-subtle);
+  font-size: var(--text-sm);
 }
 
 @media (max-width: 900px) {
