@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import BaseButton from '@/components/base/BaseButton.vue'
+import BasePanel from '@/components/base/BasePanel.vue'
 import { useAuthStore } from '@/stores/auth'
 import type { Comment } from '@/types/library'
 import type { CommunityPost } from '@/services/communityService'
@@ -415,7 +416,7 @@ watch(currentUser, () => {
       <!-- 左侧：排行榜和公告栏 -->
       <div class="sidebar-left">
         <!-- 阅读之星排行榜 -->
-        <section class="leaderboard">
+        <BasePanel>
           <h2 class="section-title">阅读之星</h2>
           <div v-if="loadingStars" class="loading">加载中...</div>
           <div v-else class="leaderboard-list">
@@ -432,10 +433,10 @@ watch(currentUser, () => {
               </div>
             </div>
           </div>
-        </section>
+        </BasePanel>
 
         <!-- 公告栏 -->
-        <section class="announcements">
+        <BasePanel>
           <h2 class="section-title">公告栏</h2>
           <div class="announcement-list">
             <div v-for="announcement in announcements" :key="announcement.id" class="announcement-item">
@@ -446,13 +447,13 @@ watch(currentUser, () => {
               </p>
             </div>
           </div>
-        </section>
+        </BasePanel>
       </div>
 
       <!-- 右侧：UGC动态 -->
       <div class="content-right">
         <!-- 发布动态表单 -->
-        <section class="post-form" v-if="isLoggedIn">
+        <BasePanel v-if="isLoggedIn">
           <div class="form-header">
             <div class="avatar" :style="{ backgroundColor: currentUser?.avatarColor || '#6b7280' }">
               {{ currentUser?.name?.charAt(0) }}
@@ -497,10 +498,10 @@ watch(currentUser, () => {
               {{ loadingPosts ? '发布中...' : '发布' }}
             </BaseButton>
           </div>
-        </section>
+        </BasePanel>
 
         <!-- 社区动态列表 -->
-        <section class="posts">
+        <BasePanel>
           <h2 class="section-title">社区动态</h2>
           <div v-if="loadingCommunity" class="loading">
             加载中...
@@ -593,7 +594,7 @@ watch(currentUser, () => {
               </div>
             </article>
           </div>
-        </section>
+        </BasePanel>
       </div>
     </div>
   </div>
@@ -632,15 +633,6 @@ watch(currentUser, () => {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-}
-
-.leaderboard,
-.announcements {
-  background: var(--color-surface);
-  border-radius: var(--radius-xl);
-  padding: 1.5rem;
-  border: 1px solid var(--color-border);
-  box-shadow: var(--shadow-soft);
 }
 
 .section-title {
@@ -753,14 +745,6 @@ watch(currentUser, () => {
   gap: 1.5rem;
 }
 
-.post-form {
-  background: var(--color-surface);
-  border-radius: var(--radius-xl);
-  padding: 1.5rem;
-  border: 1px solid var(--color-border);
-  box-shadow: var(--shadow-soft);
-}
-
 .form-header {
   display: flex;
   align-items: center;
@@ -849,14 +833,6 @@ textarea:focus {
 
 .publish {
   flex-shrink: 0;
-}
-
-.posts {
-  background: var(--color-surface);
-  border-radius: var(--radius-xl);
-  padding: 1.5rem;
-  border: 1px solid var(--color-border);
-  box-shadow: var(--shadow-soft);
 }
 
 .post-list {

@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import BaseAlert from '@/components/base/BaseAlert.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
+import BasePanel from '@/components/base/BasePanel.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useLibraryStore } from '@/stores/library'
 import type { Book, BorrowingRecord } from '@/types/library'
@@ -255,7 +256,7 @@ const handleRemoveFavorite = async (bookId: string) => {
 
     <BaseAlert v-if="actionMessage" :variant="actionVariant">{{ actionMessage }}</BaseAlert>
 
-    <section class="borrowings" v-if="isLoggedIn">
+    <BasePanel v-if="isLoggedIn">
       <div class="section-header">
         <div>
           <p class="eyebrow">{{ t('borrowings.currentTab') }}</p>
@@ -297,15 +298,15 @@ const handleRemoveFavorite = async (bookId: string) => {
       <div v-else class="empty-state">
         <p>{{ t('borrowings.noActive') }}</p>
       </div>
-    </section>
-    <section v-else class="borrowings">
+    </BasePanel>
+    <BasePanel v-else>
       <div class="empty-state">
         <p>{{ t('borrowings.loginHint') }}</p>
         <BaseButton to="/login" variant="primary" size="lg">{{ t('auth.login') }}</BaseButton>
       </div>
-    </section>
+    </BasePanel>
 
-    <section class="history" v-if="isLoggedIn">
+    <BasePanel v-if="isLoggedIn">
       <div class="section-header">
         <div>
           <p class="eyebrow">{{ t('borrowings.historyTab') }}</p>
@@ -329,13 +330,13 @@ const handleRemoveFavorite = async (bookId: string) => {
       <div v-else class="empty-state">
         <p>{{ t('borrowings.noHistory') }}</p>
       </div>
-    </section>
-    <section v-else class="history">
+    </BasePanel>
+    <BasePanel v-else>
       <div class="empty-state">
         <p>{{ t('borrowings.loginHint') }}</p>
         <BaseButton to="/login" variant="primary" size="lg">{{ t('auth.login') }}</BaseButton>
       </div>
-    </section>
+    </BasePanel>
 
     <section v-if="isLoggedIn" class="credit">
       <div>
@@ -464,15 +465,6 @@ const handleRemoveFavorite = async (bookId: string) => {
 
 .summary-card .hint {
   color: var(--color-subtle);
-}
-
-.borrowings,
-.history {
-  background: var(--color-surface);
-  border-radius: var(--radius-xl);
-  padding: 1.5rem;
-  border: 1px solid var(--color-border);
-  box-shadow: var(--shadow-soft);
 }
 
 .section-header {
