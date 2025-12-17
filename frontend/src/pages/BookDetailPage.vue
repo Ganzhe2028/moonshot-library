@@ -17,14 +17,41 @@ const libraryStore = useLibraryStore()
 const authStore = useAuthStore()
 const { t, locale } = useI18n()
 
+const userRating = ref(0)
+const ratingFeedback = ref('')
+const ratingVariant = ref<'success' | 'error'>('success')
+
 watch(
   () => route.params.id,
   (id) => {
     if (typeof id === 'string') {
       libraryStore.fetchBookById(id)
+      libraryStore.fetchBookRatings(id)
+      if (authStore.user?.id) {
+        libraryStore.getUserBookRating(id).then((existing) => {
+          userRating.value = existing?.rating ?? 0
+        })
+      } else {
+        userRating.value = 0
+      }
     }
   },
   { immediate: true },
+)
+
+watch(
+  () => authStore.user?.id,
+  (userId) => {
+    const bookId = route.params.id
+    if (typeof bookId !== 'string') return
+    if (!userId) {
+      userRating.value = 0
+      return
+    }
+    libraryStore.getUserBookRating(bookId).then((existing) => {
+      userRating.value = existing?.rating ?? 0
+    })
+  },
 )
 
 onMounted(() => {
@@ -79,18 +106,16 @@ const displayTags = computed(() => {
 const feedback = ref('')
 const feedbackVariant = ref<'success' | 'error'>('success')
 
-const userRating = ref(0)
-const ratingFeedback = ref('')
-const ratingVariant = ref<'success' | 'error'>('success')
-
 const commentSectionRef = ref<InstanceType<typeof CommentSection>>()
 const comments = ref<Comment[]>([])
 
-const handleRatingChange = (rating: number) => {
+const handleRatingChange = async (rating: number) => {
   userRating.value = rating
-  // 这里将在store更新后调用API
-  ratingFeedback.value = `您的评分: ${rating}星`
-  ratingVariant.value = 'success'
+  if (!book.value) return
+
+  const result = await libraryStore.submitRating(book.value.id, rating)
+  ratingVariant.value = result.success ? 'success' : 'error'
+  ratingFeedback.value = result.message
 
   // 3秒后清除反馈信息
   setTimeout(() => {

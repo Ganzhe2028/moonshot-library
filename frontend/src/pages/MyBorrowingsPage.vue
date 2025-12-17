@@ -15,9 +15,11 @@ const { t, locale } = useI18n()
 const currentUser = computed(() => authStore.user)
 const isLoggedIn = computed(() => !!currentUser.value)
 const actionMessage = ref('')
-const actionVariant = ref<'success' | 'error'>('success')
+const actionVariant = ref<'success' | 'error' | 'warning'>('success')
 
 const favoritesLoading = computed(() => libraryStore.favoritesLoading)
+
+const MAX_RENEWALS = 2
 
 const favoriteBooks = computed(() => {
   if (!libraryStore.favorites.length) return []
@@ -168,9 +170,17 @@ const requireAuth = () => {
   return true
 }
 
-const handleRenew = async (recordId: string) => {
+const canRenew = (record: BorrowingRecord) => record.renewals < MAX_RENEWALS
+
+const handleRenew = async (record: BorrowingRecord) => {
   if (!requireAuth()) return
-  const result = await libraryStore.renewBorrowing(recordId)
+  if (!canRenew(record)) {
+    actionVariant.value = 'warning'
+    actionMessage.value = t('borrowings.renewLimitReached')
+    return
+  }
+
+  const result = await libraryStore.renewBorrowing(record.id)
   actionVariant.value = result.success ? 'success' : 'error'
   actionMessage.value = result.message
 }
@@ -270,12 +280,17 @@ const handleRemoveFavorite = async (bookId: string) => {
             <BaseButton type="button" variant="secondary" @click="handleReturn(item.record.id)">
               {{ t('borrowings.return') }}
             </BaseButton>
-            <BaseButton type="button" variant="primary" @click="handleRenew(item.record.id)">
-              {{ t('borrowings.renew') }}
+            <BaseButton
+              type="button"
+              variant="primary"
+              :disabled="!canRenew(item.record)"
+              @click="handleRenew(item.record)"
+            >
+              {{ canRenew(item.record) ? t('borrowings.renew') : t('borrowings.renewLimitReached') }}
             </BaseButton>
           </div>
           <p class="renewals">
-            {{ t('borrowings.renewTip') }} ({{ item.record.renewals }} / 2)
+            {{ t('borrowings.renewTip') }} ({{ item.record.renewals }} / {{ MAX_RENEWALS }})
           </p>
         </article>
       </div>

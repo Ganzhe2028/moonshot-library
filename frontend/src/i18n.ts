@@ -121,6 +121,7 @@ export const messages = {
       renew: '续借',
       return: '归还',
       renewTip: '每次续借将延长归还时间。',
+      renewLimitReached: '不可续借',
       dueDate: '到期',
       credit: {
         title: '信用/信誉',
@@ -417,6 +418,7 @@ export const messages = {
       renew: 'Renew',
       return: 'Return',
       renewTip: 'Each renewal extends the due date.',
+      renewLimitReached: 'Cannot renew',
       dueDate: 'Due',
       credit: {
         title: 'Credit',
