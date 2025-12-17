@@ -231,7 +231,7 @@ class APITester {
       );
 
       if (createBorrowingResult.success && createBorrowingResult.data.success) {
-        const borrowingId = String(createBorrowingResult.data.data.borrowingRecord.id);
+        const borrowingId = String(createBorrowingResult.data.data.borrowing.id);
 
         // 获取借阅记录
         const getBorrowingResult = await this.makeRequest('GET', `/borrowings/${borrowingId}`);

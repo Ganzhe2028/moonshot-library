@@ -3,6 +3,10 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import * as XLSX from 'xlsx'
 import { useI18n } from 'vue-i18n'
 
+import BaseAlert from '@/components/base/BaseAlert.vue'
+import BaseBadge from '@/components/base/BaseBadge.vue'
+import BaseButton from '@/components/base/BaseButton.vue'
+import BaseCard from '@/components/base/BaseCard.vue'
 import { useLibraryStore } from '@/stores/library'
 import type { Book, BookImportResult, BookStatus } from '@/types/library'
 
@@ -175,15 +179,15 @@ const handleDelete = async (bookId: string) => {
 const statusBadge = (status: BookStatus) => {
   switch (status) {
     case 'available':
-      return { text: t('admin.books.status.available'), className: 'green' }
+      return { text: t('admin.books.status.available'), variant: 'success' as const }
     case 'borrowed':
-      return { text: t('admin.books.status.borrowed'), className: 'amber' }
+      return { text: t('admin.books.status.borrowed'), variant: 'warning' as const }
     case 'reserved':
-      return { text: t('admin.books.status.reserved'), className: 'orange' }
+      return { text: t('admin.books.status.reserved'), variant: 'warning' as const }
     case 'maintenance':
-      return { text: t('admin.books.status.maintenance'), className: 'gray' }
+      return { text: t('admin.books.status.maintenance'), variant: 'neutral' as const }
     default:
-      return { text: status, className: '' }
+      return { text: status, variant: 'neutral' as const }
   }
 }
 
@@ -285,15 +289,19 @@ onMounted(() => {
 
 <template>
   <div :class="['grid', { single: !showForm }]">
-    <section class="panel">
+    <BaseCard padding="sm" radius="lg" shadow="none">
       <div class="panel-head">
         <div>
           <p class="eyebrow">{{ t('admin.books.listTitle') }}</p>
           <h2>{{ t('admin.books.listTitle') }}</h2>
         </div>
-        <div class="actions">
-          <button type="button" class="ghost" @click="reload">{{ t('admin.books.refresh') }}</button>
-          <button type="button" class="primary" @click="startCreate">{{ t('admin.books.create') }}</button>
+        <div class="head-actions">
+          <BaseButton type="button" variant="ghost" size="sm" @click="reload">
+            {{ t('admin.books.refresh') }}
+          </BaseButton>
+          <BaseButton type="button" variant="primary" size="sm" @click="startCreate">
+            {{ t('admin.books.create') }}
+          </BaseButton>
         </div>
       </div>
 
@@ -304,12 +312,18 @@ onMounted(() => {
             {{ t('admin.books.import.hint') }}
           </p>
           <div class="import-actions">
-            <button type="button" class="ghost" @click="downloadTemplate">
+            <BaseButton type="button" variant="ghost" size="sm" @click="downloadTemplate">
               {{ t('admin.books.import.download') }}
-            </button>
-            <button type="button" class="primary" :disabled="importLoading" @click="triggerFilePicker">
+            </BaseButton>
+            <BaseButton
+              type="button"
+              variant="primary"
+              size="sm"
+              :disabled="importLoading"
+              @click="triggerFilePicker"
+            >
               {{ importLoading ? t('admin.books.import.uploading') : t('admin.books.import.upload') }}
-            </button>
+            </BaseButton>
             <input
               ref="fileInputRef"
               type="file"
@@ -321,8 +335,8 @@ onMounted(() => {
           <p v-if="importFileName" class="hint file-name">
             {{ t('admin.books.import.selected', { name: importFileName }) }}
           </p>
-          <p v-if="importError" class="alert error">{{ importError }}</p>
-          <div v-if="importResult" class="import-result alert success">
+          <BaseAlert v-if="importError" variant="error">{{ importError }}</BaseAlert>
+          <BaseAlert v-if="importResult" variant="success" class="import-result">
             <p>
               {{
                 t('admin.books.import.result', {
@@ -340,7 +354,7 @@ onMounted(() => {
                 {{ t('admin.books.import.moreErrors', { count: importResult.errors.length - 3 }) }}
               </li>
             </ul>
-          </div>
+          </BaseAlert>
         </div>
       </div>
 
@@ -360,25 +374,31 @@ onMounted(() => {
           </div>
           <span>{{ categoryForLocale(book) }}</span>
           <span>{{ book.availableCopies }} / {{ book.totalCopies }}</span>
-          <span :class="['pill', statusBadge(book.status).className]">
+          <BaseBadge :variant="statusBadge(book.status).variant">
             {{ statusBadge(book.status).text }}
-          </span>
-          <div class="actions">
-            <button type="button" class="ghost" @click="startEdit(book.id)">{{ t('admin.books.edit') }}</button>
-            <button type="button" class="ghost danger" @click="handleDelete(book.id)">{{ t('admin.books.delete') }}</button>
+          </BaseBadge>
+          <div class="row-actions">
+            <BaseButton type="button" variant="ghost" size="sm" @click="startEdit(book.id)">
+              {{ t('admin.books.edit') }}
+            </BaseButton>
+            <BaseButton type="button" variant="danger" size="sm" @click="handleDelete(book.id)">
+              {{ t('admin.books.delete') }}
+            </BaseButton>
           </div>
         </div>
         <p v-if="!books.length" class="hint">{{ t('admin.books.table.empty') }}</p>
       </div>
-    </section>
+    </BaseCard>
 
-    <section class="panel form-panel" v-if="showForm">
+    <BaseCard v-if="showForm" class="form-panel" padding="sm" radius="lg" shadow="none">
       <div class="panel-head">
         <div>
           <p class="eyebrow">{{ t('admin.books.formTitleCreate') }}</p>
           <h2>{{ editingId ? t('admin.books.formTitleEdit') : t('admin.books.formTitleCreate') }}</h2>
         </div>
-        <button type="button" class="ghost" @click="showForm = false">{{ t('admin.books.closeForm') }}</button>
+        <BaseButton type="button" variant="ghost" size="sm" @click="showForm = false">
+          {{ t('admin.books.closeForm') }}
+        </BaseButton>
       </div>
 
       <form class="form" @submit.prevent="handleSubmit">
@@ -480,14 +500,14 @@ onMounted(() => {
           <textarea v-model="form.descriptionEn" rows="3" :placeholder="t('admin.books.form.descEn')" />
         </label>
 
-        <button type="submit" class="primary">
+        <BaseButton type="submit" variant="primary" block>
           {{ editingId ? t('admin.books.form.submitUpdate') : t('admin.books.form.submitCreate') }}
-        </button>
+        </BaseButton>
       </form>
 
-    </section>
+    </BaseCard>
   </div>
-  <p v-if="message" :class="['alert', messageVariant]">{{ message }}</p>
+  <BaseAlert v-if="message" :variant="messageVariant">{{ message }}</BaseAlert>
 </template>
 
 <style scoped>
@@ -501,13 +521,6 @@ onMounted(() => {
   grid-template-columns: 1fr;
 }
 
-.panel {
-  border: 1px solid rgba(15, 17, 21, 0.05);
-  border-radius: 18px;
-  padding: 1rem;
-  background: #fff;
-}
-
 .panel-head {
   display: flex;
   justify-content: space-between;
@@ -516,7 +529,7 @@ onMounted(() => {
   margin-bottom: 0.5rem;
 }
 
-.actions {
+.head-actions {
   display: flex;
   gap: 0.5rem;
 }
@@ -524,35 +537,13 @@ onMounted(() => {
 .eyebrow {
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  font-size: 0.75rem;
-  color: #8a8e99;
+  font-size: var(--text-xs);
+  color: var(--color-subtle);
   margin: 0 0 0.25rem;
 }
 
-.panel h2 {
+.panel-head h2 {
   margin: 0;
-}
-
-.primary {
-  background: linear-gradient(120deg, #4338ca, #6366f1);
-  color: #fff;
-  border: none;
-  border-radius: 12px;
-  padding: 0.65rem 1rem;
-  font-weight: 600;
-}
-
-.ghost {
-  background: rgba(15, 17, 21, 0.05);
-  border: 1px solid rgba(15, 17, 21, 0.06);
-  border-radius: 10px;
-  padding: 0.5rem 0.8rem;
-  color: #1f1f25;
-}
-
-.ghost.danger {
-  color: #b91c1c;
-  border-color: rgba(185, 28, 28, 0.3);
 }
 
 .table {
@@ -571,13 +562,13 @@ onMounted(() => {
 
 .table-head {
   font-weight: 600;
-  color: #4c4f59;
+  color: var(--color-muted);
 }
 
 .table-row {
   padding: 0.7rem;
-  border: 1px solid rgba(15, 17, 21, 0.05);
-  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
 }
 
 .book-title {
@@ -587,45 +578,18 @@ onMounted(() => {
 
 .book-meta {
   margin: 0.1rem 0 0;
-  color: #6c6f78;
-  font-size: 0.9rem;
+  color: var(--color-subtle);
+  font-size: var(--text-sm);
 }
 
 .actions-col {
   text-align: right;
 }
 
-.actions {
+.row-actions {
   display: flex;
   gap: 0.4rem;
   justify-content: flex-end;
-}
-
-.pill {
-  padding: 0.25rem 0.7rem;
-  border-radius: 999px;
-  font-size: 0.85rem;
-  text-align: center;
-}
-
-.pill.green {
-  background: rgba(16, 185, 129, 0.12);
-  color: #047857;
-}
-
-.pill.amber {
-  background: rgba(251, 191, 36, 0.18);
-  color: #92400e;
-}
-
-.pill.orange {
-  background: rgba(248, 113, 113, 0.18);
-  color: #b91c1c;
-}
-
-.pill.gray {
-  background: rgba(107, 114, 128, 0.15);
-  color: #374151;
 }
 
 .form-panel {
@@ -645,16 +609,17 @@ label {
   flex-direction: column;
   gap: 0.35rem;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--color-ink);
 }
 
 input,
 textarea,
 select {
-  border: 1px solid rgba(15, 17, 21, 0.1);
-  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xs);
   padding: 0.65rem;
-  background: rgba(249, 250, 255, 0.8);
+  background: var(--color-surface-soft);
+  color: var(--color-ink);
 }
 
 .two-cols {
@@ -663,29 +628,12 @@ select {
   gap: 0.6rem;
 }
 
-.alert {
-  margin-top: 0.5rem;
-  padding: 0.65rem 0.8rem;
-  border-radius: 10px;
-  font-size: 0.95rem;
-}
-
-.alert.success {
-  background: rgba(16, 185, 129, 0.12);
-  color: #047857;
-}
-
-.alert.error {
-  background: rgba(239, 68, 68, 0.12);
-  color: #b91c1c;
-}
-
 .import-strip {
   margin-bottom: 0.8rem;
   padding: 0.75rem;
-  border: 1px dashed rgba(67, 56, 202, 0.3);
-  border-radius: 12px;
-  background: rgba(67, 56, 202, 0.05);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--panel-gradient);
 }
 
 .import-actions {
@@ -706,7 +654,7 @@ select {
 .error-list {
   margin: 0.35rem 0 0;
   padding-left: 1.2rem;
-  color: #92400e;
+  color: var(--color-warning-strong);
 }
 
 .sr-only {
@@ -722,8 +670,8 @@ select {
 }
 
 .hint {
-  color: #6c6f78;
-  font-size: 0.95rem;
+  color: var(--color-subtle);
+  font-size: var(--text-sm);
 }
 
 .note {

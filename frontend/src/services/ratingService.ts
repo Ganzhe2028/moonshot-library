@@ -2,6 +2,8 @@ import type { Rating, Comment } from '@/types/library'
 
 const API_BASE_URL = '/api'
 
+const RATINGS_STORAGE_KEY = 'bookRatings'
+
 class RatingService {
   private getHeaders(includeAuth = false, contentType: string | null = 'application/json'): Record<string, string> {
     const headers: Record<string, string> = {
@@ -14,6 +16,42 @@ class RatingService {
       }
     }
     return headers
+  }
+
+  private loadStoredRatings(): Rating[] {
+    try {
+      const stored = localStorage.getItem(RATINGS_STORAGE_KEY)
+      if (!stored) return []
+      const parsed = JSON.parse(stored)
+      return Array.isArray(parsed) ? (parsed as Rating[]) : []
+    } catch (error) {
+      console.error('解析评分数据失败:', error)
+      return []
+    }
+  }
+
+  private saveStoredRatings(ratings: Rating[]) {
+    try {
+      localStorage.setItem(RATINGS_STORAGE_KEY, JSON.stringify(Array.isArray(ratings) ? ratings : []))
+    } catch (error) {
+      console.error('保存评分数据失败:', error)
+    }
+  }
+
+  private getCurrentUserId(): string | null {
+    const candidates = ['auth_user', 'user', 'currentUser']
+    for (const key of candidates) {
+      const stored = localStorage.getItem(key)
+      if (!stored) continue
+      try {
+        const parsed = JSON.parse(stored)
+        const id = typeof parsed?.id === 'string' ? parsed.id : null
+        if (id) return id
+      } catch (error) {
+        console.warn(`解析用户信息失败: ${key}`, error)
+      }
+    }
+    return null
   }
 
   private async request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -39,29 +77,103 @@ class RatingService {
 
   // 模拟响应数据，用于开发环境
   private getMockResponse(path: string, init?: RequestInit) {
+    const method = (init?.method ?? 'GET').toUpperCase()
+
     // 模拟获取书籍评分
-    if (path.match(/\/books\/[^/]+\/ratings/) && init?.method === 'GET') {
+    if (path.match(/^\/books\/[^/]+\/ratings$/) && method === 'GET') {
+      const bookId = path.split('/')[2]
+      const allRatings = this.loadStoredRatings()
+      const ratings = allRatings.filter((r) => r.bookId === bookId)
+      const ratingCount = ratings.length
+      const averageRating = ratingCount
+        ? ratings.reduce((sum, r) => sum + (typeof r.rating === 'number' ? r.rating : 0), 0) / ratingCount
+        : 0
       return {
-        ratings: [],
-        averageRating: 4.5,
-        ratingCount: 25
+        ratings,
+        averageRating,
+        ratingCount,
       }
     }
 
     // 模拟提交评分
-    if (path.match(/\/ratings/) && init?.method === 'POST') {
-      const body = JSON.parse(init.body as string)
+    if (path === '/ratings' && method === 'POST') {
+      const bodyText = typeof init?.body === 'string' ? init.body : ''
+      if (!bodyText) {
+        throw new Error('缺少评分数据')
+      }
+      const body = JSON.parse(bodyText)
+      if (!body?.bookId || typeof body.rating !== 'number') {
+        throw new Error('评分参数无效')
+      }
+      const userId = this.getCurrentUserId() || 'anonymous'
+
+      const allRatings = this.loadStoredRatings()
+      const existingIndex = allRatings.findIndex((r) => r.bookId === body.bookId && r.userId === userId)
+
+      const now = new Date().toISOString()
+      const ratingRecord: Rating = {
+        id: existingIndex >= 0 ? allRatings[existingIndex]!.id : Date.now().toString(),
+        bookId: body.bookId,
+        userId,
+        rating: body.rating,
+        createdAt: existingIndex >= 0 ? allRatings[existingIndex]!.createdAt : now,
+        updatedAt: now,
+      }
+
+      if (existingIndex >= 0) {
+        allRatings[existingIndex] = ratingRecord
+      } else {
+        allRatings.push(ratingRecord)
+      }
+      this.saveStoredRatings(allRatings)
+
       return {
         rating: {
-          id: Date.now().toString(),
-          ...body,
-          createdAt: new Date().toISOString()
+          ...ratingRecord,
         }
       }
     }
 
+    // 模拟获取用户对特定书籍的评分
+    if (path.match(/^\/books\/[^/]+\/ratings\/user\/[^/]+$/) && method === 'GET') {
+      const parts = path.split('/')
+      const bookId = parts[2]
+      const userId = parts[5]
+      const allRatings = this.loadStoredRatings()
+      const rating = allRatings.find((r) => r.bookId === bookId && r.userId === userId) ?? null
+      return { rating }
+    }
+
+    // 模拟更新评分
+    if (path.match(/^\/ratings\/[^/]+$/) && method === 'PUT') {
+      const ratingId = path.split('/')[2]
+      const bodyText = typeof init?.body === 'string' ? init.body : ''
+      if (!bodyText) {
+        throw new Error('缺少评分数据')
+      }
+      const body = JSON.parse(bodyText)
+      if (typeof body?.rating !== 'number') {
+        throw new Error('评分参数无效')
+      }
+      const allRatings = this.loadStoredRatings()
+      const index = allRatings.findIndex((r) => r.id === ratingId)
+      if (index < 0) {
+        throw new Error('评分不存在')
+      }
+
+      const existing = allRatings[index]!
+      const updated: Rating = {
+        ...existing,
+        rating: body.rating,
+        updatedAt: new Date().toISOString(),
+      }
+      allRatings[index] = updated
+      this.saveStoredRatings(allRatings)
+      return { rating: updated }
+    }
+
     // 模拟获取书籍评论
-    if (path.match(/\/books\/[^/]+\/comments/) && init?.method === 'GET') {
+    if (path.match(/\/books\/[^/]+\/comments/) && method === 'GET') {
       return {
         comments: [
           {
@@ -85,8 +197,9 @@ class RatingService {
     }
 
     // 模拟提交评论
-    if (path.match(/\/comments/) && init?.method === 'POST') {
-      const body = JSON.parse(init.body as string)
+    if (path.match(/\/comments/) && method === 'POST') {
+      const bodyText = typeof init?.body === 'string' ? init.body : ''
+      const body = bodyText ? JSON.parse(bodyText) : {}
       return {
         comment: {
           id: Date.now().toString(),
@@ -98,13 +211,13 @@ class RatingService {
     }
 
     // 模拟删除评论
-    if (path.match(/\/comments\/[^/]+/) && init?.method === 'DELETE') {
+    if (path.match(/\/comments\/[^/]+/) && method === 'DELETE') {
       // 在模拟环境中，删除评论总是成功
       return { success: true }
     }
 
     // 模拟获取所有书本评论（管理用）
-    if (path === '/comments/all' && init?.method === 'GET') {
+    if (path === '/comments/all' && method === 'GET') {
       return {
         comments: [
           {

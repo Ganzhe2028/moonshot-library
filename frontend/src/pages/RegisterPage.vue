@@ -1,6 +1,6 @@
 <template>
   <div class="auth-container">
-    <div class="auth-card">
+    <BaseCard class="auth-card" padding="lg" radius="xl">
       <div class="auth-header">
         <h1>{{ t('auth.registerTitle') }}</h1>
         <p>{{ t('auth.registerSubtitle') }}</p>
@@ -9,7 +9,7 @@
       <form @submit.prevent="handleRegister" class="auth-form">
         <div class="form-group">
           <label for="name">{{ t('auth.name') }}</label>
-          <input
+          <BaseInput
             id="name"
             v-model="registerForm.name"
             type="text"
@@ -21,7 +21,7 @@
 
         <div class="form-group">
           <label for="email">{{ t('auth.email') }}</label>
-          <input
+          <BaseInput
             id="email"
             v-model="registerForm.email"
             type="email"
@@ -33,7 +33,7 @@
 
         <div class="form-group">
           <label for="password">{{ t('auth.password') }}</label>
-          <input
+          <BaseInput
             id="password"
             v-model="registerForm.password"
             type="password"
@@ -61,7 +61,7 @@
 
         <div class="form-group" v-if="registerForm.role === 'student'">
           <label for="grade">{{ t('auth.grade') }}</label>
-          <input
+          <BaseInput
             id="grade"
             v-model="registerForm.grade"
             type="text"
@@ -70,20 +70,18 @@
           />
         </div>
 
-        <div v-if="error" class="error-message">
-          {{ error }}
-        </div>
+        <BaseAlert v-if="error" variant="error">{{ error }}</BaseAlert>
 
-        <button type="submit" class="submit-button" :disabled="isLoading">
+        <BaseButton type="submit" variant="primary" block :disabled="isLoading">
           {{ isLoading ? t('auth.registering') : t('auth.register') }}
-        </button>
+        </BaseButton>
       </form>
 
       <div class="auth-footer">
         <p>{{ t('auth.hasAccount') }}</p>
         <router-link to="/login" class="link-button">{{ t('auth.loginNow') }}</router-link>
       </div>
-    </div>
+    </BaseCard>
   </div>
 </template>
 
@@ -91,6 +89,10 @@
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import BaseAlert from '@/components/base/BaseAlert.vue'
+import BaseButton from '@/components/base/BaseButton.vue'
+import BaseCard from '@/components/base/BaseCard.vue'
+import BaseInput from '@/components/base/BaseInput.vue'
 import { useAuthStore } from '@/stores/auth'
 import type { RegisterRequest } from '@/types/library'
 
@@ -139,21 +141,14 @@ const handleRegister = async () => {
 
 <style scoped>
 .auth-container {
-  min-height: 100vh;
   display: flex;
-  align-items: center;
   justify-content: center;
-  padding: 2rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 3rem 1.5rem 4rem;
 }
 
 .auth-card {
-  background: white;
-  border-radius: 20px;
-  padding: 3rem;
   width: 100%;
-  max-width: 400px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  max-width: 440px;
 }
 
 .auth-header {
@@ -164,12 +159,12 @@ const handleRegister = async () => {
 .auth-header h1 {
   font-size: 2rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--color-ink);
   margin-bottom: 0.5rem;
 }
 
 .auth-header p {
-  color: #6b7280;
+  color: var(--color-muted);
   font-size: 1rem;
 }
 
@@ -187,60 +182,29 @@ const handleRegister = async () => {
 
 .form-group label {
   font-weight: 500;
-  color: #374151;
+  color: var(--color-ink);
   font-size: 0.875rem;
 }
 
-.form-group input,
 .form-group select {
-  padding: 0.75rem;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  font-size: 1rem;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1rem;
+  font-size: var(--text-base);
+  background: var(--color-surface-soft);
+  color: var(--color-ink);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
 }
 
-.form-group input:focus,
 .form-group select:focus {
   outline: none;
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-soft);
 }
 
-.form-group input:disabled,
 .form-group select:disabled {
-  background-color: #f3f4f6;
-  cursor: not-allowed;
-}
-
-.error-message {
-  background-color: #fef2f2;
-  color: #dc2626;
-  padding: 0.75rem;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  text-align: center;
-}
-
-.submit-button {
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  color: white;
-  padding: 0.875rem;
-  border: none;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.submit-button:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
-}
-
-.submit-button:disabled {
-  opacity: 0.7;
+  opacity: 0.75;
   cursor: not-allowed;
 }
 
@@ -248,32 +212,28 @@ const handleRegister = async () => {
   text-align: center;
   margin-top: 2rem;
   padding-top: 2rem;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--color-border);
 }
 
 .auth-footer p {
-  color: #6b7280;
+  color: var(--color-muted);
   margin-bottom: 0.5rem;
 }
 
 .link-button {
-  color: #6366f1;
+  color: var(--color-primary);
   text-decoration: none;
   font-weight: 600;
   transition: color 0.2s;
 }
 
 .link-button:hover {
-  color: #4f46e5;
+  color: var(--color-primary-strong);
 }
 
 @media (max-width: 640px) {
   .auth-container {
     padding: 1rem;
-  }
-  
-  .auth-card {
-    padding: 2rem;
   }
 }
 </style>

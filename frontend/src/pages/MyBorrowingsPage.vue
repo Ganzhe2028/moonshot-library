@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { RouterLink } from 'vue-router'
 
+import BaseAlert from '@/components/base/BaseAlert.vue'
+import BaseButton from '@/components/base/BaseButton.vue'
+import BasePanel from '@/components/base/BasePanel.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useLibraryStore } from '@/stores/library'
 import type { Book, BorrowingRecord } from '@/types/library'
@@ -14,9 +16,11 @@ const { t, locale } = useI18n()
 const currentUser = computed(() => authStore.user)
 const isLoggedIn = computed(() => !!currentUser.value)
 const actionMessage = ref('')
-const actionVariant = ref<'success' | 'error'>('success')
+const actionVariant = ref<'success' | 'error' | 'warning'>('success')
 
 const favoritesLoading = computed(() => libraryStore.favoritesLoading)
+
+const MAX_RENEWALS = 2
 
 const favoriteBooks = computed(() => {
   if (!libraryStore.favorites.length) return []
@@ -167,9 +171,17 @@ const requireAuth = () => {
   return true
 }
 
-const handleRenew = async (recordId: string) => {
+const canRenew = (record: BorrowingRecord) => record.renewals < MAX_RENEWALS
+
+const handleRenew = async (record: BorrowingRecord) => {
   if (!requireAuth()) return
-  const result = await libraryStore.renewBorrowing(recordId)
+  if (!canRenew(record)) {
+    actionVariant.value = 'warning'
+    actionMessage.value = t('borrowings.renewLimitReached')
+    return
+  }
+
+  const result = await libraryStore.renewBorrowing(record.id)
   actionVariant.value = result.success ? 'success' : 'error'
   actionMessage.value = result.message
 }
@@ -230,7 +242,7 @@ const handleRemoveFavorite = async (bookId: string) => {
       <div>
         <p class="eyebrow">{{ t('borrowings.loginHintTitle') }}</p>
         <h1>{{ t('borrowings.loginHint') }}</h1>
-        <router-link class="primary" to="/login">{{ t('auth.login') }}</router-link>
+        <BaseButton to="/login" variant="primary" size="lg">{{ t('auth.login') }}</BaseButton>
       </div>
     </section>
 
@@ -242,9 +254,9 @@ const handleRemoveFavorite = async (bookId: string) => {
       </div>
     </section>
 
-    <p v-if="actionMessage" :class="['action-message', actionVariant]">{{ actionMessage }}</p>
+    <BaseAlert v-if="actionMessage" :variant="actionVariant">{{ actionMessage }}</BaseAlert>
 
-    <section class="borrowings" v-if="isLoggedIn">
+    <BasePanel v-if="isLoggedIn">
       <div class="section-header">
         <div>
           <p class="eyebrow">{{ t('borrowings.currentTab') }}</p>
@@ -266,30 +278,35 @@ const handleRemoveFavorite = async (bookId: string) => {
             {{ formatDate(item.record.dueDate) }}
           </p>
           <div class="actions">
-            <button type="button" class="secondary" @click="handleReturn(item.record.id)">
+            <BaseButton type="button" variant="secondary" @click="handleReturn(item.record.id)">
               {{ t('borrowings.return') }}
-            </button>
-            <button type="button" class="primary" @click="handleRenew(item.record.id)">
-              {{ t('borrowings.renew') }}
-            </button>
+            </BaseButton>
+            <BaseButton
+              type="button"
+              variant="primary"
+              :disabled="!canRenew(item.record)"
+              @click="handleRenew(item.record)"
+            >
+              {{ canRenew(item.record) ? t('borrowings.renew') : t('borrowings.renewLimitReached') }}
+            </BaseButton>
           </div>
           <p class="renewals">
-            {{ t('borrowings.renewTip') }} ({{ item.record.renewals }} / 2)
+            {{ t('borrowings.renewTip') }} ({{ item.record.renewals }} / {{ MAX_RENEWALS }})
           </p>
         </article>
       </div>
       <div v-else class="empty-state">
         <p>{{ t('borrowings.noActive') }}</p>
       </div>
-    </section>
-    <section v-else class="borrowings">
+    </BasePanel>
+    <BasePanel v-else>
       <div class="empty-state">
         <p>{{ t('borrowings.loginHint') }}</p>
-        <router-link class="primary" to="/login">{{ t('auth.login') }}</router-link>
+        <BaseButton to="/login" variant="primary" size="lg">{{ t('auth.login') }}</BaseButton>
       </div>
-    </section>
+    </BasePanel>
 
-    <section class="history" v-if="isLoggedIn">
+    <BasePanel v-if="isLoggedIn">
       <div class="section-header">
         <div>
           <p class="eyebrow">{{ t('borrowings.historyTab') }}</p>
@@ -313,13 +330,13 @@ const handleRemoveFavorite = async (bookId: string) => {
       <div v-else class="empty-state">
         <p>{{ t('borrowings.noHistory') }}</p>
       </div>
-    </section>
-    <section v-else class="history">
+    </BasePanel>
+    <BasePanel v-else>
       <div class="empty-state">
         <p>{{ t('borrowings.loginHint') }}</p>
-        <router-link class="primary" to="/login">{{ t('auth.login') }}</router-link>
+        <BaseButton to="/login" variant="primary" size="lg">{{ t('auth.login') }}</BaseButton>
       </div>
-    </section>
+    </BasePanel>
 
     <section v-if="isLoggedIn" class="credit">
       <div>
@@ -450,31 +467,6 @@ const handleRemoveFavorite = async (bookId: string) => {
   color: var(--color-subtle);
 }
 
-.action-message {
-  padding: 0.8rem 1rem;
-  border-radius: 16px;
-  text-align: center;
-}
-
-.action-message.success {
-  background: var(--color-success-soft);
-  color: var(--color-success-strong);
-}
-
-.action-message.error {
-  background: var(--color-danger-soft);
-  color: var(--color-danger-strong);
-}
-
-.borrowings,
-.history {
-  background: var(--color-surface);
-  border-radius: var(--radius-xl);
-  padding: 1.5rem;
-  border: 1px solid var(--color-border);
-  box-shadow: var(--shadow-soft);
-}
-
 .section-header {
   display: flex;
   justify-content: space-between;
@@ -535,25 +527,6 @@ const handleRemoveFavorite = async (bookId: string) => {
   gap: 0.6rem;
   flex-wrap: wrap;
   margin-top: 0.9rem;
-}
-
-.primary,
-.secondary {
-  border-radius: 14px;
-  padding: 0.65rem 1rem;
-  font-weight: var(--font-weight-semibold);
-}
-
-.primary {
-  background: var(--cta-gradient);
-  color: #fff;
-  box-shadow: 0 12px 28px var(--color-primary-soft);
-}
-
-.secondary {
-  background: var(--chip-bg);
-  color: var(--color-ink);
-  border: 1px solid var(--color-border);
 }
 
 .renewals {

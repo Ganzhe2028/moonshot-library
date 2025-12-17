@@ -1,199 +1,105 @@
-# Moonshot Library System API 架构文档
+# Moonshot Library API 概览
 
-## 概述
+面向校园的图书馆管理系统后端，基于 **Express.js + TypeScript + SQLite**。文档反映当前代码实现，便于前后端协作和排查。
 
-Moonshot Library System 是一个现代化的校园图书馆管理系统，提供完整的图书借阅、用户管理和权限控制功能。本文档旨在提供 API 架构的高层次概述，帮助开发者理解系统的整体设计和功能模块。
+---
 
-## API 架构设计
+## 技术栈与约定
+- **框架**：Express.js（TypeScript）
+- **数据库**：SQLite3（`backend/database/library.db`，表结构见下）
+- **认证**：JWT，`Authorization: Bearer <token>`
+- **角色**：`student` / `teacher` / `librarian`（部分接口接受 `admin` 用作扩展）
+- **验证**：`express-validator`，错误统一 `{ success, message, data? }`
+- **文档**：Swagger UI `GET /api-docs`，OpenAPI JSON `GET /api-docs.json`
+- **分页**：`limit` / `offset`，默认 50 / 0
 
-### 架构原则
+---
 
-- **RESTful API 设计**：遵循 REST 设计规范，使用标准的 HTTP 方法和状态码
-- **分层架构**：控制器、服务层、数据访问层分离
-- **统一响应格式**：所有 API 响应采用一致的格式
-- **认证与授权**：基于 JWT 的认证机制和基于角色的权限控制
+## 主要功能模块（路由前缀 `/api`）
 
-### 技术栈
+### 1) 认证 Auth (`/auth/*`)
+- `POST /auth/register` 用户注册
+- `POST /auth/login` 登录获取 token
+- `POST /auth/refresh` 刷新 token
+- `POST /auth/logout` 退出
+- `POST /auth/microsoft`（可选）MSAL 登录
 
-- **后端框架**：Node.js + Express
-- **数据库**：MongoDB
-- **认证**：JWT (JSON Web Token)
-- **文档工具**：Swagger/OpenAPI
+### 2) 图书 Books (`/books/*`)
+- `GET /books` 列表，支持 `limit/offset/category/search`
+- `GET /books/:id` 详情
+- `POST /books` 创建（需 `librarian` 或 `admin`）
+- `PUT /books/:id` 更新（需 `librarian` 或 `admin`）
+- `DELETE /books/:id` 删除（需 `librarian` 或 `admin`）
+- `GET /books/categories` 分类列表
+- `POST /books/import` 批量导入（表格上传）
 
-## 主要功能模块
+> 可借判断依赖 `available_copies` 与 `status`。当前实现：只要 `available_copies > 0` 且状态不是 `maintenance/reserved` 就视为可借；当余量为 0 时状态标记为 `borrowed`（维护状态保持不变）。
 
-### 1. 认证管理 (`/api/auth/*`)
+### 3) 借阅 Borrowings (`/borrowings/*`)
+- `GET /borrowings` 列表，支持 `userId/bookId/status/limit/offset`（需登录；管理员可查看任意用户）
+- `GET /borrowings/:id` 详情
+- `POST /borrowings` 创建借阅（登录用户）
+  - 业务规则：`available_copies > 0` 且 `status === 'available'`
+  - 信用分 `< 50` 拒绝借阅
+  - 默认借期 21 天（`BORROW_PERIOD_DAYS`，默认 21）
+- `PUT /borrowings/:id/return` 归还，释放库存
+- `PUT /borrowings/:id/renew` 续借
+  - 信用分 `< 70` 拒绝续借
+  - 每次续借增加 `RENEW_PERIOD_DAYS`（默认 14），最多 `MAX_RENEWALS` 次（默认 2）
+- `PUT /borrowings/:id` 管理端更新借阅记录（仅 `librarian`，可改借期/状态）
+- `GET /borrowings/overdue` 逾期检查
+  - 先查询 `due_date < today AND status=active`，再批量标记 `status=overdue`
+- 返回约定：借阅/归还/续借/更新接口统一返回 `data.borrowing`
 
-**功能说明**：处理用户的认证相关操作，包括注册、登录、令牌刷新和登出。
+### 4) 用户 Users (`/users/*`)
+- `GET /users` / `GET /users/role/:role` 用户列表（`librarian`/`admin`）
+- `GET /users/:id` 用户详情（本人或管理员）
+- `PUT /users/:id` 更新用户（管理员）
 
-**主要端点**：
-- 用户注册
-- 用户登录
-- 刷新访问令牌
-- 用户登出
-- Microsoft 身份验证 (MSAL)
+#### 收藏 Favorites (`/users/:id/favorites`)
+- `GET /users/:id/favorites` 本人或管理员
+- `POST /users/:id/favorites` body `{ bookId }`
+- `DELETE /users/:id/favorites/:bookId`
 
-**访问控制**：
-- 注册和登录：无需认证
-- 令牌刷新和登出：需要有效令牌
+#### 信用 Credit (`/users/:id/credit`)
+- `GET /users/:id/credit` 本人或管理员
+- `PUT /users/:id/credit`（仅管理员/馆员）body `{ score?, remarks? }`
+- 规则：0–100，默认 80；`>=90 excellent / >=70 good / >=50 warn / else suspended`；`<50` 禁借阅，`<70` 禁续借；访问接口会按“每 3 天 +10，封顶 100”自动恢复。
 
-### 2. 图书管理 (`/api/books/*`)
+---
 
-**功能说明**：管理图书馆内的图书资源，包括图书的增删改查和分类管理。
+## 数据模型（SQLite 表）
+- `users`
+  - `id (TEXT PK)`, `email`, `password`, `name`, `role ('student'|'teacher'|'librarian')`, `grade`, `membership ('active'|'suspended')`, `avatar_color`, `created_at/updated_at`
+- `books`
+  - 基础信息 + 双语字段（`*_en`）、`total_copies`、`available_copies`、`status ('available'|'borrowed'|'reserved'|'maintenance')`、`tags/tags_en` (JSON)
+- `borrowing_records`
+  - `user_id`, `book_id`, `borrow_date`, `due_date`, `return_date`, `status ('active'|'returned'|'overdue')`, `renewals`
+- `favorites`
+  - `user_id`, `book_id`，唯一约束 `(user_id, book_id)`
+- `user_credit`
+  - `user_id` (unique), `score`, `level`, `status`, `remarks`, `last_recovered_at`
+- `reservations`
+  - 预留表，当前接口未暴露
 
-**主要端点**：
-- 获取图书列表（支持分页、筛选和搜索）
-- 获取图书详情
-- 创建新图书
-- 更新图书信息
-- 删除图书
-- 获取图书分类列表
+索引与外键已在初始化时创建，`PRAGMA foreign_keys = ON`。
 
-**访问控制**：
-- 获取图书列表和详情：公开访问
-- 创建、更新和删除：仅管理员和图书管理员
+---
 
-### 3. 借阅管理 (`/api/borrowings/*`)
-
-**功能说明**：处理图书的借阅、归还和续借等操作，以及借阅记录的管理。
-
-**主要端点**：
-- 创建借阅记录
-- 归还图书
-- 续借图书
-- 获取借阅记录（支持多条件筛选）
-- 获取借阅记录详情
-- 检查逾期图书
-
-**访问控制**：
-- 所有端点：需要认证
-- 管理员和图书管理员可访问所有借阅记录
-- 普通用户仅可访问自己的借阅记录
-
-## 认证与授权
-
-### 认证机制
-
-- **认证方式**：JWT Bearer Token
-- **令牌类型**：访问令牌（短期有效）和刷新令牌（长期有效）
-- **令牌传递**：通过 `Authorization` 请求头传递
-- **多源认证**：支持本地账号和 Microsoft 账号认证
-
-### 角色体系
-
-系统采用基于角色的访问控制 (RBAC)，包含以下角色：
-
-- **管理员 (admin)**：具有系统的完全访问权限
-- **图书管理员 (librarian)**：负责图书管理和借阅操作
-- **教师 (teacher)**：具有普通用户权限，可能有特殊借阅权限
-- **学生 (student)**：普通用户权限
-
-## 错误处理机制
-
-### 统一响应格式
-
-所有 API 响应采用统一的 JSON 格式：
-
+## 响应与错误
 ```json
 {
-  "success": true|false,
-  "message": "响应消息",
-  "data": { /* 响应数据 */ },
-  "errors": ["详细错误信息列表"]
+  "success": true,
+  "message": "说明",
+  "data": { /* 可选 */ },
+  "errors": [ /* 可选，验证失败时提供 */ ]
 }
 ```
+- 常见状态码：`200/201` 成功，`400` 业务或参数错误，`401` 未认证，`403` 权限不足，`404` 未找到，`429` 频控，`500` 服务异常。
 
-### 常见状态码
+---
 
-- **200 OK**：请求成功
-- **201 Created**：资源创建成功
-- **400 Bad Request**：请求参数错误
-- **401 Unauthorized**：未认证或认证失败
-- **403 Forbidden**：权限不足
-- **404 Not Found**：资源不存在
-- **500 Internal Server Error**：服务器内部错误
-
-## 分页与查询
-
-### 分页机制
-
-支持分页的 API 端点使用以下查询参数：
-
-- `limit`：每页返回的记录数（默认 50，最大 100）
-- `offset`：偏移量（默认 0）
-
-### 查询功能
-
-大多数列表查询 API 支持以下功能：
-
-- 字段筛选
-- 关键词搜索
-- 状态过滤
-- 排序
-
-## 系统限制
-
-### 限流策略
-
-- 普通 API：每 IP 每分钟最多 60 次请求
-- 认证相关 API：每 IP 每 15 分钟最多 5 次请求
-- 通用限制：每 IP 每 15 分钟最多 100 次请求
-
-## 数据模型关系
-
-系统包含三个核心数据模型：
-
-1. **用户 (User)**：系统用户信息
-2. **图书 (Book)**：图书资源信息
-3. **借阅记录 (BorrowingRecord)**：连接用户和图书的借阅关系
-
-## 使用动态 API 文档
-
-系统提供交互式的 Swagger UI 文档，可通过以下方式访问：
-
-- **Swagger UI**：启动服务器后访问 `http://localhost:3000/api-docs`
-- **OpenAPI JSON**：访问 `http://localhost:3000/api-docs.json` 获取完整的 OpenAPI 规范
-
-动态文档提供：
-- 实时更新的 API 端点信息
-- 详细的请求参数和响应格式
-- 交互式 API 测试功能
-- 模型定义和引用
-
-## 开发指南
-
-### 本地开发
-
-1. 克隆仓库：`git clone [仓库地址]`
-2. 安装依赖：`npm install`
-3. 配置环境变量（参考 `.env.example`）
-4. 启动开发服务器：`npm run dev`
-5. 访问 Swagger UI：`http://localhost:3000/api-docs`
-
-### API 版本控制
-
-系统采用 URL 路径版本控制，当前版本为 v1。如需升级 API，将在 URL 中体现新的版本号。
-
-### 代码组织
-
-API 相关代码组织如下：
-- `src/controllers/`：API 控制器，处理请求和响应
-- `src/routes/`：路由定义，映射 URL 到控制器
-- `src/services/`：业务逻辑层
-- `src/models/`：数据模型定义
-- `src/middleware/`：中间件（认证、日志等）
-
-## 贡献指南
-
-如需向项目贡献代码，请遵循以下规范：
-
-1. 为新的 API 端点添加详细的 Swagger 注释
-2. 保持代码风格一致性
-3. 编写单元测试和集成测试
-4. 更新相关文档
-
-## 结论
-
-本架构文档提供了 Moonshot Library System API 的高层次概述。对于具体的 API 调用细节、参数说明和示例，请参考系统提供的动态 Swagger 文档（`http://localhost:3000/api-docs`）。
-
-通过静态架构文档与动态 API 文档的结合，开发者可以快速了解系统设计，并获取最新、最准确的 API 使用信息。
+## 开发与调试
+- 本地运行：`npm install && npm run init-db && npm run dev`
+- Swagger UI：`http://localhost:3000/api-docs`
+- 若修改 API：同步更新 Swagger 注释与本文档，确保前端服务契约一致。

@@ -9,7 +9,7 @@
 
 ## ⚠️ 开发前必读
 
-1. **每次开发前** AI Agent 需阅读：`Documentation/README-BEFORE-DEV-EN.md`
+1. **每次开发前** AI Agent 需阅读：`README-BEFORE-DEV-EN.md`
 2. 第一次开发请仔细阅读本文档和开发规范文档
 
 ---
@@ -210,6 +210,7 @@ pm2 startup           # 设置开机自启
 ## 文档
 
 - **API 文档**：`backend/API_DOCUMENTATION.md`
+- **前端概览**：`Documentation/FRONTEND_OVERVIEW.md`
 - **开发规范**：`Documentation/README-BEFORE-DEV-CN.md`
 - **M365 SSO 配置**：`Documentation/M365_AUTH_SETUP.md`
 

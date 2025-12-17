@@ -148,7 +148,7 @@ export const updateBorrowingRecord = async (req: AuthRequest, res: Response): Pr
     const response: ApiResponse = {
       success: true,
       message: 'Borrowing record updated successfully',
-      data: updatedRecord
+      data: { borrowing: updatedRecord }
     };
 
     res.status(200).json(response);
@@ -192,7 +192,11 @@ export const createBorrowing = async (req: AuthRequest, res: Response): Promise<
       throw new NotFoundError('Book not found');
     }
 
-    if (book.availableCopies <= 0 || book.status !== 'available') {
+    if (book.status === 'maintenance' || book.status === 'reserved') {
+      throw new AppError('Book is not available for borrowing', 400);
+    }
+
+    if (book.availableCopies <= 0) {
       throw new AppError('Book is not available for borrowing', 400);
     }
 
@@ -234,7 +238,7 @@ export const createBorrowing = async (req: AuthRequest, res: Response): Promise<
     const response: ApiResponse = {
       success: true,
       message: 'Book borrowed successfully',
-      data: { borrowingRecord }
+      data: { borrowing: borrowingRecord }
     };
 
     res.status(201).json(response);
@@ -284,7 +288,7 @@ export const returnBookHandler = async (req: Request, res: Response): Promise<vo
     const response: ApiResponse = {
       success: true,
       message: 'Book returned successfully',
-      data: { borrowingRecord: updatedRecord }
+      data: { borrowing: updatedRecord }
     };
 
     res.json(response);
@@ -343,7 +347,7 @@ export const renewBorrowingHandler = async (req: Request, res: Response): Promis
     const response: ApiResponse = {
       success: true,
       message: 'Book renewed successfully',
-      data: { borrowingRecord: updatedRecord }
+      data: { borrowing: updatedRecord }
     };
 
     res.json(response);
@@ -434,7 +438,7 @@ export const getBorrowingRecord = async (req: Request, res: Response): Promise<v
     const response: ApiResponse = {
       success: true,
       message: 'Borrowing record retrieved successfully',
-      data: { borrowingRecord }
+      data: { borrowing: borrowingRecord }
     };
 
     res.json(response);

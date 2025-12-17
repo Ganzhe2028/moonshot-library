@@ -1,5 +1,6 @@
 :root {
-  --font-sans: 'Inter', 'SF Pro Display', 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Helvetica Neue',
+  --font-sans:
+    'Inter', 'SF Pro Display', 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Helvetica Neue',
     sans-serif;
   --font-display: var(--font-sans);
   --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
@@ -62,11 +63,8 @@
   --status-info-bg: var(--color-info-soft);
   --status-info-text: var(--color-info-strong);
   --logo-glow: rgba(255, 91, 4, 0.3);
-  --app-background: radial-gradient(
-      circle at 14% 20%,
-      rgba(255, 91, 4, 0.18) 0,
-      rgba(255, 91, 4, 0) 32%
-    ),
+  --app-background:
+    radial-gradient(circle at 14% 20%, rgba(255, 91, 4, 0.18) 0, rgba(255, 91, 4, 0) 32%),
     radial-gradient(circle at 80% 0%, rgba(30, 55, 65, 0.12) 0, rgba(30, 55, 65, 0) 32%),
     linear-gradient(180deg, #f3f6f7 0%, #eef1f3 100%);
   --panel-gradient: linear-gradient(120deg, rgba(255, 91, 4, 0.12), rgba(30, 55, 65, 0.08));

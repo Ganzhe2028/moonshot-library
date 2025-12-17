@@ -5,6 +5,8 @@ import { useI18n } from 'vue-i18n'
 
 import { useLibraryStore } from '@/stores/library'
 import { useAuthStore } from '@/stores/auth'
+import BaseAlert from '@/components/base/BaseAlert.vue'
+import BaseButton from '@/components/base/BaseButton.vue'
 import RatingStars from '@/components/RatingStars.vue'
 import CommentSection from '@/components/CommentSection.vue'
 import type { Comment } from '@/types/library'
@@ -15,14 +17,41 @@ const libraryStore = useLibraryStore()
 const authStore = useAuthStore()
 const { t, locale } = useI18n()
 
+const userRating = ref(0)
+const ratingFeedback = ref('')
+const ratingVariant = ref<'success' | 'error'>('success')
+
 watch(
   () => route.params.id,
   (id) => {
     if (typeof id === 'string') {
       libraryStore.fetchBookById(id)
+      libraryStore.fetchBookRatings(id)
+      if (authStore.user?.id) {
+        libraryStore.getUserBookRating(id).then((existing) => {
+          userRating.value = existing?.rating ?? 0
+        })
+      } else {
+        userRating.value = 0
+      }
     }
   },
   { immediate: true },
+)
+
+watch(
+  () => authStore.user?.id,
+  (userId) => {
+    const bookId = route.params.id
+    if (typeof bookId !== 'string') return
+    if (!userId) {
+      userRating.value = 0
+      return
+    }
+    libraryStore.getUserBookRating(bookId).then((existing) => {
+      userRating.value = existing?.rating ?? 0
+    })
+  },
 )
 
 onMounted(() => {
@@ -77,18 +106,16 @@ const displayTags = computed(() => {
 const feedback = ref('')
 const feedbackVariant = ref<'success' | 'error'>('success')
 
-const userRating = ref(0)
-const ratingFeedback = ref('')
-const ratingVariant = ref<'success' | 'error'>('success')
-
 const commentSectionRef = ref<InstanceType<typeof CommentSection>>()
 const comments = ref<Comment[]>([])
 
-const handleRatingChange = (rating: number) => {
+const handleRatingChange = async (rating: number) => {
   userRating.value = rating
-  // 这里将在store更新后调用API
-  ratingFeedback.value = `您的评分: ${rating}星`
-  ratingVariant.value = 'success'
+  if (!book.value) return
+
+  const result = await libraryStore.submitRating(book.value.id, rating)
+  ratingVariant.value = result.success ? 'success' : 'error'
+  ratingFeedback.value = result.message
 
   // 3秒后清除反馈信息
   setTimeout(() => {
@@ -223,9 +250,9 @@ const coverImage = computed(
             ({{ book.ratingCount }} 人评分)
           </span>
         </div>
-        <p v-if="ratingFeedback" :class="['rating-feedback', ratingVariant]">
+        <BaseAlert v-if="ratingFeedback" :variant="ratingVariant" class="rating-feedback">
           {{ ratingFeedback }}
-        </p>
+        </BaseAlert>
         <p class="summary">{{ displayDescription }}</p>
 
 
@@ -234,35 +261,36 @@ const coverImage = computed(
         </div>
 
         <div class="actions">
-          <button
+          <BaseButton
             type="button"
-            class="primary"
-            :disabled="hasBorrowed || book.status !== 'available'"
+            variant="primary"
+            size="lg"
+            class="borrow-button"
+            :disabled="
+              hasBorrowed ||
+              !book.availableCopies ||
+              book.status === 'maintenance' ||
+              book.status === 'reserved'
+            "
             @click="handleBorrow"
           >
             {{
               hasBorrowed
                 ? t('bookDetail.alreadyBorrowed')
-                : book.status === 'available'
+                : book.availableCopies && book.status !== 'maintenance' && book.status !== 'reserved'
                   ? t('bookDetail.borrowNow')
                   : t('bookDetail.unavailable')
             }}
-          </button>
-          <button type="button" class="secondary" @click="router.push('/borrowings')">
+          </BaseButton>
+          <BaseButton type="button" variant="secondary" size="lg" @click="router.push('/borrowings')">
             {{ t('bookDetail.viewBorrowings') }}
-          </button>
-          <button
-            v-if="authStore.user"
-            type="button"
-            class="ghost"
-            :class="{ active: isFavorite }"
-            @click="toggleFavorite"
-          >
+          </BaseButton>
+          <BaseButton v-if="authStore.user" type="button" variant="ghost" size="lg" :active="isFavorite" @click="toggleFavorite">
             {{ isFavorite ? t('bookDetail.favorited') : t('bookDetail.favorite') }}
-          </button>
+          </BaseButton>
         </div>
 
-        <p v-if="feedback" :class="['feedback', feedbackVariant]">{{ feedback }}</p>
+        <BaseAlert v-if="feedback" :variant="feedbackVariant">{{ feedback }}</BaseAlert>
       </div>
     </section>
 
@@ -382,40 +410,6 @@ h1 {
 
 .rating-feedback {
   margin-bottom: 1rem;
-  padding: 0.5rem 1rem;
-  border-radius: var(--radius-sm);
-  font-size: var(--text-sm);
-}
-
-.rating-feedback.success {
-  background: var(--status-available-bg);
-  color: var(--status-available-text);
-}
-
-.rating-feedback.error {
-  background: var(--status-danger-bg);
-  color: var(--status-danger-text);
-}
-
-.ghost {
-  background: var(--color-surface);
-  color: var(--color-muted);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: 0.65rem 1rem;
-  font-weight: var(--font-weight-semibold);
-  transition: all 0.2s ease;
-}
-
-.ghost.active {
-  background: var(--color-primary-soft);
-  color: var(--color-primary-strong);
-  border-color: var(--color-primary);
-}
-
-.ghost:hover {
-  color: var(--color-primary-strong);
-  border-color: var(--color-primary);
 }
 
 .summary {
@@ -444,48 +438,12 @@ h1 {
   flex-wrap: wrap;
 }
 
-.primary,
-.secondary {
-  border-radius: var(--radius-md);
-  padding: 0.85rem 1.4rem;
-  font-weight: var(--font-weight-semibold);
-}
-
-.primary {
-  background: var(--cta-gradient);
-  color: white;
+.borrow-button {
   min-width: 160px;
-  box-shadow: 0 16px 32px var(--color-primary-soft);
 }
 
-.primary:disabled {
-  background: var(--color-primary-soft);
-  cursor: not-allowed;
-  color: var(--color-muted);
-  box-shadow: none;
-}
-
-.secondary {
-  background: var(--chip-bg);
-  color: var(--color-ink);
-  border: 1px solid var(--color-border);
-}
-
-.feedback {
+.actions + .base-alert {
   margin-top: 0.8rem;
-  padding: 0.7rem 1rem;
-  border-radius: var(--radius-sm);
-  font-size: var(--text-sm);
-}
-
-.feedback.success {
-  background: var(--status-available-bg);
-  color: var(--status-available-text);
-}
-
-.feedback.error {
-  background: var(--status-danger-bg);
-  color: var(--status-danger-text);
 }
 
 .details {

@@ -1,6 +1,6 @@
 <template>
   <div class="auth-container">
-    <div class="auth-card">
+    <BaseCard class="auth-card" padding="lg" radius="xl">
       <div class="auth-header">
         <h1>{{ t('auth.loginTitle') }}</h1>
         <p>{{ t('auth.loginSubtitle') }}</p>
@@ -9,7 +9,7 @@
       <form @submit.prevent="handleLogin" class="auth-form">
         <div class="form-group">
           <label for="email">{{ t('auth.email') }}</label>
-          <input
+          <BaseInput
             id="email"
             v-model="loginForm.email"
             type="email"
@@ -21,7 +21,7 @@
 
         <div class="form-group">
           <label for="password">{{ t('auth.password') }}</label>
-          <input
+          <BaseInput
             id="password"
             v-model="loginForm.password"
             type="password"
@@ -31,13 +31,11 @@
           />
         </div>
 
-        <div v-if="error" class="error-message">
-          {{ error }}
-        </div>
+        <BaseAlert v-if="error" variant="error">{{ error }}</BaseAlert>
 
-        <button type="submit" class="submit-button" :disabled="isLoading">
+        <BaseButton type="submit" variant="primary" block :disabled="isLoading">
           {{ isLoading ? t('auth.loggingIn') : t('auth.login') }}
-        </button>
+        </BaseButton>
       </form>
 
       <!-- 分隔线 -->
@@ -48,9 +46,12 @@
       </div>
 
       <!-- Microsoft M365 登录按钮 -->
-      <button 
+      <BaseButton
+        type="button"
         @click="handleM365Login" 
-        class="microsoft-button" 
+        class="microsoft-button"
+        variant="ghost"
+        block
         :disabled="isLoading"
       >
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -60,7 +61,7 @@
           <path d="M12.2788 13.015C12.2788 15.0771 13.4314 16.8289 15.1817 17.5451V15.7796C14.3036 15.3269 13.7613 14.3936 13.7613 13.3344V11.9566C14.6329 11.4988 15.1757 10.5655 15.1757 9.50628C15.1757 7.44864 14.0231 5.70203 12.2788 4.98155V6.55973C12.2788 7.61895 11.741 8.55228 10.8581 9.00502C11.7406 9.44424 12.2788 10.3776 12.2788 11.4368V13.015Z" fill="#FFB900"/>
         </svg>
         <span>{{ isLoading ? t('auth.m365Logging') : t('auth.m365') }}</span>
-      </button>
+      </BaseButton>
 
       <div class="test-accounts">
         <h4>{{ t('auth.testAccounts') }}</h4>
@@ -83,7 +84,7 @@
       </div>
 
 
-    </div>
+    </BaseCard>
   </div>
 </template>
 
@@ -91,6 +92,10 @@
 import { ref, reactive } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import BaseAlert from '@/components/base/BaseAlert.vue'
+import BaseButton from '@/components/base/BaseButton.vue'
+import BaseCard from '@/components/base/BaseCard.vue'
+import BaseInput from '@/components/base/BaseInput.vue'
 import { useAuthStore } from '@/stores/auth'
 import { authService } from '@/services/authService'
 
@@ -189,21 +194,14 @@ const handleM365Login = async () => {
 
 <style scoped>
 .auth-container {
-  min-height: 100vh;
   display: flex;
-  align-items: center;
   justify-content: center;
-  padding: 2rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 3rem 1.5rem 4rem;
 }
 
 .auth-card {
-  background: white;
-  border-radius: 20px;
-  padding: 3rem;
   width: 100%;
-  max-width: 400px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  max-width: 440px;
 }
 
 .auth-header {
@@ -214,12 +212,12 @@ const handleM365Login = async () => {
 .auth-header h1 {
   font-size: 2rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--color-ink);
   margin-bottom: 0.5rem;
 }
 
 .auth-header p {
-  color: #6b7280;
+  color: var(--color-muted);
   font-size: 1rem;
 }
 
@@ -237,58 +235,8 @@ const handleM365Login = async () => {
 
 .form-group label {
   font-weight: 500;
-  color: #374151;
+  color: var(--color-ink);
   font-size: 0.875rem;
-}
-
-.form-group input {
-  padding: 0.75rem;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  font-size: 1rem;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.form-group input:focus {
-  outline: none;
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-}
-
-.form-group input:disabled {
-  background-color: #f3f4f6;
-  cursor: not-allowed;
-}
-
-.error-message {
-  background-color: #fef2f2;
-  color: #dc2626;
-  padding: 0.75rem;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  text-align: center;
-}
-
-.submit-button {
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  color: white;
-  padding: 0.875rem;
-  border: none;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.submit-button:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
-}
-
-.submit-button:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
 }
 
 /* 分隔线样式 */
@@ -296,14 +244,14 @@ const handleM365Login = async () => {
   display: flex;
   align-items: center;
   margin: 2rem 0;
-  color: #6b7280;
+  color: var(--color-subtle);
   font-size: 0.875rem;
 }
 
 .divider-line {
   flex: 1;
   height: 1px;
-  background-color: #e5e7eb;
+  background-color: var(--color-border);
 }
 
 .divider-text {
@@ -313,55 +261,28 @@ const handleM365Login = async () => {
 
 /* Microsoft登录按钮样式 */
 .microsoft-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
   gap: 0.75rem;
-  width: 100%;
-  padding: 0.875rem;
-  background-color: #ffffff;
-  color: #374151;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.microsoft-button:hover:not(:disabled) {
-  background-color: #f9fafb;
-  border-color: #9ca3af;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-.microsoft-button:active:not(:disabled) {
-  transform: translateY(1px);
-}
-
-.microsoft-button:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
+  font-weight: var(--font-weight-medium);
 }
 
 .auth-footer {
   text-align: center;
   margin-top: 2rem;
   padding-top: 2rem;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--color-border);
 }
 
 .test-accounts {
   margin-top: 2rem;
   padding: 1.5rem;
-  background-color: #f8fafc;
-  border-radius: 12px;
-  border: 1px solid #e2e8f0;
+  background-color: var(--color-surface-soft);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
 }
 
 .test-accounts h4 {
   margin: 0 0 1rem 0;
-  color: #374151;
+  color: var(--color-ink);
   font-size: 0.875rem;
   font-weight: 600;
 }
@@ -372,11 +293,11 @@ const handleM365Login = async () => {
   text-align: left;
   margin-bottom: 0.75rem;
   padding: 0.75rem;
-  background-color: white;
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
+  background-color: var(--color-surface);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
   font-size: 0.9rem;
-  color: #374151;
+  color: var(--color-muted);
   cursor: pointer;
   transition: border-color 0.2s, box-shadow 0.2s, transform 0.1s;
 }
@@ -386,13 +307,13 @@ const handleM365Login = async () => {
 }
 
 .test-account strong {
-  color: #1f2937;
+  color: var(--color-ink);
   font-weight: 600;
 }
 
 .test-account:hover:not(:disabled) {
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-soft);
   transform: translateY(-1px);
 }
 
@@ -402,49 +323,24 @@ const handleM365Login = async () => {
 }
 
 .auth-footer p {
-  color: #6b7280;
+  color: var(--color-muted);
   margin-bottom: 0.5rem;
 }
 
 .link-button {
-  color: #6366f1;
+  color: var(--color-primary);
   text-decoration: none;
   font-weight: 600;
   transition: color 0.2s;
 }
 
 .link-button:hover {
-  color: #4f46e5;
-}
-
-.demo-info {
-  margin-top: 2rem;
-  padding: 1rem;
-  background-color: #f8fafc;
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
-}
-
-.demo-info h3 {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #374151;
-  margin-bottom: 0.5rem;
-}
-
-.demo-info p {
-  font-size: 0.75rem;
-  color: #6b7280;
-  margin: 0.25rem 0;
+  color: var(--color-primary-strong);
 }
 
 @media (max-width: 640px) {
   .auth-container {
     padding: 1rem;
-  }
-  
-  .auth-card {
-    padding: 2rem;
   }
 }
 </style>
