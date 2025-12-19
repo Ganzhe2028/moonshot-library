@@ -85,6 +85,8 @@ const historyRecords = computed(() =>
   })),
 )
 
+const remainingBorrowingQuota = computed(() => libraryStore.remainingBorrowingQuota)
+
 const summaryCards = computed(() => [
   {
     label: t('borrowings.currentTab'),
@@ -92,9 +94,9 @@ const summaryCards = computed(() => [
     hint: t('borrowings.current'),
   },
   {
-    label: t('home.filterAvailable'),
-    value: libraryStore.books.filter((book) => book.status === 'available').length,
-    hint: t('home.available'),
+    label: t('borrowings.limitLabel'),
+    value: remainingBorrowingQuota.value,
+    hint: t('borrowings.limitHint', { count: libraryStore.borrowingLimit }),
   },
   {
     label: t('borrowings.historyTab'),
@@ -198,6 +200,7 @@ onMounted(() => {
   libraryStore.fetchBorrowings()
   libraryStore.fetchFavorites()
   libraryStore.fetchCredit()
+  libraryStore.fetchBorrowingLimit()
 })
 
 watch(

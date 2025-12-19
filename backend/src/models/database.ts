@@ -111,6 +111,33 @@ const ensureCreditColumns = (database: Database): Promise<void> => {
     });
   });
 };
+
+const ensureSystemSettings = (database: Database): Promise<void> => {
+  const defaults = [{ key: 'max_active_borrowings', value: '5' }];
+
+  return new Promise((resolve, reject) => {
+    Promise.all(
+      defaults.map(
+        (setting) =>
+          new Promise<void>((res, rej) => {
+            database.run(
+              'INSERT OR IGNORE INTO system_settings (key, value) VALUES (?, ?)',
+              [setting.key, setting.value],
+              (err) => {
+                if (err) {
+                  rej(err);
+                } else {
+                  res();
+                }
+              }
+            );
+          })
+      )
+    )
+      .then(() => resolve())
+      .catch(reject);
+  });
+};
 export const initDatabase = (): Promise<void> => {
   return new Promise((resolve, reject) => {
     const database = getDatabase();
@@ -212,6 +239,14 @@ export const initDatabase = (): Promise<void> => {
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       );
 
+      -- 系统设置表
+      CREATE TABLE IF NOT EXISTS system_settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+
       -- 创建索引
       CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
       CREATE INDEX IF NOT EXISTS idx_books_category ON books(category);
@@ -268,6 +303,13 @@ export const initDatabase = (): Promise<void> => {
       BEGIN
         UPDATE user_credit SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
       END;
+
+      CREATE TRIGGER IF NOT EXISTS update_system_settings_timestamp
+      AFTER UPDATE ON system_settings
+      FOR EACH ROW
+      BEGIN
+        UPDATE system_settings SET updated_at = CURRENT_TIMESTAMP WHERE key = OLD.key;
+      END;
     `;
 
     database.exec(createTablesSQL, (err) => {
@@ -277,6 +319,7 @@ export const initDatabase = (): Promise<void> => {
       } else {
         ensureBookColumns(database)
           .then(() => ensureCreditColumns(database))
+          .then(() => ensureSystemSettings(database))
           .then(() => {
             console.log('✅ Database tables initialized successfully');
             resolve();

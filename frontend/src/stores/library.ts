@@ -5,6 +5,7 @@ import { borrowingService } from '@/services/borrowingService'
 import { ratingService } from '@/services/ratingService'
 import { favoriteService } from '@/services/favoriteService'
 import { creditService } from '@/services/creditService'
+import { settingsService } from '@/services/settingsService'
 import { i18n } from '@/i18n'
 import { useAuthStore } from './auth'
 
@@ -27,6 +28,10 @@ interface LibraryState {
   credit: Credit | null
   creditLoading: boolean
   creditError: string
+  borrowingLimit: number
+  borrowingLimitLoaded: boolean
+  borrowingLimitLoading: boolean
+  borrowingLimitError: string
 }
 
 export const useLibraryStore = defineStore('library', {
@@ -49,6 +54,10 @@ export const useLibraryStore = defineStore('library', {
     credit: null,
     creditLoading: false,
     creditError: '',
+    borrowingLimit: 5,
+    borrowingLimitLoaded: false,
+    borrowingLimitLoading: false,
+    borrowingLimitError: '',
   }),
   getters: {
     activeBorrowings: (state): BorrowingRecord[] =>
@@ -62,6 +71,10 @@ export const useLibraryStore = defineStore('library', {
       return (bookId: string) => this.activeBorrowings.some((record) => record.bookId === bookId)
     },
     favoriteBookIds: (state): string[] => state.favorites.map((fav) => fav.bookId),
+    remainingBorrowingQuota(): number {
+      if (!Number.isFinite(this.borrowingLimit)) return 0
+      return Math.max(0, this.borrowingLimit - this.activeBorrowings.length)
+    },
   },
   actions: {
     async fetchBooks(force = false) {
@@ -224,6 +237,22 @@ export const useLibraryStore = defineStore('library', {
         this.creditError = err instanceof Error ? err.message : i18n.global.t('borrowings.credit.tipWarn')
       } finally {
         this.creditLoading = false
+      }
+    },
+    async fetchBorrowingLimit(force = false) {
+      if (this.borrowingLimitLoaded && !force) return
+      this.borrowingLimitLoading = true
+      this.borrowingLimitError = ''
+      try {
+        const limit = await settingsService.fetchBorrowingLimit()
+        if (Number.isFinite(limit) && limit > 0) {
+          this.borrowingLimit = limit
+          this.borrowingLimitLoaded = true
+        }
+      } catch (err) {
+        this.borrowingLimitError = err instanceof Error ? err.message : '无法加载借阅上限'
+      } finally {
+        this.borrowingLimitLoading = false
       }
     },
     async addFavorite(bookId: string) {

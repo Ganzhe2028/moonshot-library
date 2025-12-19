@@ -100,6 +100,25 @@ export const getBorrowingRecordsByUser = async (
   });
 };
 
+export const countActiveBorrowingsByUser = async (userId: string): Promise<number> => {
+  const db = getDatabase();
+
+  return new Promise((resolve, reject) => {
+    const sql = `
+      SELECT COUNT(*) as count
+      FROM borrowing_records
+      WHERE user_id = ? AND status IN ('active', 'overdue')
+    `;
+    db.get(sql, [userId], (err, row: { count: number }) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(row?.count ?? 0);
+      }
+    });
+  });
+};
+
 export const getBorrowingRecordsByBook = async (
   bookId: string,
   status?: string

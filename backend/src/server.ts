@@ -14,6 +14,7 @@ import authRoutes from './routes/auth';
 import bookRoutes from './routes/books';
 import borrowingRoutes from './routes/borrowings';
 import userRoutes from './routes/users';
+import settingsRoutes from './routes/settings';
 import { initDatabase } from './models/database';
 import { ensureDemoAccounts } from './scripts/seedData';
 
@@ -214,6 +215,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/books', bookRoutes);
 app.use('/api/borrowings', borrowingRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/settings', settingsRoutes);
 
 // 错误处理中间件
 app.use(notFound);

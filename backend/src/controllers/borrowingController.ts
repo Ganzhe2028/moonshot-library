@@ -7,6 +7,7 @@ import { getUserById } from '../models/user';
 import { getCreditByUserId } from '../models/credit';
 import {
   checkOverdueBorrowings,
+  countActiveBorrowingsByUser,
   createBorrowingRecord,
   getAllBorrowingRecords,
   getBorrowingRecordById,
@@ -17,6 +18,7 @@ import {
   updateBorrowingRecord as updateBorrowingRecordInDb,
   updateOverdueStatus
 } from '../models/borrowing';
+import { getBorrowingLimit } from '../models/settings';
 
 export const validateCreateBorrowing = [
   body('bookId')
@@ -210,6 +212,12 @@ export const createBorrowing = async (req: AuthRequest, res: Response): Promise<
     const credit = await getCreditByUserId(userId);
     if (credit.score < 50) {
       throw new AppError('Credit score too low to borrow books', 403);
+    }
+
+    const maxActiveBorrowings = await getBorrowingLimit();
+    const activeBorrowings = await countActiveBorrowingsByUser(userId);
+    if (activeBorrowings >= maxActiveBorrowings) {
+      throw new AppError(`Borrowing limit reached (max ${maxActiveBorrowings})`, 400);
     }
 
     // 检查用户是否已有未归还的相同图书
