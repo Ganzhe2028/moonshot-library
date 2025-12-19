@@ -37,9 +37,7 @@ const localizedDescription = (book: Book) =>
 const localizedTags = (book: Book) =>
   locale.value === 'en' && book.tagsEn?.length ? book.tagsEn : book.tags || []
 
-const availableCount = computed(
-  () => libraryStore.books.filter((book) => book.status === 'available').length,
-)
+const borrowableCount = computed(() => libraryStore.remainingBorrowingQuota)
 
 const filteredBooks = computed(() => {
   const query = searchQuery.value.trim().toLowerCase()
@@ -108,6 +106,7 @@ onMounted(() => {
   libraryStore.fetchBooks()
   libraryStore.fetchBorrowings()
   libraryStore.fetchFavorites()
+  libraryStore.fetchBorrowingLimit()
 })
 
 watch(
@@ -145,7 +144,7 @@ watch(
           </div>
           <div>
             <p class="meta-eyebrow">{{ t('home.available') }}</p>
-            <p class="meta-value">{{ availableCount }}</p>
+            <p class="meta-value">{{ borrowableCount }}</p>
           </div>
           <RouterLink class="link" to="/borrowings">{{ t('home.viewBorrowings') }}</RouterLink>
         </div>
