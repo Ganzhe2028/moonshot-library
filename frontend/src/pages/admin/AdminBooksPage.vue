@@ -43,7 +43,13 @@ const form = reactive({
   description: '',
   word_count: '',
   descriptionEn: '',
+  coverImage: '',
 })
+
+const coverFile = ref<File | null>(null)
+const coverPreview = ref<string>('')
+const coverUploading = ref(false)
+const coverInputRef = ref<HTMLInputElement | null>(null)
 
 const statusOptions: { value: BookStatus; label: string }[] = [
   { value: 'available', label: t('admin.books.status.available') },
@@ -85,7 +91,10 @@ const resetForm = () => {
     description: '',
     word_count: '',
     descriptionEn: '',
+    coverImage: '',
   })
+  coverFile.value = null
+  coverPreview.value = ''
 }
 
 const startCreate = () => {
@@ -117,7 +126,10 @@ const startEdit = (bookId: string) => {
     location: book.location || '',
     description: book.description || '',
     descriptionEn: book.descriptionEn || '',
+    coverImage: book.coverImage || '',
   })
+  coverFile.value = null
+  coverPreview.value = book.coverImage || ''
 }
 
 const parseList = (value: string) =>
@@ -127,6 +139,24 @@ const parseList = (value: string) =>
     .filter(Boolean)
 
 const handleSubmit = async () => {
+  let coverImageUrl = form.coverImage
+
+  // 如果有新上传的封面文件，先上传
+  if (coverFile.value) {
+    coverUploading.value = true
+    try {
+      coverImageUrl = await libraryStore.uploadCover(coverFile.value)
+      form.coverImage = coverImageUrl
+    } catch (err) {
+      messageVariant.value = 'error'
+      message.value = err instanceof Error ? err.message : '封面上传失败'
+      coverUploading.value = false
+      return
+    } finally {
+      coverUploading.value = false
+    }
+  }
+
   const payload = {
     title: form.title.trim(),
     titleEn: form.titleEn.trim(),
@@ -147,6 +177,7 @@ const handleSubmit = async () => {
     description: form.description.trim() || undefined,
     word_count: form.word_count ? Number(form.word_count) : undefined,
     descriptionEn: form.descriptionEn.trim() || undefined,
+    coverImage: coverImageUrl || undefined,
   }
 
   if (!payload.title || !payload.authors.length || !payload.category) {
@@ -165,6 +196,46 @@ const handleSubmit = async () => {
   if (result.success) {
     resetForm()
     showForm.value = false
+  }
+}
+
+const handleCoverChange = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (file) {
+    // 验证文件类型
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif']
+    if (!allowedTypes.includes(file.type)) {
+      messageVariant.value = 'error'
+      message.value = '仅支持上传图片文件（jpg, png, webp, gif）'
+      return
+    }
+
+    // 验证文件大小（5MB）
+    if (file.size > 5 * 1024 * 1024) {
+      messageVariant.value = 'error'
+      message.value = '图片文件大小不能超过 5MB'
+      return
+    }
+
+    coverFile.value = file
+    // 创建预览
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      coverPreview.value = e.target?.result as string
+    }
+    reader.readAsDataURL(file)
+  }
+}
+
+const triggerCoverPicker = () => coverInputRef.value?.click()
+
+const removeCover = () => {
+  coverFile.value = null
+  coverPreview.value = ''
+  form.coverImage = ''
+  if (coverInputRef.value) {
+    coverInputRef.value.value = ''
   }
 }
 
@@ -492,6 +563,30 @@ onMounted(() => {
         </div>
 
         <label>
+          图书封面
+          <div class="cover-upload">
+            <div v-if="coverPreview || form.coverImage" class="cover-preview">
+              <img :src="coverPreview || form.coverImage" alt="封面预览" />
+              <button type="button" class="remove-cover" @click="removeCover">×</button>
+            </div>
+            <div v-else class="cover-placeholder">
+              <p>点击上传封面</p>
+              <p class="hint">支持 JPG、PNG、WebP、GIF，最大 5MB</p>
+            </div>
+            <input
+              ref="coverInputRef"
+              type="file"
+              accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
+              class="sr-only"
+              @change="handleCoverChange"
+            />
+            <BaseButton type="button" variant="ghost" size="sm" @click="triggerCoverPicker" :disabled="coverUploading">
+              {{ coverUploading ? '上传中...' : coverPreview || form.coverImage ? '更换封面' : '上传封面' }}
+            </BaseButton>
+          </div>
+        </label>
+
+        <label>
           {{ t('admin.books.form.desc') }}
           <textarea v-model="form.description" rows="3" :placeholder="t('admin.books.form.desc')" />
         </label>
@@ -676,6 +771,77 @@ select {
 
 .note {
   margin: 0 0 0.5rem;
+}
+
+.cover-upload {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.cover-preview {
+  position: relative;
+  width: 100%;
+  max-width: 300px;
+  aspect-ratio: 3/4;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--color-surface-soft);
+}
+
+.cover-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.remove-cover {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-size: 1.5rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.remove-cover:hover {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.cover-placeholder {
+  width: 100%;
+  max-width: 300px;
+  aspect-ratio: 3/4;
+  border: 2px dashed var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: var(--color-surface-soft);
+  text-align: center;
+}
+
+.cover-placeholder p {
+  margin: 0.25rem 0;
+  color: var(--color-muted);
+}
+
+.cover-placeholder .hint {
+  font-size: var(--text-xs);
+  color: var(--color-subtle);
 }
 
 @media (max-width: 1024px) {

@@ -10,12 +10,23 @@ import {
   validateUpdateBook,
   validateBookId,
   validateBookQuery,
-  importBooksHandler
+  importBooksHandler,
+  uploadCoverHandler
 } from '../controllers/bookController';
 import { authenticate, authorize } from '../middleware/auth';
 import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
 
 const router = Router();
+
+// 确保上传目录存在
+const uploadsDir = path.join(process.cwd(), 'backend', 'uploads', 'covers');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+// Excel 文件上传配置（用于导入）
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 },
@@ -29,6 +40,29 @@ const upload = multer({
       cb(null, true);
     } else {
       cb(new Error('仅支持上传Excel文件（xlsx/xls，兼容CSV）'));
+    }
+  }
+});
+
+// 图片文件上传配置（用于封面）
+const coverUpload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => {
+      cb(null, uploadsDir);
+    },
+    filename: (_req, file, cb) => {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      const ext = path.extname(file.originalname);
+      cb(null, `cover-${uniqueSuffix}${ext}`);
+    }
+  }),
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  fileFilter: (_req, file, cb) => {
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('仅支持上传图片文件（jpg, png, webp, gif）'));
     }
   }
 });
@@ -242,6 +276,74 @@ router.post(
   authorize(['admin', 'librarian']),
   importUploadMiddleware,
   importBooksHandler
+);
+
+/**
+ * @swagger
+ * /books/upload-cover:
+ *   post:
+ *     summary: 上传图书封面
+ *     description: 上传图书封面图片，返回图片URL
+ *     tags: [Books]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               cover:
+ *                 type: string
+ *                 format: binary
+ *                 description: 封面图片文件
+ *     responses:
+ *       200:
+ *         description: 上传成功
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: 封面上传成功
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     url:
+ *                       type: string
+ *                       example: /api/uploads/covers/cover-1234567890.jpg
+ *       400:
+ *         description: 上传失败
+ *       401:
+ *         description: 未认证
+ *       403:
+ *         description: 权限不足
+ */
+const coverUploadMiddleware = (req: Request, res: Response, next: NextFunction): void => {
+  coverUpload.single('cover')(req, res, (err: any) => {
+    if (err) {
+      res.status(400).json({
+        success: false,
+        message: err.message || '文件上传失败'
+      });
+      return;
+    }
+    next();
+  });
+};
+
+router.post(
+  '/upload-cover',
+  authenticate,
+  authorize(['admin', 'librarian']),
+  coverUploadMiddleware,
+  uploadCoverHandler
 );
 
 /**

@@ -7,6 +7,7 @@ import swaggerUi from 'swagger-ui-express';
 import swaggerJsdoc from 'swagger-jsdoc';
 import dotenv from 'dotenv';
 import session from 'express-session';
+import path from 'path';
 
 import { errorHandler } from './middleware/errorHandler';
 import { notFound } from './middleware/notFound';
@@ -208,6 +209,9 @@ app.get('/api-docs.json', (req, res) => {
   res.setHeader('Content-Type', 'application/json');
   res.send(swaggerSpec);
 });
+
+// 静态文件服务 - 提供上传的封面图片
+app.use('/api/uploads', express.static(path.join(process.cwd(), 'backend', 'uploads')));
 
 // API 路由
 app.use('/api/auth', authRoutes);

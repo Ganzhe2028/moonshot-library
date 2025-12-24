@@ -100,6 +100,27 @@ class BookService {
 
     return data.categories || []
   }
+
+  async uploadCover(file: File): Promise<string> {
+    const formData = new FormData()
+    formData.append('cover', file)
+
+    const headers = this.getHeaders(false)
+    const response = await fetch(`${API_BASE_URL}/books/upload-cover`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    })
+
+    const data = await response.json().catch(() => ({}))
+
+    if (!response.ok) {
+      const message = data?.message || '封面上传失败'
+      throw new Error(message)
+    }
+
+    return data.data?.url || ''
+  }
 }
 
 export const bookService = new BookService()
