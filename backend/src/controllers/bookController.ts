@@ -20,9 +20,16 @@ export const validateCreateBook = [
     .withMessage('Title must be between 1 and 200 characters'),
   body('titleEn')
     .optional({ checkFalsy: true })
-    .trim()
-    .isLength({ min: 1, max: 200 })
-    .withMessage('English title must be between 1 and 200 characters'),
+    .custom((value) => {
+      // 如果为空或未提供，允许通过
+      if (!value || value.trim() === '') {
+        return true;
+      }
+      // 如果提供了值，检查长度
+      const trimmed = value.trim();
+      return trimmed.length >= 1 && trimmed.length <= 200;
+    })
+    .withMessage('English title must be between 1 and 200 characters if provided'),
   body('authors')
     .isArray({ min: 1 })
     .withMessage('Authors must be a non-empty array'),
@@ -32,56 +39,140 @@ export const validateCreateBook = [
     .withMessage('Each author name must be between 1 and 100 characters'),
   body('authorsEn')
     .optional()
-    .isArray()
-    .withMessage('English authors must be an array'),
-  body('authorsEn.*')
-    .optional()
-    .trim()
-    .isLength({ min: 1, max: 100 })
-    .withMessage('Each English author name must be between 1 and 100 characters'),
+    .custom((value) => {
+      // 如果为空或未提供，允许通过
+      if (!value || (Array.isArray(value) && value.length === 0)) {
+        return true;
+      }
+      // 必须是数组
+      if (!Array.isArray(value)) {
+        return false;
+      }
+      // 数组中的每个元素必须是非空字符串
+      return value.every((item: any) => {
+        if (typeof item !== 'string') return false;
+        const trimmed = item.trim();
+        return trimmed.length >= 1 && trimmed.length <= 100;
+      });
+    })
+    .withMessage('English authors must be an array, and each author name must be between 1 and 100 characters if provided'),
   body('isbn')
-    .optional()
+    .optional({ checkFalsy: true })
     .trim()
-    .isISBN()
-    .withMessage('Please provide a valid ISBN'),
+    .custom((value) => {
+      // 如果为空或未提供，允许通过
+      if (!value || value.trim() === '') {
+        return true;
+      }
+      // 清理格式：去除空格和连字符
+      const cleaned = value.replace(/[\s-]/g, '');
+      // 验证是否为有效的 ISBN-10 或 ISBN-13
+      // ISBN-10: 10位数字，最后一位可以是X
+      // ISBN-13: 13位数字
+      const isbn10Pattern = /^[0-9]{9}[0-9Xx]$/;
+      const isbn13Pattern = /^[0-9]{13}$/;
+      
+      if (cleaned.length === 10 && isbn10Pattern.test(cleaned)) {
+        return true;
+      }
+      if (cleaned.length === 13 && isbn13Pattern.test(cleaned)) {
+        return true;
+      }
+      // 如果格式不对，尝试使用 express-validator 的 isISBN 验证
+      // 但先恢复原始格式以便验证
+      return /^[0-9]{10}$|^[0-9]{13}$|^[0-9]{9}[0-9Xx]$/.test(cleaned);
+    })
+    .withMessage('ISBN 必须是有效的 ISBN-10（10位数字，最后一位可以是X）或 ISBN-13（13位数字）格式'),
   body('publisher')
-    .optional()
-    .trim()
-    .isLength({ min: 1, max: 100 })
-    .withMessage('Publisher must be between 1 and 100 characters'),
+    .optional({ checkFalsy: true })
+    .custom((value) => {
+      // 如果为空或未提供，允许通过
+      if (!value || value.trim() === '') {
+        return true;
+      }
+      // 如果提供了值，检查长度
+      const trimmed = value.trim();
+      return trimmed.length >= 1 && trimmed.length <= 100;
+    })
+    .withMessage('Publisher must be between 1 and 100 characters if provided'),
   body('publisherEn')
-    .optional()
-    .trim()
-    .isLength({ min: 1, max: 100 })
-    .withMessage('English publisher must be between 1 and 100 characters'),
+    .optional({ checkFalsy: true })
+    .custom((value) => {
+      // 如果为空或未提供，允许通过
+      if (!value || value.trim() === '') {
+        return true;
+      }
+      // 如果提供了值，检查长度
+      const trimmed = value.trim();
+      return trimmed.length >= 1 && trimmed.length <= 100;
+    })
+    .withMessage('English publisher must be between 1 and 100 characters if provided'),
   body('publishedYear')
-    .optional()
-    .isInt({ min: 1000, max: new Date().getFullYear() })
-    .withMessage('Published year must be a valid year'),
+    .optional({ checkFalsy: true })
+    .custom((value) => {
+      // 如果为空或未提供，允许通过
+      if (!value || value === '' || value === null || value === undefined) {
+        return true;
+      }
+      // 转换为数字
+      const year = Number(value);
+      // 检查是否为有效年份
+      if (isNaN(year) || !Number.isInteger(year)) {
+        return false;
+      }
+      const currentYear = new Date().getFullYear();
+      return year >= 1000 && year <= currentYear;
+    })
+    .withMessage('Published year must be a valid year between 1000 and ' + new Date().getFullYear()),
   body('category')
     .trim()
     .isLength({ min: 1, max: 50 })
     .withMessage('Category must be between 1 and 50 characters'),
   body('categoryEn')
     .optional({ checkFalsy: true })
-    .trim()
-    .isLength({ min: 1, max: 50 })
-    .withMessage('English category must be between 1 and 50 characters'),
+    .custom((value) => {
+      // 如果为空或未提供，允许通过
+      if (!value || value.trim() === '') {
+        return true;
+      }
+      // 如果提供了值，检查长度
+      const trimmed = value.trim();
+      return trimmed.length >= 1 && trimmed.length <= 50;
+    })
+    .withMessage('English category must be between 1 and 50 characters if provided'),
   body('description')
-    .optional()
-    .trim()
-    .isLength({ max: 1000 })
-    .withMessage('Description must not exceed 1000 characters'),
+    .optional({ checkFalsy: true })
+    .custom((value) => {
+      // 如果为空或未提供，允许通过
+      if (!value || value.trim() === '') {
+        return true;
+      }
+      // 如果提供了值，检查长度
+      const trimmed = value.trim();
+      return trimmed.length <= 1000;
+    })
+    .withMessage('Description must not exceed 1000 characters if provided'),
   body('descriptionEn')
-    .optional()
-    .trim()
-    .isLength({ max: 1000 })
-    .withMessage('English description must not exceed 1000 characters'),
+    .optional({ checkFalsy: true })
+    .custom((value) => {
+      // 如果为空或未提供，允许通过
+      if (!value || value.trim() === '') {
+        return true;
+      }
+      // 如果提供了值，检查长度
+      const trimmed = value.trim();
+      return trimmed.length <= 1000;
+    })
+    .withMessage('English description must not exceed 1000 characters if provided'),
   body('coverImage')
-    .optional()
+    .optional({ checkFalsy: true })
     .trim()
-    .isURL()
-    .withMessage('Cover image must be a valid URL'),
+    .custom((value) => {
+      // 允许 URL 或相对路径
+      if (!value || value.trim() === '') return true;
+      return value.startsWith('http://') || value.startsWith('https://') || value.startsWith('/api/uploads/');
+    })
+    .withMessage('Cover image must be a valid URL or upload path'),
   body('status')
     .optional()
     .isIn(['available', 'borrowed', 'reserved', 'maintenance'])
@@ -94,10 +185,17 @@ export const validateCreateBook = [
     .isInt({ min: 0, max: 100 })
     .withMessage('Available copies must be between 0 and 100'),
   body('location')
-    .optional()
-    .trim()
-    .isLength({ min: 1, max: 50 })
-    .withMessage('Location must be between 1 and 50 characters'),
+    .optional({ checkFalsy: true })
+    .custom((value) => {
+      // 如果为空或未提供，允许通过
+      if (!value || value.trim() === '') {
+        return true;
+      }
+      // 如果提供了值，检查长度
+      const trimmed = value.trim();
+      return trimmed.length >= 1 && trimmed.length <= 50;
+    })
+    .withMessage('Location must be between 1 and 50 characters if provided'),
   body('tags')
     .optional()
     .isArray()
@@ -427,6 +525,39 @@ export const importBooksHandler = async (req: Request, res: Response): Promise<v
     };
 
     res.status(201).json(response);
+  } catch (error) {
+    if (error instanceof AppError) {
+      res.status(error.statusCode).json({
+        success: false,
+        message: error.message
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        message: error instanceof Error ? error.message : 'Internal server error'
+      });
+    }
+  }
+};
+
+export const uploadCoverHandler = async (req: Request, res: Response): Promise<void> => {
+  try {
+    if (!req.file) {
+      throw new ValidationError('请上传封面图片');
+    }
+
+    // 返回图片URL（相对于API根路径）
+    const imageUrl = `/api/uploads/covers/${req.file.filename}`;
+
+    const response: ApiResponse = {
+      success: true,
+      message: '封面上传成功',
+      data: {
+        url: imageUrl
+      }
+    };
+
+    res.json(response);
   } catch (error) {
     if (error instanceof AppError) {
       res.status(error.statusCode).json({

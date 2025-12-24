@@ -151,6 +151,15 @@ export const useLibraryStore = defineStore('library', {
         return { success: false, message }
       }
     },
+    async uploadCover(file: File): Promise<string> {
+      try {
+        const url = await bookService.uploadCover(file)
+        return url
+      } catch (err) {
+        const message = err instanceof Error ? err.message : '封面上传失败'
+        throw new Error(message)
+      }
+    },
     async importBooks(file: File): Promise<{ success: boolean; message: string; result?: BookImportResult }> {
       this.booksError = ''
       try {

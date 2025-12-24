@@ -44,6 +44,7 @@ __screenshots__/
 /backend/.env
 /backend/database/
 /backend/dist
+/backend/uploads/
 /frontend/dist
 /server/
 .trae/documents/修复借阅历史显示问题.md
