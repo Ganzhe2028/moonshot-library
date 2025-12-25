@@ -147,9 +147,14 @@ p {
   line-height: var(--line-relaxed);
 }
 
-.u-stack {
+.u-stack,
+.u-stack-sm,
+.u-stack-lg {
   display: flex;
   flex-direction: column;
+}
+
+.u-stack {
   gap: var(--space-4);
 }
 
