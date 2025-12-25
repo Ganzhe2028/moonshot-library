@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import BaseAlert from '@/components/base/BaseAlert.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
+import BaseModal from '@/components/base/BaseModal.vue'
 import BasePanel from '@/components/base/BasePanel.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useLibraryStore } from '@/stores/library'
@@ -17,6 +18,10 @@ const currentUser = computed(() => authStore.user)
 const isLoggedIn = computed(() => !!currentUser.value)
 const actionMessage = ref('')
 const actionVariant = ref<'success' | 'error' | 'warning'>('success')
+const showReturnModal = ref(false)
+const returnRecordId = ref<string | null>(null)
+const returnRecordInfo = ref<{ book: Book | null; record: BorrowingRecord | null } | null>(null)
+const returning = ref(false)
 
 const favoritesLoading = computed(() => libraryStore.favoritesLoading)
 
@@ -188,11 +193,57 @@ const handleRenew = async (record: BorrowingRecord) => {
   actionMessage.value = result.message
 }
 
-const handleReturn = async (recordId: string) => {
+const handleReturn = (recordId: string) => {
   if (!requireAuth()) return
-  const result = await libraryStore.returnBook(recordId)
-  actionVariant.value = result.success ? 'success' : 'error'
-  actionMessage.value = result.message
+  
+  // 查找要归还的记录信息
+  const record = libraryStore.activeBorrowings.find((r) => r.id === recordId)
+  if (!record) {
+    actionVariant.value = 'error'
+    actionMessage.value = '未找到借阅记录'
+    return
+  }
+  
+  const book = libraryStore.getBookById(record.bookId)
+  if (!book) {
+    actionVariant.value = 'error'
+    actionMessage.value = '未找到图书信息'
+    return
+  }
+  
+  // 显示确认弹窗
+  returnRecordId.value = recordId
+  returnRecordInfo.value = { book, record }
+  showReturnModal.value = true
+}
+
+const confirmReturn = async () => {
+  if (!returnRecordId.value || returning.value) return
+  
+  returning.value = true
+  try {
+    const result = await libraryStore.returnBook(returnRecordId.value)
+    actionVariant.value = result.success ? 'success' : 'error'
+    actionMessage.value = result.message
+    
+    if (result.success) {
+      // 关闭弹窗
+      showReturnModal.value = false
+      returnRecordId.value = null
+      returnRecordInfo.value = null
+    }
+  } catch (err) {
+    actionVariant.value = 'error'
+    actionMessage.value = err instanceof Error ? err.message : '归还失败，请稍后再试。'
+  } finally {
+    returning.value = false
+  }
+}
+
+const cancelReturn = () => {
+  showReturnModal.value = false
+  returnRecordId.value = null
+  returnRecordInfo.value = null
 }
 
 onMounted(() => {
@@ -258,6 +309,35 @@ const handleRemoveFavorite = async (bookId: string) => {
     </section>
 
     <BaseAlert v-if="actionMessage" :variant="actionVariant">{{ actionMessage }}</BaseAlert>
+
+    <!-- 归还确认弹窗 -->
+    <BaseModal :open="showReturnModal" title="确认归还" @close="cancelReturn">
+      <div v-if="returnRecordInfo && returnRecordInfo.book && returnRecordInfo.record" class="return-confirm-content">
+        <p class="confirm-text">确定要归还以下图书吗？</p>
+        <div class="book-info">
+          <p class="book-title">{{ localizedTitle(returnRecordInfo.book) }}</p>
+          <p class="book-author">{{ formatAuthors(returnRecordInfo.book) }}</p>
+          <div class="borrow-info">
+            <p>
+              <span class="label">{{ t('buttons.borrow') }}：</span>
+              <span>{{ formatDate(returnRecordInfo.record.borrowDate) }}</span>
+            </p>
+            <p>
+              <span class="label">{{ t('borrowings.dueDate') }}：</span>
+              <span>{{ formatDate(returnRecordInfo.record.dueDate) }}</span>
+            </p>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <BaseButton type="button" variant="ghost" @click="cancelReturn" :disabled="returning">
+            取消
+          </BaseButton>
+          <BaseButton type="button" variant="primary" @click="confirmReturn" :disabled="returning">
+            {{ returning ? '归还中...' : '确认归还' }}
+          </BaseButton>
+        </div>
+      </div>
+    </BaseModal>
 
     <BasePanel v-if="isLoggedIn">
       <div class="section-header">
@@ -692,6 +772,67 @@ const handleRemoveFavorite = async (bookId: string) => {
   color: var(--color-danger-strong);
   border-color: var(--color-danger-strong);
   box-shadow: 0 12px 22px var(--color-danger-soft);
+}
+
+.return-confirm-content {
+  padding: 1rem 0;
+}
+
+.confirm-text {
+  margin: 0 0 1.5rem;
+  font-size: var(--text-base);
+  color: var(--color-ink);
+  font-weight: var(--font-weight-semibold);
+}
+
+.book-info {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: var(--color-surface-soft);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+}
+
+.book-info .book-title {
+  margin: 0 0 0.5rem;
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-ink);
+}
+
+.book-info .book-author {
+  margin: 0 0 1rem;
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+}
+
+.borrow-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.borrow-info p {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-ink);
+}
+
+.borrow-info .label {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-muted);
+  margin-right: 0.5rem;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border);
 }
 
 @media (max-width: 768px) {
