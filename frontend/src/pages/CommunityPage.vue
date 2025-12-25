@@ -406,24 +406,24 @@ watch(currentUser, () => {
 </script>
 
 <template>
-  <div class="community-page">
-    <header class="page-header">
+  <div class="community-page u-stack-lg">
+    <header class="page-header u-stack-sm">
       <h1>社区</h1>
       <p class="subtitle">与书友分享阅读心得，交流读书乐趣</p>
     </header>
 
-    <div class="community-container">
+    <div class="community-container u-grid">
       <!-- 左侧：排行榜和公告栏 -->
-      <div class="sidebar-left">
+      <div class="sidebar-left u-stack">
         <!-- 阅读之星排行榜 -->
         <BasePanel>
           <h2 class="section-title">阅读之星</h2>
           <div v-if="loadingStars" class="loading">加载中...</div>
-          <div v-else class="leaderboard-list">
-            <div v-for="(user, index) in readingStars" :key="user.id" class="leaderboard-item">
+          <div v-else class="leaderboard-list u-stack">
+            <div v-for="(user, index) in readingStars" :key="user.id" class="leaderboard-item u-inline u-inline-md">
               <div class="rank">{{ index + 1 }}</div>
-              <div class="user-info">
-                <div class="avatar" :style="{ backgroundColor: user.avatarColor }">
+              <div class="user-info u-inline u-inline-sm">
+                <div class="avatar u-center" :style="{ backgroundColor: user.avatarColor }">
                   {{ user.name?.charAt(0) }}
                 </div>
                 <div>
@@ -438,7 +438,7 @@ watch(currentUser, () => {
         <!-- 公告栏 -->
         <BasePanel>
           <h2 class="section-title">公告栏</h2>
-          <div class="announcement-list">
+          <div class="announcement-list u-stack">
             <div v-for="announcement in announcements" :key="announcement.id" class="announcement-item">
               <h3 class="announcement-title">{{ announcement.title }}</h3>
               <p class="announcement-content">{{ announcement.content }}</p>
@@ -451,11 +451,11 @@ watch(currentUser, () => {
       </div>
 
       <!-- 右侧：UGC动态 -->
-      <div class="content-right">
+      <div class="content-right u-stack">
         <!-- 发布动态表单 -->
         <BasePanel v-if="isLoggedIn">
-          <div class="form-header">
-            <div class="avatar" :style="{ backgroundColor: currentUser?.avatarColor || '#6b7280' }">
+          <div class="form-header u-inline">
+            <div class="avatar u-center" :style="{ backgroundColor: currentUser?.avatarColor || '#6b7280' }">
               {{ currentUser?.name?.charAt(0) }}
             </div>
             <p class="user-name">{{ currentUser?.name }}</p>
@@ -467,14 +467,14 @@ watch(currentUser, () => {
           ></textarea>
 
           <!-- 图片预览区域 -->
-          <div v-if="newPostImages.length > 0" class="image-previews">
+          <div v-if="newPostImages.length > 0" class="image-previews u-inline u-inline-sm u-wrap">
             <div v-for="(img, index) in newPostImages" :key="index" class="image-preview">
               <img :src="img" alt="Preview" class="preview-img">
-              <button type="button" class="remove-img" @click="removeImage(index)">×</button>
+              <button type="button" class="remove-img u-center" @click="removeImage(index)">×</button>
             </div>
           </div>
 
-          <div class="form-actions">
+          <div class="form-actions u-inline">
             <!-- 图片上传按钮 -->
             <button type="button" class="upload-btn" @click="triggerImageUpload">
               📷 上传图片
@@ -509,10 +509,10 @@ watch(currentUser, () => {
           <div v-else-if="communityPosts.length === 0" class="empty">
             <p>暂无动态，快来发布第一条吧！</p>
           </div>
-          <div v-else class="post-list">
+          <div v-else class="post-list u-stack">
             <article v-for="post in communityPosts" :key="post.id" class="post">
-              <div class="post-header">
-                <div class="avatar" :style="{ backgroundColor: post.userAvatar }">
+              <div class="post-header u-inline">
+                <div class="avatar u-center" :style="{ backgroundColor: post.userAvatar }">
                   {{ post.userName.charAt(0) }}
                 </div>
                 <div class="user-info">
@@ -521,13 +521,13 @@ watch(currentUser, () => {
                 </div>
               </div>
               <div class="post-content">{{ post.content }}</div>
-              <div v-if="post.images.length" class="post-images">
+              <div v-if="post.images.length" class="post-images u-inline u-inline-sm u-wrap">
                 <img v-for="(img, index) in post.images" :key="index" :src="img" alt="Post image">
               </div>
-              <div class="post-actions">
+              <div class="post-actions u-inline u-inline-lg">
                 <button
                   type="button"
-                  class="action-btn"
+                  class="action-btn u-inline u-inline-sm"
                   :class="{ active: isPostLiked(post.id) }"
                   @click="toggleLike(post.id)"
                 >
@@ -535,7 +535,7 @@ watch(currentUser, () => {
                 </button>
                 <button
                   type="button"
-                  class="action-btn"
+                  class="action-btn u-inline u-inline-sm"
                   @click="toggleComments(post.id)"
                 >
                   💬 {{ post.comments }}
@@ -543,21 +543,21 @@ watch(currentUser, () => {
               </div>
 
               <!-- 评论区 -->
-              <div v-if="showComments[post.id]" class="comments-section">
+              <div v-if="showComments[post.id]" class="comments-section u-stack-sm">
                 <div v-if="loadingComments[post.id]" class="loading-comments">
                   加载评论中...
                 </div>
-                <div v-else class="comments-list">
-                  <div
-                    v-for="comment in postComments[post.id] || []"
-                    :key="comment.id"
-                    class="comment-item"
-                  >
-                    <div class="comment-header">
-                      <span class="comment-author">{{ comment.userName }}</span>
-                      <div class="comment-actions">
-                        <span class="comment-date">{{ formatDate(comment.createdAt || new Date().toISOString()) }}</span>
-                        <button
+                  <div v-else class="comments-list u-stack-sm">
+                    <div
+                      v-for="comment in postComments[post.id] || []"
+                      :key="comment.id"
+                      class="comment-item"
+                    >
+                      <div class="comment-header u-split u-wrap">
+                        <span class="comment-author">{{ comment.userName }}</span>
+                        <div class="comment-actions u-inline u-inline-md">
+                          <span class="comment-date">{{ formatDate(comment.createdAt || new Date().toISOString()) }}</span>
+                          <button
                           v-if="authStore.isAdmin || authStore.isLibrarian"
                           class="delete-comment-btn"
                           @click="handleDeleteComment(post.id, comment.id)"
@@ -576,7 +576,7 @@ watch(currentUser, () => {
                 </div>
 
                 <!-- 评论输入框 -->
-                <div v-if="isLoggedIn" class="comment-input-section">
+                <div v-if="isLoggedIn" class="comment-input-section u-stack-sm">
                   <textarea
                     v-model="newComments[post.id]"
                     placeholder="写下你的评论..."
@@ -607,7 +607,6 @@ watch(currentUser, () => {
 
 .page-header {
   text-align: center;
-  margin-bottom: 2rem;
 }
 
 .page-header h1 {
@@ -618,21 +617,18 @@ watch(currentUser, () => {
 .subtitle {
   color: var(--color-subtle);
   font-size: 1.1rem;
-  margin-top: 0.5rem;
+  margin-top: 0;
 }
 
 .community-container {
-  display: grid;
   grid-template-columns: 320px 1fr;
-  gap: 2rem;
+  gap: var(--space-6);
   max-width: 1200px;
   margin: 0 auto;
 }
 
 .sidebar-left {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+  gap: var(--space-5);
 }
 
 .section-title {
@@ -642,15 +638,9 @@ watch(currentUser, () => {
 }
 
 .leaderboard-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
 }
 
 .leaderboard-item {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
   padding: 0.8rem;
   border-radius: var(--radius-lg);
   background: var(--color-surface-soft);
@@ -678,9 +668,6 @@ watch(currentUser, () => {
 }
 
 .user-info {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
   flex: 1;
 }
 
@@ -689,9 +676,6 @@ watch(currentUser, () => {
   height: 40px;
   border-radius: 50%;
   color: var(--color-surface);
-  display: flex;
-  align-items: center;
-  justify-content: center;
   font-weight: 600;
   font-size: 1rem;
 }
@@ -708,9 +692,6 @@ watch(currentUser, () => {
 }
 
 .announcement-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
 }
 
 .announcement-item {
@@ -740,16 +721,12 @@ watch(currentUser, () => {
 }
 
 .content-right {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+  gap: var(--space-5);
 }
 
 .form-header {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
   margin-bottom: 1rem;
+  --layout-inline-gap: var(--space-3);
 }
 
 textarea {
@@ -771,9 +748,6 @@ textarea:focus {
 }
 
 .image-previews {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
   margin: 1rem 0;
 }
 
@@ -804,9 +778,6 @@ textarea:focus {
   border: none;
   font-size: 14px;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .upload-btn {
@@ -818,7 +789,6 @@ textarea:focus {
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
-  margin-right: 1rem;
 }
 
 .upload-btn:hover {
@@ -826,9 +796,9 @@ textarea:focus {
 }
 
 .form-actions {
-  display: flex;
   justify-content: flex-end;
   margin-top: 1rem;
+  --layout-inline-gap: var(--space-4);
 }
 
 .publish {
@@ -836,9 +806,7 @@ textarea:focus {
 }
 
 .post-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+  gap: var(--space-5);
 }
 
 .post {
@@ -851,10 +819,8 @@ textarea:focus {
 }
 
 .post-header {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
   margin-bottom: 0.8rem;
+  --layout-inline-gap: var(--space-3);
 }
 
 .post-time {
@@ -876,12 +842,9 @@ textarea:focus {
 .post-images img {
   max-width: 100%;
   border-radius: var(--radius-sm);
-  margin-right: 0.5rem;
 }
 
 .post-actions {
-  display: flex;
-  gap: 1.5rem;
 }
 
 .action-btn {
@@ -890,9 +853,6 @@ textarea:focus {
   color: var(--color-subtle);
   font-size: 0.9rem;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
   padding: 0.3rem 0;
 }
 
@@ -919,12 +879,7 @@ textarea:focus {
   font-size: 0.9rem;
 }
 
-.comments-list {
-  margin-bottom: 1rem;
-}
-
 .comment-item {
-  margin-bottom: 0.8rem;
   padding: 0.8rem;
   background: var(--color-surface-soft);
   border-radius: var(--radius-md);
@@ -932,8 +887,6 @@ textarea:focus {
 }
 
 .comment-header {
-  display: flex;
-  justify-content: space-between;
   margin-bottom: 0.5rem;
   font-size: 0.9rem;
 }
@@ -944,9 +897,6 @@ textarea:focus {
 }
 
 .comment-actions {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
 }
 
 .comment-date {
@@ -983,7 +933,6 @@ textarea:focus {
 }
 
 .comment-input-section {
-  margin-top: 1rem;
 }
 
 .comment-input {
@@ -1005,7 +954,6 @@ textarea:focus {
 }
 
 .submit-comment-btn {
-  margin-top: 0.5rem;
   background: var(--color-primary);
   color: var(--color-surface);
   border: none;

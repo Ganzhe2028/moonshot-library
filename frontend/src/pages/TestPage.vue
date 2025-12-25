@@ -1,5 +1,5 @@
 <template>
-  <div class="test-page">
+  <div class="test-page u-stack-lg">
     <h1>图书数据测试</h1>
     <div class="info">
       <p>图书总数: {{ libraryStore.books.length }}</p>
@@ -7,7 +7,7 @@
       <p>错误信息: {{ libraryStore.booksError || '无错误' }}</p>
     </div>
     
-    <div class="books-list" v-if="libraryStore.books.length > 0">
+    <div class="books-list u-stack-lg" v-if="libraryStore.books.length > 0">
       <h2>图书详情:</h2>
       <div v-for="book in libraryStore.books" :key="book.id" class="book-item">
         <pre>{{ JSON.stringify(book, null, 2) }}</pre>
@@ -32,20 +32,17 @@ onMounted(() => {
 .test-page {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: var(--space-6);
 }
 
 .info {
   background: #f5f5f5;
   padding: 1rem;
   border-radius: 8px;
-  margin-bottom: 2rem;
+  margin-bottom: 0;
 }
 
 .books-list {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
 }
 
 .book-item {

@@ -1,5 +1,5 @@
 <template>
-  <div class="auth-callback-container">
+  <div class="auth-callback-container u-center">
     <div class="loading-spinner">
       <p>正在处理登录...</p>
     </div>
@@ -14,9 +14,6 @@
 <style scoped>
 .auth-callback-container {
   min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .loading-spinner {

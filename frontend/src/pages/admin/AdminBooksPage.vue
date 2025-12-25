@@ -359,14 +359,14 @@ onMounted(() => {
 </script>
 
 <template>
-  <div :class="['grid', { single: !showForm }]">
+  <div :class="['grid', 'u-grid', { single: !showForm }]">
     <BaseCard padding="sm" radius="lg" shadow="none">
-      <div class="panel-head">
+      <div class="panel-head u-split u-wrap">
         <div>
           <p class="eyebrow">{{ t('admin.books.listTitle') }}</p>
           <h2>{{ t('admin.books.listTitle') }}</h2>
         </div>
-        <div class="head-actions">
+        <div class="head-actions u-inline u-inline-sm">
           <BaseButton type="button" variant="ghost" size="sm" @click="reload">
             {{ t('admin.books.refresh') }}
           </BaseButton>
@@ -382,7 +382,7 @@ onMounted(() => {
           <p class="hint">
             {{ t('admin.books.import.hint') }}
           </p>
-          <div class="import-actions">
+          <div class="import-actions u-inline u-inline-sm u-wrap">
             <BaseButton type="button" variant="ghost" size="sm" @click="downloadTemplate">
               {{ t('admin.books.import.download') }}
             </BaseButton>
@@ -430,15 +430,15 @@ onMounted(() => {
       </div>
 
       <div v-if="libraryStore.booksLoading" class="hint">{{ t('admin.books.loading') || '...' }}</div>
-      <div v-else class="table">
-        <div class="table-head">
+      <div v-else class="table u-stack-sm">
+        <div class="table-head u-grid">
           <span>{{ t('admin.books.table.title') }}</span>
           <span>{{ t('admin.books.table.category') }}</span>
           <span>{{ t('admin.books.table.stock') }}</span>
           <span>{{ t('admin.books.table.status') }}</span>
           <span class="actions-col">{{ t('admin.books.table.actions') }}</span>
         </div>
-        <div v-for="book in books" :key="book.id" class="table-row">
+        <div v-for="book in books" :key="book.id" class="table-row u-grid">
           <div>
             <p class="book-title">{{ titleForLocale(book) }}</p>
             <p class="book-meta">{{ authorsForLocale(book).join(' / ') }}</p>
@@ -448,7 +448,7 @@ onMounted(() => {
           <BaseBadge :variant="statusBadge(book.status).variant">
             {{ statusBadge(book.status).text }}
           </BaseBadge>
-          <div class="row-actions">
+          <div class="row-actions u-inline u-inline-sm">
             <BaseButton type="button" variant="ghost" size="sm" @click="startEdit(book.id)">
               {{ t('admin.books.edit') }}
             </BaseButton>
@@ -462,7 +462,7 @@ onMounted(() => {
     </BaseCard>
 
     <BaseCard v-if="showForm" class="form-panel" padding="sm" radius="lg" shadow="none">
-      <div class="panel-head">
+      <div class="panel-head u-split u-wrap">
         <div>
           <p class="eyebrow">{{ t('admin.books.formTitleCreate') }}</p>
           <h2>{{ editingId ? t('admin.books.formTitleEdit') : t('admin.books.formTitleCreate') }}</h2>
@@ -472,45 +472,45 @@ onMounted(() => {
         </BaseButton>
       </div>
 
-      <form class="form" @submit.prevent="handleSubmit">
+      <form class="form u-stack" @submit.prevent="handleSubmit">
         <p class="hint note">{{ t('admin.books.form.bilingualHint') }}</p>
-        <label>
+        <label class="u-stack">
           {{ t('admin.books.form.title') }}
           <input v-model="form.title" type="text" :placeholder="t('admin.books.form.title')" required />
         </label>
-        <label>
+        <label class="u-stack">
           {{ t('admin.books.form.titleEn') }}
           <input v-model="form.titleEn" type="text" :placeholder="t('admin.books.form.titleEn')" />
         </label>
-        <label>
+        <label class="u-stack">
           {{ t('admin.books.form.authors') }}
           <input v-model="form.authors" type="text" :placeholder="t('admin.books.form.authors')" required />
         </label>
-        <label>
+        <label class="u-stack">
           {{ t('admin.books.form.authorsEn') }}
           <input v-model="form.authorsEn" type="text" :placeholder="t('admin.books.form.authorsEn')" />
         </label>
-        <label>
+        <label class="u-stack">
           {{ t('admin.books.form.category') }}
           <input v-model="form.category" type="text" :placeholder="t('admin.books.form.category')" required />
         </label>
-        <label>
+        <label class="u-stack">
           {{ t('admin.books.form.categoryEn') }}
           <input v-model="form.categoryEn" type="text" :placeholder="t('admin.books.form.categoryEn')" />
         </label>
 
-        <div class="two-cols">
-          <label>
+        <div class="two-cols u-grid">
+          <label class="u-stack">
             {{ t('admin.books.form.total') }}
             <input v-model.number="form.totalCopies" type="number" min="1" />
           </label>
-          <label>
+          <label class="u-stack">
             {{ t('admin.books.form.available') }}
             <input v-model.number="form.availableCopies" type="number" min="0" />
           </label>
         </div>
 
-        <label>
+        <label class="u-stack">
           {{ t('admin.books.form.status') }}
           <select v-model="form.status">
             <option v-for="option in statusOptions" :key="option.value" :value="option.value">
@@ -519,57 +519,57 @@ onMounted(() => {
           </select>
         </label>
 
-        <label>
+        <label class="u-stack">
           {{ t('admin.books.form.tags') }}
           <input v-model="form.tags" type="text" :placeholder="t('admin.books.form.tags')" />
         </label>
-        <label>
+        <label class="u-stack">
           {{ t('admin.books.form.tagsEn') }}
           <input v-model="form.tagsEn" type="text" :placeholder="t('admin.books.form.tagsEn')" />
         </label>
 
-        <div class="two-cols">
-          <label>
+        <div class="two-cols u-grid">
+          <label class="u-stack">
             ISBN
             <input v-model="form.isbn" type="text" />
           </label>
-          <label>
+          <label class="u-stack">
             {{ t('admin.books.form.publisher') }}
             <input v-model="form.publisher" type="text" />
           </label>
         </div>
 
-        <label>
+        <label class="u-stack">
           {{ t('admin.books.form.publisherEn') }}
           <input v-model="form.publisherEn" type="text" />
         </label>
 
-        <div class="two-cols">
-          <label>
+        <div class="two-cols u-grid">
+          <label class="u-stack">
             {{ t('admin.books.form.year') }}
             <input v-model="form.publishedYear" type="number" min="1900" max="2100" />
           </label>
-          <label>
+          <label class="u-stack">
             字数
             <input v-model="form.word_count" type="number" min="0" placeholder="输入书籍字数" />
           </label>
         </div>
 
-        <div class="two-cols">
-          <label>
+        <div class="two-cols u-grid">
+          <label class="u-stack">
             {{ t('admin.books.form.location') }}
             <input v-model="form.location" type="text" placeholder="A区-101" />
           </label>
         </div>
 
-        <label>
+        <label class="u-stack">
           图书封面
-          <div class="cover-upload">
+          <div class="cover-upload u-stack">
             <div v-if="coverPreview || form.coverImage" class="cover-preview">
               <img :src="coverPreview || form.coverImage" alt="封面预览" />
-              <button type="button" class="remove-cover" @click="removeCover">×</button>
+              <button type="button" class="remove-cover u-center" @click="removeCover">×</button>
             </div>
-            <div v-else class="cover-placeholder">
+            <div v-else class="cover-placeholder u-stack">
               <p>点击上传封面</p>
               <p class="hint">支持 JPG、PNG、WebP、GIF，最大 5MB</p>
             </div>
@@ -586,11 +586,11 @@ onMounted(() => {
           </div>
         </label>
 
-        <label>
+        <label class="u-stack">
           {{ t('admin.books.form.desc') }}
           <textarea v-model="form.description" rows="3" :placeholder="t('admin.books.form.desc')" />
         </label>
-        <label>
+        <label class="u-stack">
           {{ t('admin.books.form.descEn') }}
           <textarea v-model="form.descriptionEn" rows="3" :placeholder="t('admin.books.form.descEn')" />
         </label>
@@ -607,9 +607,7 @@ onMounted(() => {
 
 <style scoped>
 .grid {
-  display: grid;
   grid-template-columns: 1.2fr 1fr;
-  gap: 1rem;
 }
 
 .grid.single {
@@ -617,16 +615,10 @@ onMounted(() => {
 }
 
 .panel-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
   margin-bottom: 0.5rem;
 }
 
 .head-actions {
-  display: flex;
-  gap: 0.5rem;
 }
 
 .eyebrow {
@@ -642,16 +634,13 @@ onMounted(() => {
 }
 
 .table {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
+  gap: var(--space-2);
 }
 
 .table-head,
 .table-row {
-  display: grid;
   grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
-  gap: 0.6rem;
+  gap: var(--space-3);
   align-items: center;
 }
 
@@ -682,8 +671,6 @@ onMounted(() => {
 }
 
 .row-actions {
-  display: flex;
-  gap: 0.4rem;
   justify-content: flex-end;
 }
 
@@ -694,15 +681,11 @@ onMounted(() => {
 }
 
 .form {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+  gap: var(--space-3);
 }
 
 label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
+  gap: var(--space-2);
   font-weight: 600;
   color: var(--color-ink);
 }
@@ -718,9 +701,8 @@ select {
 }
 
 .two-cols {
-  display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.6rem;
+  gap: var(--space-3);
 }
 
 .import-strip {
@@ -732,10 +714,7 @@ select {
 }
 
 .import-actions {
-  display: flex;
-  gap: 0.5rem;
   margin: 0.5rem 0;
-  flex-wrap: wrap;
 }
 
 .file-name {
@@ -774,9 +753,7 @@ select {
 }
 
 .cover-upload {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+  gap: var(--space-3);
 }
 
 .cover-preview {
@@ -809,9 +786,6 @@ select {
   cursor: pointer;
   font-size: 1.5rem;
   line-height: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   transition: background 0.2s;
 }
 
@@ -825,17 +799,16 @@ select {
   aspect-ratio: 3/4;
   border: 2px dashed var(--color-border-strong);
   border-radius: var(--radius-sm);
-  display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 1.5rem;
   background: var(--color-surface-soft);
   text-align: center;
+  gap: var(--space-2);
 }
 
 .cover-placeholder p {
-  margin: 0.25rem 0;
+  margin: 0;
   color: var(--color-muted);
 }
 

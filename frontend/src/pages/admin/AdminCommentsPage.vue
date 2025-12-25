@@ -99,8 +99,8 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="admin-comments-page">
-    <header class="page-header">
+  <div class="admin-comments-page u-stack-lg">
+    <header class="page-header u-stack-sm">
       <h1>社区评论管理</h1>
       <p class="subtitle">管理所有社区动态中的评论</p>
     </header>
@@ -109,7 +109,7 @@ onMounted(() => {
     <BaseAlert v-if="actionMessage" :variant="actionVariant">{{ actionMessage }}</BaseAlert>
 
     <!-- 搜索过滤 -->
-    <div class="filter-section">
+    <div class="filter-section u-split u-wrap">
       <BaseInput
         v-model="filterText"
         type="text"
@@ -131,8 +131,8 @@ onMounted(() => {
           :key="item.comment.id"
           class="comment-card"
         >
-          <div class="comment-header">
-            <div class="comment-info">
+          <div class="comment-header u-split u-wrap">
+            <div class="comment-info u-inline u-inline-sm">
               <span class="comment-author">{{ item.comment.userName }}</span>
               <span class="comment-date">{{ formatDate(item.comment.createdAt) }}</span>
             </div>
@@ -164,13 +164,9 @@ onMounted(() => {
 
 <style scoped>
 .admin-comments-page {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
 }
 
 .page-header {
-  margin-bottom: 2rem;
 }
 
 .page-header h1 {
@@ -181,17 +177,12 @@ onMounted(() => {
 }
 
 .subtitle {
-  margin: 0.5rem 0 0;
+  margin: 0;
   color: var(--color-subtle);
 }
 
 .filter-section {
-  margin-bottom: 1.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 1rem;
+  margin-bottom: 0;
 }
 
 .search-input {
@@ -230,16 +221,10 @@ onMounted(() => {
 }
 
 .comment-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   margin-bottom: 0.75rem;
 }
 
 .comment-info {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
 }
 
 .comment-author {

@@ -170,7 +170,7 @@ onMounted(() => {
 
 <template>
   <BaseCard padding="sm" radius="lg" shadow="none" class="limit-card">
-    <div class="panel-head">
+    <div class="panel-head u-split u-wrap">
       <div>
         <p class="eyebrow">{{ t('admin.borrowings.limitTitle') }}</p>
         <h2>{{ t('admin.borrowings.limitTitle') }}</h2>
@@ -178,7 +178,7 @@ onMounted(() => {
       </div>
     </div>
 
-    <div class="limit-form">
+    <div class="limit-form u-inline u-wrap">
       <div class="limit-field">
         <label for="maxActiveBorrowings">{{ t('admin.borrowings.limitLabel') }}</label>
         <BaseInput
@@ -191,7 +191,7 @@ onMounted(() => {
         />
         <small>{{ t('admin.borrowings.limitHint') }}</small>
       </div>
-      <div class="limit-actions">
+      <div class="limit-actions u-inline u-inline-sm">
         <BaseButton
           type="button"
           variant="primary"
@@ -209,12 +209,12 @@ onMounted(() => {
   </BaseCard>
 
   <BaseCard padding="sm" radius="lg" shadow="none">
-    <div class="panel-head">
+    <div class="panel-head u-split u-wrap">
       <div>
         <p class="eyebrow">{{ t('admin.borrowings.title') }}</p>
         <h2>{{ t('admin.borrowings.title') }}</h2>
       </div>
-      <div class="actions">
+      <div class="actions u-inline u-inline-sm">
         <select v-model="statusFilter">
           <option value="all">{{ t('admin.users.filterAll') }}</option>
           <option value="active">{{ t('admin.borrowings.status.active') || '借阅中' }}</option>
@@ -231,15 +231,15 @@ onMounted(() => {
     <BaseAlert v-else-if="adminStore.borrowingsError" variant="error">
       {{ adminStore.borrowingsError }}
     </BaseAlert>
-    <div v-else class="table">
-      <div class="table-head">
+    <div v-else class="table u-stack-sm">
+      <div class="table-head u-grid">
         <span>{{ t('admin.borrowings.columns.book') }}</span>
         <span>{{ t('admin.borrowings.columns.user') }}</span>
         <span>{{ t('admin.borrowings.columns.borrowDate') }}</span>
         <span>{{ t('admin.borrowings.columns.dueDate') }}</span>
         <span>{{ t('admin.borrowings.columns.status') }}</span>
       </div>
-      <div v-for="item in borrowingRows" :key="item.record.id" class="table-row">
+      <div v-for="item in borrowingRows" :key="item.record.id" class="table-row u-grid">
         <span>{{ item.bookTitle }}</span>
         <span>{{ item.userName }}</span>
         <span>{{ item.record.borrowDate }}</span>
@@ -268,18 +268,18 @@ onMounted(() => {
   >
     <BaseAlert v-if="submitError" variant="error">{{ submitError }}</BaseAlert>
 
-    <div class="form-group">
+    <div class="form-group u-stack">
       <label for="borrowDate">{{ t('admin.borrowings.columns.borrowDate') }}</label>
       <BaseInput type="datetime-local" id="borrowDate" v-model="formData.borrowDate" required />
       <small>{{ t('admin.borrowings.editHint.borrowDate') || '支持精确到秒的时间修改' }}</small>
     </div>
 
-    <div class="form-group">
+    <div class="form-group u-stack">
       <label for="dueDate">{{ t('admin.borrowings.columns.dueDate') }}</label>
       <BaseInput type="datetime-local" id="dueDate" v-model="formData.dueDate" required />
     </div>
 
-    <div class="form-group">
+    <div class="form-group u-stack">
       <label for="status">{{ t('admin.borrowings.columns.status') }}</label>
       <select id="status" v-model="formData.status" required>
         <option value="active">{{ t('admin.borrowings.status.active') || '借阅中' }}</option>
@@ -301,10 +301,6 @@ onMounted(() => {
 
 <style scoped>
 .panel-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
   margin-bottom: 0.5rem;
 }
 
@@ -326,9 +322,6 @@ onMounted(() => {
 }
 
 .actions {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
 }
 
 select {
@@ -340,26 +333,22 @@ select {
 }
 
 .table {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
+  gap: var(--space-2);
 }
 
 .table-head,
 .table-row {
-  display: grid;
   grid-template-columns: 2fr 1.2fr 1fr 1fr 1fr 0.8fr;
-  gap: 0.6rem;
+  gap: var(--space-3);
   align-items: center;
 }
 
 .form-group {
   margin-bottom: 1.2rem;
+  gap: var(--space-2);
 }
 
 .form-group label {
-  display: block;
-  margin-bottom: 0.4rem;
   font-weight: 500;
   color: var(--color-ink);
 }
@@ -385,10 +374,7 @@ select {
 }
 
 .limit-form {
-  display: flex;
-  gap: 1rem;
   align-items: flex-end;
-  flex-wrap: wrap;
 }
 
 .limit-field {
@@ -410,9 +396,6 @@ select {
 }
 
 .limit-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
 }
 
 @media (max-width: 768px) {

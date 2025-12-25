@@ -33,8 +33,8 @@ const tabs = computed(() => [
 </script>
 
 <template>
-  <div class="admin-shell">
-    <header class="admin-header">
+  <div class="admin-shell u-stack">
+    <header class="admin-header u-split u-wrap">
       <div>
         <p class="eyebrow">{{ t('admin.layout.title') }}</p>
         <h1>Moonshot Library Admin</h1>
@@ -43,7 +43,7 @@ const tabs = computed(() => [
       <RouterLink to="/" class="back-home">← {{ t('common.home') }}</RouterLink>
     </header>
 
-    <nav class="admin-nav">
+    <nav class="admin-nav u-inline u-inline-sm u-wrap">
       <RouterLink
         v-for="tab in tabs"
         :key="tab.path"
@@ -63,16 +63,9 @@ const tabs = computed(() => [
 <style scoped>
 .admin-shell {
   padding: 1rem 0 3rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
 }
 
 .admin-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
 }
 
 .eyebrow {
@@ -101,9 +94,6 @@ h1 {
 }
 
 .admin-nav {
-  display: flex;
-  gap: 0.6rem;
-  flex-wrap: wrap;
 }
 
 .admin-nav a {

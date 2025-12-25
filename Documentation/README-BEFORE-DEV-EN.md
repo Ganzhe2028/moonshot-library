@@ -27,3 +27,10 @@ This file is for developers and AI assistants to keep outputs consistent, mainta
 - Credit API: `GET /api/users/:id/credit` (self/admin/librarian), `PUT /api/users/:id/credit` (admin/librarian only). Only `score` (0–100) and `remarks` are editable; level/status are derived from score (≥90 excellent, ≥70 good, ≥50 warn, else suspended). Default score 80; auto-recovery +10 every 3 days on access, capped at 100.
 - Business rules: score <50 blocks borrowing/rating/comment; score <70 blocks renew; backend enforces borrow/renew restrictions—mirror on the frontend if needed.
 - Frontend usage: favorites via `favoriteService` + `libraryStore` (`fetch/add/remove`); credit via `creditService` + `libraryStore.credit` (loaded on auth change). Admin users page includes “Edit credit” modal for score edits; MyBorrowings shows credit badge/state.
+
+---
+
+## 15. UI Handoff & Alignment (new)
+- Handoff checklist + spec template: `Documentation/UI-HANDOFF-EN.md` (CN: `Documentation/UI-HANDOFF-CN.md`).
+- Alignment tokens/utilities: `frontend/src/assets/main.css` (use `u-stack`, `u-inline`, `u-center`, etc.).
+- Minimum acceptance: layout uses global utilities, responsive breakpoints verified, loading/empty/error/disabled states covered, data mapping confirmed, and i18n strings in language files.

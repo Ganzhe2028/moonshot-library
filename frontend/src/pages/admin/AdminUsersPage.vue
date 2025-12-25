@@ -193,7 +193,7 @@ const saveUserChanges = async () => {
   saveError.value = ''
   try {
     // 准备更新参数，对于admin用户不更新角色
-    const updateParams: any = {
+    const updateParams: Partial<AuthUser> = {
       membership: editingUser.membership,
       grade: editingUser.grade
     }
@@ -237,12 +237,12 @@ onMounted(() => {
 
 <template>
   <BaseCard padding="sm" radius="lg" shadow="none">
-    <div class="panel-head">
+    <div class="panel-head u-split u-wrap">
       <div>
         <p class="eyebrow">{{ t('admin.users.title') }}</p>
         <h2>{{ t('admin.users.title') }}</h2>
       </div>
-      <div class="actions">
+      <div class="actions u-inline u-inline-sm">
         <select v-model="roleFilter">
           <option value="all">{{ t('admin.users.filterAll') }}</option>
           <option value="student">{{ t('auth.student') }}</option>
@@ -260,14 +260,14 @@ onMounted(() => {
     <BaseAlert v-else-if="adminStore.usersError" variant="error">
       {{ adminStore.usersError }}
     </BaseAlert>
-    <div v-else class="table">
-      <div class="table-head">
+    <div v-else class="table u-stack-sm">
+      <div class="table-head u-grid">
         <span>{{ t('auth.name') }} / {{ t('auth.email') }}</span>
         <span>{{ t('auth.role') }}</span>
         <span>{{ t('admin.users.membership') }}</span>
         <span>{{ t('auth.grade') }}</span>
       </div>
-      <div v-for="user in users" :key="user.id" class="table-row">
+      <div v-for="user in users" :key="user.id" class="table-row u-grid">
         <div>
           <p class="title">{{ user.name }}</p>
           <p class="meta">{{ user.email }}</p>
@@ -277,7 +277,7 @@ onMounted(() => {
           {{ membershipBadge(user.membership).text }}
         </BaseBadge>
         <span>{{ user.grade || '--' }}</span>
-        <div class="row-actions">
+        <div class="row-actions u-inline u-inline-sm">
           <BaseButton type="button" variant="ghost" size="sm" @click="openEditDialog(user)">
             {{ t('admin.edit') }}
           </BaseButton>
@@ -298,7 +298,7 @@ onMounted(() => {
   >
     <BaseAlert v-if="saveError" variant="error">{{ saveError }}</BaseAlert>
 
-    <div class="form-group">
+    <div class="form-group u-stack">
       <label>{{ t('auth.role') }}</label>
       <div v-if="editingUser.role === 'admin'" class="form-group-readonly">
         <span class="role-display">{{ t('auth.role') }}: Admin</span>
@@ -313,7 +313,7 @@ onMounted(() => {
       </select>
     </div>
 
-    <div class="form-group">
+    <div class="form-group u-stack">
       <label>{{ t('admin.users.membership') }}</label>
       <select v-model="editingUser.membership" :disabled="isSaving">
         <option value="active">{{ t('admin.users.membershipActive') }}</option>
@@ -321,7 +321,7 @@ onMounted(() => {
       </select>
     </div>
 
-    <div class="form-group">
+    <div class="form-group u-stack">
       <label>{{ t('auth.grade') }}</label>
       <BaseInput
         type="text"
@@ -346,7 +346,7 @@ onMounted(() => {
     <BaseAlert v-if="creditError" variant="error">{{ creditError }}</BaseAlert>
     <div v-else-if="creditLoading" class="hint">{{ t('admin.users.loadingCredit') }}</div>
     <template v-else>
-      <div class="form-group">
+      <div class="form-group u-stack">
         <label>{{ t('admin.users.creditScore') }}</label>
         <BaseInput
           type="number"
@@ -357,14 +357,14 @@ onMounted(() => {
         />
         <small class="readonly-hint">{{ t('admin.users.creditLevel') }}: {{ creditForm.level }}</small>
       </div>
-      <div class="form-group">
+      <div class="form-group u-stack">
         <label>{{ t('admin.users.creditLevel') }}</label>
         <div class="form-group-readonly">
           <span class="role-display">{{ t('admin.users.creditLevel') }}: {{ creditForm.level }}</span>
           <small class="readonly-hint">{{ t('admin.users.creditStatus') }}: {{ creditForm.status }}</small>
         </div>
       </div>
-      <div class="form-group">
+      <div class="form-group u-stack">
         <label>{{ t('admin.users.creditRemarks') }}</label>
         <textarea v-model="creditForm.remarks" rows="3" :disabled="creditLoading"></textarea>
       </div>
@@ -383,10 +383,6 @@ onMounted(() => {
 
 <style scoped>
 .panel-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
   margin-bottom: 0.5rem;
 }
 
@@ -403,14 +399,9 @@ onMounted(() => {
 }
 
 .actions {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
 }
 
 .row-actions {
-  display: flex;
-  gap: 0.5rem;
   justify-content: flex-end;
 }
 
@@ -423,16 +414,13 @@ select {
 }
 
 .table {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
+  gap: var(--space-2);
 }
 
 .table-head,
 .table-row {
-  display: grid;
   grid-template-columns: 2fr 1fr 1fr 1fr auto;
-  gap: 0.6rem;
+  gap: var(--space-3);
   align-items: center;
 }
 
@@ -473,11 +461,10 @@ select {
 /* 模态框样式 */
 .form-group {
   margin-bottom: 1rem;
+  gap: var(--space-2);
 }
 
 .form-group label {
-  display: block;
-  margin-bottom: 0.5rem;
   font-weight: 500;
   color: var(--color-ink);
 }

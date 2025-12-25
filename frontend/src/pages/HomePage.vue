@@ -119,16 +119,18 @@ watch(
 </script>
 
 <template>
-  <div class="page">
-    <section class="hero">
-      <p class="eyebrow">{{ t('home.eyebrow') }}</p>
-      <h1>{{ t('home.title') }}</h1>
-      <p class="subtitle">
-        {{ t('home.subtitle') }}
-      </p>
+  <div class="page u-stack-lg">
+    <section class="hero u-stack-lg">
+      <div class="hero-copy u-stack-sm">
+        <p class="eyebrow">{{ t('home.eyebrow') }}</p>
+        <h1>{{ t('home.title') }}</h1>
+        <p class="subtitle">
+          {{ t('home.subtitle') }}
+        </p>
+      </div>
 
-      <div class="search-card">
-        <div class="search-input">
+      <div class="search-card u-stack">
+        <div class="search-input u-inline u-inline-sm">
           <input
             v-model="searchQuery"
             type="search"
@@ -137,7 +139,7 @@ watch(
           <button type="button">{{ t('home.search') }}</button>
         </div>
 
-        <div class="search-meta">
+        <div class="search-meta u-inline u-inline-xl u-wrap">
           <div>
             <p class="meta-eyebrow">{{ t('home.total') }}</p>
             <p class="meta-value">{{ libraryStore.books.length }}</p>
@@ -151,7 +153,7 @@ watch(
       </div>
     </section>
 
-    <section class="status-panel" v-if="nextDue">
+    <section class="status-panel u-inline u-inline-md" v-if="nextDue">
       <div class="status-badge">{{ t('home.nextDue') }}</div>
       <div>
         <p class="status-title">{{ localizedTitle(nextDue!.book) }}</p>
@@ -163,9 +165,9 @@ watch(
       <RouterLink class="status-action" to="/borrowings">{{ t('home.manageBorrowings') }}</RouterLink>
     </section>
 
-    <section class="filters">
+    <section class="filters u-split u-wrap">
       <p>{{ t('home.quickFilter') }}</p>
-      <div class="chips">
+      <div class="chips u-inline u-inline-sm u-wrap">
         <button
           v-for="filter in filters"
           :key="filter"
@@ -193,9 +195,9 @@ watch(
       </div>
     </section>
 
-    <section class="tags" v-if="spotlightTags.length">
+    <section class="tags u-stack" v-if="spotlightTags.length">
       <p class="tags-title">{{ t('home.hotTags') }}</p>
-      <div class="tag-grid">
+      <div class="tag-grid u-inline u-inline-sm u-wrap">
         <span v-for="tag in spotlightTags" :key="tag">{{ tag }}</span>
       </div>
     </section>
@@ -204,14 +206,11 @@ watch(
 
 <style scoped>
 .page {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-  padding-bottom: 3rem;
+  padding-bottom: var(--space-7);
 }
 
 .hero {
-  padding: 3rem 0 1rem;
+  padding: var(--space-7) 0 var(--space-4);
 }
 
 .eyebrow {
@@ -219,7 +218,7 @@ watch(
   letter-spacing: 0.18em;
   font-size: var(--text-xs);
   color: var(--color-subtle);
-  margin-bottom: 0.5rem;
+  margin: 0;
 }
 
 .hero h1 {
@@ -231,24 +230,20 @@ watch(
 .subtitle {
   max-width: 640px;
   color: var(--color-muted);
-  margin-bottom: 1.6rem;
+  margin: 0;
   font-size: var(--text-md);
 }
 
 .search-card {
   background: var(--color-surface);
   border-radius: var(--radius-xl);
-  padding: 1.5rem;
+  padding: var(--space-5);
   border: 1px solid var(--color-border);
   box-shadow: var(--shadow-soft);
-  display: flex;
-  flex-direction: column;
-  gap: 1.2rem;
 }
 
 .search-input {
-  display: flex;
-  gap: 0.5rem;
+  width: 100%;
 }
 
 .search-input input {
@@ -264,15 +259,8 @@ watch(
   background: var(--cta-gradient);
   color: #fff;
   border-radius: var(--radius-md);
-  padding: 0 1.5rem;
+  padding: 0 var(--space-5);
   box-shadow: 0 12px 28px var(--color-primary-soft);
-}
-
-.search-meta {
-  display: flex;
-  align-items: center;
-  gap: 2rem;
-  flex-wrap: wrap;
 }
 
 .meta-eyebrow {
@@ -294,10 +282,7 @@ watch(
 .status-panel {
   background: var(--panel-gradient);
   border-radius: var(--radius-xl);
-  padding: 1.4rem 1.8rem;
-  display: flex;
-  align-items: center;
-  gap: 1.2rem;
+  padding: var(--space-5) var(--space-6);
   border: 1px solid var(--color-border);
 }
 
@@ -326,19 +311,6 @@ watch(
   color: var(--color-primary);
 }
 
-.filters {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.chips {
-  display: flex;
-  gap: 0.6rem;
-  flex-wrap: wrap;
-}
-
 .chips button {
   padding: 0.35rem 0.9rem;
   border-radius: 999px;
@@ -357,7 +329,7 @@ watch(
 .book-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 1.5rem;
+  gap: var(--space-5);
 }
 
 .empty-state {
@@ -378,16 +350,9 @@ watch(
 }
 
 .tags-title {
-  margin-top: 0;
-  margin-bottom: 1rem;
+  margin: 0;
   font-weight: 600;
   color: var(--color-ink);
-}
-
-.tag-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.6rem;
 }
 
 .tag-grid span {

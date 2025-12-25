@@ -1,13 +1,13 @@
 <template>
-  <div class="auth-container">
+  <div class="auth-container u-inline u-center-x">
     <BaseCard class="auth-card" padding="lg" radius="xl">
-      <div class="auth-header">
+      <div class="auth-header u-stack-sm">
         <h1>{{ t('auth.registerTitle') }}</h1>
         <p>{{ t('auth.registerSubtitle') }}</p>
       </div>
 
-      <form @submit.prevent="handleRegister" class="auth-form">
-        <div class="form-group">
+      <form @submit.prevent="handleRegister" class="auth-form u-stack">
+        <div class="form-group u-stack">
           <label for="name">{{ t('auth.name') }}</label>
           <BaseInput
             id="name"
@@ -19,7 +19,7 @@
           />
         </div>
 
-        <div class="form-group">
+        <div class="form-group u-stack">
           <label for="email">{{ t('auth.email') }}</label>
           <BaseInput
             id="email"
@@ -31,7 +31,7 @@
           />
         </div>
 
-        <div class="form-group">
+        <div class="form-group u-stack">
           <label for="password">{{ t('auth.password') }}</label>
           <BaseInput
             id="password"
@@ -44,7 +44,7 @@
           />
         </div>
 
-        <div class="form-group">
+        <div class="form-group u-stack">
           <label for="role">{{ t('auth.role') }}</label>
           <select
             id="role"
@@ -59,7 +59,7 @@
           </select>
         </div>
 
-        <div class="form-group" v-if="registerForm.role === 'student'">
+        <div class="form-group u-stack" v-if="registerForm.role === 'student'">
           <label for="grade">{{ t('auth.grade') }}</label>
           <BaseInput
             id="grade"
@@ -77,7 +77,7 @@
         </BaseButton>
       </form>
 
-      <div class="auth-footer">
+      <div class="auth-footer u-stack-sm">
         <p>{{ t('auth.hasAccount') }}</p>
         <router-link to="/login" class="link-button">{{ t('auth.loginNow') }}</router-link>
       </div>
@@ -141,9 +141,7 @@ const handleRegister = async () => {
 
 <style scoped>
 .auth-container {
-  display: flex;
-  justify-content: center;
-  padding: 3rem 1.5rem 4rem;
+  padding: var(--space-7) var(--space-5) var(--space-8);
 }
 
 .auth-card {
@@ -153,14 +151,14 @@ const handleRegister = async () => {
 
 .auth-header {
   text-align: center;
-  margin-bottom: 2rem;
+  margin-bottom: var(--space-6);
 }
 
 .auth-header h1 {
   font-size: 2rem;
   font-weight: 700;
   color: var(--color-ink);
-  margin-bottom: 0.5rem;
+  margin-bottom: 0;
 }
 
 .auth-header p {
@@ -169,15 +167,11 @@ const handleRegister = async () => {
 }
 
 .auth-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+  gap: var(--space-5);
 }
 
 .form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--space-2);
 }
 
 .form-group label {
@@ -210,14 +204,14 @@ const handleRegister = async () => {
 
 .auth-footer {
   text-align: center;
-  margin-top: 2rem;
-  padding-top: 2rem;
+  margin-top: var(--space-6);
+  padding-top: var(--space-6);
   border-top: 1px solid var(--color-border);
 }
 
 .auth-footer p {
   color: var(--color-muted);
-  margin-bottom: 0.5rem;
+  margin-bottom: 0;
 }
 
 .link-button {

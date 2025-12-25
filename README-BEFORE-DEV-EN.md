@@ -120,4 +120,11 @@ This document defines shared rules for developers and AI code assistants to keep
 
 ---
 
+## 14. UI Handoff & Alignment (new)
+- Handoff checklist + spec template: `Documentation/UI-HANDOFF-EN.md` (CN: `Documentation/UI-HANDOFF-CN.md`).
+- Alignment tokens/utilities: `frontend/src/assets/main.css` (use `u-stack`, `u-inline`, `u-center`, etc.).
+- Minimum acceptance: layout uses global utilities, responsive breakpoints verified, loading/empty/error/disabled states covered, data mapping confirmed, and i18n strings in language files.
+
+---
+
 Adhering to these rules reduces style drift across developers and AI models, cuts regression risk, and improves collaboration efficiency.

@@ -277,9 +277,9 @@ const handleRemoveFavorite = async (bookId: string) => {
 </script>
 
 <template>
-  <div class="page">
-    <section v-if="isLoggedIn" class="profile">
-      <div class="avatar" :style="avatarStyle">
+  <div class="page u-stack-lg">
+    <section v-if="isLoggedIn" class="profile u-inline u-inline-md">
+      <div class="avatar u-center" :style="avatarStyle">
         {{ userInitials }}
       </div>
       <div>
@@ -292,7 +292,7 @@ const handleRemoveFavorite = async (bookId: string) => {
         </p>
       </div>
     </section>
-    <section v-else class="profile not-logged">
+    <section v-else class="profile not-logged u-inline u-inline-md u-center-x">
       <div>
         <p class="eyebrow">{{ t('borrowings.loginHintTitle') }}</p>
         <h1>{{ t('borrowings.loginHint') }}</h1>
@@ -300,7 +300,7 @@ const handleRemoveFavorite = async (bookId: string) => {
       </div>
     </section>
 
-    <section class="summary">
+    <section class="summary u-grid">
       <div v-for="card in summaryCards" :key="card.label" class="summary-card">
         <p class="label">{{ card.label }}</p>
         <p class="value">{{ card.value }}</p>
@@ -312,12 +312,15 @@ const handleRemoveFavorite = async (bookId: string) => {
 
     <!-- 归还确认弹窗 -->
     <BaseModal :open="showReturnModal" title="确认归还" @close="cancelReturn">
-      <div v-if="returnRecordInfo && returnRecordInfo.book && returnRecordInfo.record" class="return-confirm-content">
+      <div
+        v-if="returnRecordInfo && returnRecordInfo.book && returnRecordInfo.record"
+        class="return-confirm-content u-stack"
+      >
         <p class="confirm-text">确定要归还以下图书吗？</p>
         <div class="book-info">
           <p class="book-title">{{ localizedTitle(returnRecordInfo.book) }}</p>
           <p class="book-author">{{ formatAuthors(returnRecordInfo.book) }}</p>
-          <div class="borrow-info">
+          <div class="borrow-info u-stack">
             <p>
               <span class="label">{{ t('buttons.borrow') }}：</span>
               <span>{{ formatDate(returnRecordInfo.record.borrowDate) }}</span>
@@ -328,7 +331,7 @@ const handleRemoveFavorite = async (bookId: string) => {
             </p>
           </div>
         </div>
-        <div class="modal-actions">
+        <div class="modal-actions u-inline u-inline-sm">
           <BaseButton type="button" variant="ghost" @click="cancelReturn" :disabled="returning">
             取消
           </BaseButton>
@@ -340,16 +343,16 @@ const handleRemoveFavorite = async (bookId: string) => {
     </BaseModal>
 
     <BasePanel v-if="isLoggedIn">
-      <div class="section-header">
+      <div class="section-header u-split u-wrap">
         <div>
           <p class="eyebrow">{{ t('borrowings.currentTab') }}</p>
           <h2>{{ t('borrowings.current') }}</h2>
         </div>
       </div>
 
-      <div v-if="activeBorrowings.length" class="borrowing-grid">
+      <div v-if="activeBorrowings.length" class="borrowing-grid u-stack">
         <article v-for="item in activeBorrowings" :key="item.record.id" class="borrowing-card">
-          <div class="card-head">
+          <div class="card-head u-split u-wrap">
             <p class="book-title">{{ localizedTitle(item.book) }}</p>
             <span class="due" :class="{ warning: daysUntil(item.record.dueDate) <= 3 }">
               {{ dueLabel(item.record.dueDate) }}
@@ -360,7 +363,7 @@ const handleRemoveFavorite = async (bookId: string) => {
             {{ t('buttons.borrow') }}：{{ formatDate(item.record.borrowDate) }} · {{ t('borrowings.dueDate') }}：
             {{ formatDate(item.record.dueDate) }}
           </p>
-          <div class="actions">
+          <div class="actions u-inline u-inline-sm u-wrap">
             <BaseButton type="button" variant="secondary" @click="handleReturn(item.record.id)">
               {{ t('borrowings.return') }}
             </BaseButton>
@@ -390,15 +393,15 @@ const handleRemoveFavorite = async (bookId: string) => {
     </BasePanel>
 
     <BasePanel v-if="isLoggedIn">
-      <div class="section-header">
+      <div class="section-header u-split u-wrap">
         <div>
           <p class="eyebrow">{{ t('borrowings.historyTab') }}</p>
           <h2>{{ t('borrowings.historyTab') }}</h2>
         </div>
       </div>
 
-      <div v-if="historyRecords.length" class="history-list">
-        <article v-for="item in historyRecords" :key="item.record.id">
+      <div v-if="historyRecords.length" class="history-list u-stack">
+        <article v-for="item in historyRecords" :key="item.record.id" class="history-row u-split u-wrap">
           <div>
             <p class="book-title">{{ localizedTitle(item.book) }}</p>
             <p class="book-author">{{ formatAuthors(item.book) }}</p>
@@ -421,7 +424,7 @@ const handleRemoveFavorite = async (bookId: string) => {
       </div>
     </BasePanel>
 
-    <section v-if="isLoggedIn" class="credit">
+    <section v-if="isLoggedIn" class="credit u-split u-wrap">
       <div>
         <p class="eyebrow">{{ t('borrowings.credit.title') }}</p>
         <h2>{{ t('borrowings.credit.title') }}：{{ creditSummary.levelText }}</h2>
@@ -436,7 +439,7 @@ const handleRemoveFavorite = async (bookId: string) => {
       </div>
     </section>
 
-    <section v-if="isLoggedIn" class="favorites">
+    <section v-if="isLoggedIn" class="favorites u-stack">
       <div class="section-header">
         <div>
           <p class="eyebrow">{{ t('borrowings.favorites.title') }}</p>
@@ -448,8 +451,8 @@ const handleRemoveFavorite = async (bookId: string) => {
       <div v-if="favoritesLoading" class="empty-state">
         <p>{{ t('borrowings.favorites.loading') }}</p>
       </div>
-      <div v-else-if="favoriteBooks.length" class="favorite-grid">
-        <div v-for="book in favoriteBooks" :key="book.id" class="favorite-row">
+      <div v-else-if="favoriteBooks.length" class="favorite-grid u-stack">
+        <div v-for="book in favoriteBooks" :key="book.id" class="favorite-row u-split u-wrap">
           <div>
             <p class="fav-title">{{ localizedTitle(book) }}</p>
             <p class="fav-author">{{ formatAuthors(book) }}</p>
@@ -472,10 +475,7 @@ const handleRemoveFavorite = async (bookId: string) => {
 
 <style scoped>
 .page {
-  padding: 1rem 0 3rem;
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
+  padding: var(--space-4) 0 var(--space-7);
 }
 
 .eyebrow {
@@ -487,14 +487,12 @@ const handleRemoveFavorite = async (bookId: string) => {
 }
 
 .profile {
-  display: flex;
-  gap: 1rem;
   background: var(--color-surface);
   padding: 1.5rem;
   border-radius: var(--radius-xl);
   border: 1px solid var(--color-border);
-  align-items: center;
   box-shadow: var(--shadow-soft);
+  --layout-inline-gap: var(--space-4);
 }
 
 .profile.not-logged {
@@ -507,8 +505,6 @@ const handleRemoveFavorite = async (bookId: string) => {
   height: 58px;
   border-radius: var(--radius-lg);
   color: #fff;
-  display: grid;
-  place-items: center;
   font-size: 1.5rem;
   font-weight: 600;
 }
@@ -523,9 +519,7 @@ const handleRemoveFavorite = async (bookId: string) => {
   margin-top: 0.2rem;
 }
 .summary {
-  display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 1rem;
 }
 
 .summary-card {
@@ -551,16 +545,10 @@ const handleRemoveFavorite = async (bookId: string) => {
 }
 
 .section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   margin-bottom: 1rem;
 }
 
 .borrowing-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
 }
 
 .borrowing-card {
@@ -571,10 +559,6 @@ const handleRemoveFavorite = async (bookId: string) => {
 }
 
 .card-head {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  align-items: center;
 }
 
 .book-title {
@@ -606,9 +590,6 @@ const handleRemoveFavorite = async (bookId: string) => {
 }
 
 .actions {
-  display: flex;
-  gap: 0.6rem;
-  flex-wrap: wrap;
   margin-top: 0.9rem;
 }
 
@@ -627,22 +608,14 @@ const handleRemoveFavorite = async (bookId: string) => {
 }
 
 .history-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
 }
 
-.history-list article {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+.history-row {
   padding-bottom: 0.8rem;
   border-bottom: 1px solid var(--color-border);
 }
 
-.history-list article:last-child {
+.history-row:last-child {
   border-bottom: none;
 }
 
@@ -656,10 +629,6 @@ const handleRemoveFavorite = async (bookId: string) => {
 }
 
 .credit {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);
@@ -723,16 +692,9 @@ const handleRemoveFavorite = async (bookId: string) => {
 }
 
 .favorite-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 0.8rem;
 }
 
 .favorite-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
   padding: 1rem 1.2rem;
   border-radius: var(--radius-lg);
   border: 1px solid var(--color-border);
@@ -807,11 +769,9 @@ const handleRemoveFavorite = async (bookId: string) => {
 }
 
 .borrow-info {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
   padding-top: 1rem;
   border-top: 1px solid var(--color-border);
+  gap: var(--space-2);
 }
 
 .borrow-info p {
@@ -827,9 +787,7 @@ const handleRemoveFavorite = async (bookId: string) => {
 }
 
 .modal-actions {
-  display: flex;
   justify-content: flex-end;
-  gap: 0.75rem;
   margin-top: 1.5rem;
   padding-top: 1rem;
   border-top: 1px solid var(--color-border);

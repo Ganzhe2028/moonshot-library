@@ -141,8 +141,8 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="admin-announcements-page">
-    <header class="page-header">
+  <div class="admin-announcements-page u-stack-lg">
+    <header class="page-header u-stack-sm">
       <h1>{{ t('admin.announcements.title') || '公告管理' }}</h1>
       <p class="subtitle">{{ t('admin.announcements.subtitle') || '管理社区页面的公告信息' }}</p>
     </header>
@@ -154,7 +154,7 @@ onMounted(() => {
     <template v-else>
       <BaseAlert v-if="actionMessage" :variant="actionVariant">{{ actionMessage }}</BaseAlert>
 
-      <div class="actions-bar">
+      <div class="actions-bar u-inline">
         <BaseButton type="button" variant="primary" size="sm" @click="openCreateForm" :disabled="loading">
           {{ t('admin.create') || '创建公告' }}
         </BaseButton>
@@ -169,11 +169,11 @@ onMounted(() => {
           <p>{{ t('admin.noData') || '暂无公告数据' }}</p>
         </div>
 
-        <div v-else class="announcement-list">
+        <div v-else class="announcement-list u-stack">
           <div v-for="announcement in announcements" :key="announcement.id" class="announcement-card">
-            <div class="card-header">
+            <div class="card-header u-split u-wrap">
               <h3 class="announcement-title">{{ announcement.title }}</h3>
-              <div class="card-actions">
+              <div class="card-actions u-inline u-inline-sm">
                 <BaseButton type="button" variant="ghost" size="sm" @click="openEditForm(announcement)">
                   {{ t('admin.edit') || '编辑' }}
                 </BaseButton>
@@ -183,7 +183,7 @@ onMounted(() => {
               </div>
             </div>
             <p class="announcement-content">{{ announcement.content }}</p>
-            <div class="announcement-meta">
+            <div class="announcement-meta u-split u-wrap">
               <span>{{ announcement.author }}</span>
               <span>{{ formatDate(announcement.createdAt) }}</span>
             </div>
@@ -197,17 +197,17 @@ onMounted(() => {
         :title="editingAnnouncement ? '编辑公告' : '创建公告'"
         @close="showCreateForm = false"
       >
-        <div class="form-group">
+        <div class="form-group u-stack">
           <label for="title">{{ t('admin.title') || '标题' }}</label>
           <BaseInput id="title" v-model="form.title" type="text" placeholder="请输入公告标题" />
         </div>
 
-        <div class="form-group">
+        <div class="form-group u-stack">
           <label for="content">{{ t('admin.content') || '内容' }}</label>
           <textarea id="content" v-model="form.content" rows="6" placeholder="请输入公告内容"></textarea>
         </div>
 
-        <div class="form-group">
+        <div class="form-group u-stack">
           <label for="author">{{ t('admin.author') || '作者' }}</label>
           <BaseInput
             id="author"
@@ -237,7 +237,6 @@ onMounted(() => {
 }
 
 .page-header {
-  margin-bottom: 2rem;
 }
 
 .page-header h1 {
@@ -247,7 +246,7 @@ onMounted(() => {
 
 .subtitle {
   color: var(--color-subtle);
-  margin-top: 0.5rem;
+  margin-top: 0;
 }
 
 .not-authorized {
@@ -260,8 +259,7 @@ onMounted(() => {
 }
 
 .actions-bar {
-  margin-bottom: 1.5rem;
-  display: flex;
+  margin-bottom: 0;
   justify-content: flex-end;
 }
 
@@ -273,9 +271,6 @@ onMounted(() => {
 }
 
 .announcement-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1.2rem;
 }
 
 .announcement-card {
@@ -286,11 +281,7 @@ onMounted(() => {
 }
 
 .card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
   margin-bottom: 0.8rem;
-  gap: 1rem;
 }
 
 .announcement-title {
@@ -301,8 +292,6 @@ onMounted(() => {
 }
 
 .card-actions {
-  display: flex;
-  gap: 0.6rem;
 }
 
 .announcement-content {
@@ -316,8 +305,6 @@ onMounted(() => {
 }
 
 .announcement-meta {
-  display: flex;
-  justify-content: space-between;
   font-size: 0.85rem;
   color: var(--color-subtle);
 }
@@ -329,8 +316,6 @@ onMounted(() => {
 }
 
 .form-group label {
-  display: block;
-  margin-bottom: 0.4rem;
   font-weight: 500;
   color: var(--color-ink);
 }

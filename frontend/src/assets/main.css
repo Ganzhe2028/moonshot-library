@@ -19,6 +19,21 @@
   --line-snug: 1.35;
   --line-relaxed: 1.55;
 
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4rem;
+
+  --layout-content-max: 1200px;
+  --layout-content-narrow: 760px;
+  --layout-page-padding: clamp(1.25rem, 2.5vw, 2.5rem);
+  --layout-section-gap: var(--space-6);
+  --layout-inline-gap: var(--space-3);
+
   --radius-xs: 10px;
   --radius-sm: 12px;
   --radius-md: 14px;
@@ -130,4 +145,70 @@ p {
   margin: 0;
   color: var(--color-muted);
   line-height: var(--line-relaxed);
+}
+
+.u-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.u-stack-sm {
+  gap: var(--space-3);
+}
+
+.u-stack-lg {
+  gap: var(--space-6);
+}
+
+.u-inline {
+  display: flex;
+  align-items: center;
+  gap: var(--layout-inline-gap);
+}
+
+.u-inline-sm {
+  gap: var(--space-2);
+}
+
+.u-inline-md {
+  gap: var(--space-4);
+}
+
+.u-inline-lg {
+  gap: var(--space-5);
+}
+
+.u-inline-xl {
+  gap: var(--space-6);
+}
+
+.u-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.u-center-x {
+  justify-content: center;
+}
+
+.u-center-y {
+  align-items: center;
+}
+
+.u-split {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.u-wrap {
+  flex-wrap: wrap;
+}
+
+.u-grid {
+  display: grid;
+  gap: var(--space-4);
 }

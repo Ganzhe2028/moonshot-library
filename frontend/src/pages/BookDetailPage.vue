@@ -230,7 +230,7 @@ const coverImage = computed(
 </script>
 
 <template>
-  <div v-if="book" class="page">
+  <div v-if="book" class="page u-stack-lg">
     <button type="button" class="back" @click="goBack">← {{ t('bookDetail.back') }}</button>
     <section class="header">
       <div class="cover" :style="{ backgroundImage: `url(${coverImage})` }" />
@@ -239,7 +239,7 @@ const coverImage = computed(
         <h1>{{ displayTitle }}</h1>
         <p class="author">{{ t('bookDetail.info') }} · {{ authorLine }}</p>
 
-        <div class="rating-section">
+        <div class="rating-section u-inline u-inline-sm">
           <RatingStars
             :average-rating="book.averageRating || 0"
             :show-average="true"
@@ -256,11 +256,11 @@ const coverImage = computed(
         <p class="summary">{{ displayDescription }}</p>
 
 
-        <div class="tags">
+        <div class="tags u-inline u-inline-sm u-wrap">
           <span v-for="tag in displayTags" :key="tag">{{ tag }}</span>
         </div>
 
-        <div class="actions">
+        <div class="actions u-inline u-wrap">
           <BaseButton
             type="button"
             variant="primary"
@@ -349,10 +349,7 @@ const coverImage = computed(
 
 <style scoped>
 .page {
-  padding: 1rem 0 3rem;
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
+  padding: var(--space-4) 0 var(--space-7);
 }
 
 .back {
@@ -367,7 +364,7 @@ const coverImage = computed(
 .header {
   display: grid;
   grid-template-columns: 320px 1fr;
-  gap: 2rem;
+  gap: var(--space-6);
 }
 
 .cover {
@@ -396,10 +393,7 @@ h1 {
 }
 
 .rating-section {
-  display: flex;
-  align-items: center;
   margin-bottom: 1rem;
-  gap: 0.4rem;
 }
 
 .rating-count {
@@ -418,9 +412,6 @@ h1 {
 }
 
 .tags {
-  display: flex;
-  gap: 0.6rem;
-  flex-wrap: wrap;
   margin: 1rem 0 1.5rem;
 }
 
@@ -432,30 +423,24 @@ h1 {
   font-size: var(--text-sm);
 }
 
-.actions {
-  display: flex;
-  gap: 0.8rem;
-  flex-wrap: wrap;
+.actions + .base-alert {
+  margin-top: var(--space-3);
 }
 
 .borrow-button {
   min-width: 160px;
 }
 
-.actions + .base-alert {
-  margin-top: 0.8rem;
-}
-
 .details {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 1.5rem;
+  gap: var(--space-5);
 }
 
 .card {
   background: var(--color-surface);
   border-radius: var(--radius-xl);
-  padding: 1.5rem;
+  padding: var(--space-5);
   border: 1px solid var(--color-border);
   box-shadow: var(--shadow-soft);
 }
@@ -497,7 +482,7 @@ dd {
 }
 
 .missing {
-  padding: 3rem 0;
+  padding: var(--space-7) 0;
   text-align: center;
 }
 
@@ -510,7 +495,7 @@ dd {
 }
 
 .comments-section {
-  margin-top: 3rem;
+  margin-top: var(--space-7);
 }
 
 @media (max-width: 900px) {

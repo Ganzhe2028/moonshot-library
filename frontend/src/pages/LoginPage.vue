@@ -1,13 +1,13 @@
 <template>
-  <div class="auth-container">
+  <div class="auth-container u-inline u-center-x">
     <BaseCard class="auth-card" padding="lg" radius="xl">
-      <div class="auth-header">
+      <div class="auth-header u-stack-sm">
         <h1>{{ t('auth.loginTitle') }}</h1>
         <p>{{ t('auth.loginSubtitle') }}</p>
       </div>
 
-      <form @submit.prevent="handleLogin" class="auth-form">
-        <div class="form-group">
+      <form @submit.prevent="handleLogin" class="auth-form u-stack">
+        <div class="form-group u-stack">
           <label for="email">{{ t('auth.email') }}</label>
           <BaseInput
             id="email"
@@ -19,7 +19,7 @@
           />
         </div>
 
-        <div class="form-group">
+        <div class="form-group u-stack">
           <label for="password">{{ t('auth.password') }}</label>
           <BaseInput
             id="password"
@@ -39,7 +39,7 @@
       </form>
 
       <!-- 分隔线 -->
-      <div class="divider">
+      <div class="divider u-inline u-inline-sm">
         <div class="divider-line"></div>
         <span class="divider-text">{{ t('auth.divider') }}</span>
         <div class="divider-line"></div>
@@ -78,7 +78,7 @@
         </button>
       </div>
 
-      <div class="auth-footer">
+      <div class="auth-footer u-stack-sm">
         <p>{{ t('auth.registerPrompt') }}</p>
         <router-link to="/register" class="link-button">{{ t('auth.registerLink') }}</router-link>
       </div>
@@ -194,9 +194,7 @@ const handleM365Login = async () => {
 
 <style scoped>
 .auth-container {
-  display: flex;
-  justify-content: center;
-  padding: 3rem 1.5rem 4rem;
+  padding: var(--space-7) var(--space-5) var(--space-8);
 }
 
 .auth-card {
@@ -206,14 +204,14 @@ const handleM365Login = async () => {
 
 .auth-header {
   text-align: center;
-  margin-bottom: 2rem;
+  margin-bottom: var(--space-6);
 }
 
 .auth-header h1 {
   font-size: 2rem;
   font-weight: 700;
   color: var(--color-ink);
-  margin-bottom: 0.5rem;
+  margin-bottom: 0;
 }
 
 .auth-header p {
@@ -222,15 +220,11 @@ const handleM365Login = async () => {
 }
 
 .auth-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+  gap: var(--space-5);
 }
 
 .form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--space-2);
 }
 
 .form-group label {
@@ -241,9 +235,7 @@ const handleM365Login = async () => {
 
 /* 分隔线样式 */
 .divider {
-  display: flex;
-  align-items: center;
-  margin: 2rem 0;
+  margin: var(--space-6) 0;
   color: var(--color-subtle);
   font-size: 0.875rem;
 }
@@ -267,8 +259,8 @@ const handleM365Login = async () => {
 
 .auth-footer {
   text-align: center;
-  margin-top: 2rem;
-  padding-top: 2rem;
+  margin-top: var(--space-6);
+  padding-top: var(--space-6);
   border-top: 1px solid var(--color-border);
 }
 
@@ -324,7 +316,7 @@ const handleM365Login = async () => {
 
 .auth-footer p {
   color: var(--color-muted);
-  margin-bottom: 0.5rem;
+  margin-bottom: 0;
 }
 
 .link-button {
