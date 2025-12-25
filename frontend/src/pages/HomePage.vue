@@ -259,7 +259,7 @@ watch(
   background: var(--cta-gradient);
   color: #fff;
   border-radius: var(--radius-md);
-  padding: 0 var(--space-5);
+  padding: 0.75rem var(--space-5);
   box-shadow: 0 12px 28px var(--color-primary-soft);
 }
 
