@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { body, validationResult, query } from 'express-validator';
 import { validationResult as validationResultType } from 'express-validator';
 import { createUser, getUserByEmail, verifyPassword, getUserById } from '../models/user';
-import { generateToken, generateRefreshToken } from '../utils/auth';
+import { generateToken, generateRefreshToken, verifyRefreshToken } from '../utils/auth';
 import { msalService } from '../utils/msalService';
 import { ApiResponse, LoginRequest, RegisterRequest, AuthRequest } from '../types';
 import { AppError, ValidationError } from '../middleware/errorHandler';
@@ -187,11 +187,8 @@ export const refreshToken = async (req: Request, res: Response): Promise<void> =
       throw new AppError('Refresh token required', 400);
     }
 
-    // 这里应该验证刷新令牌，为了简化，我们直接使用访问令牌逻辑
-    // 在实际应用中，刷新令牌应该有不同的验证逻辑和存储机制
-    const { id } = JSON.parse(atob(refreshToken.split('.')[1]));
-    
-    const user = await getUserByEmail(id); // 这里简化处理
+    const payload = verifyRefreshToken(refreshToken);
+    const user = await getUserById(payload.id);
     if (!user) {
       throw new AppError('Invalid refresh token', 401);
     }

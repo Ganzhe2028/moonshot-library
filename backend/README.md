@@ -76,12 +76,20 @@ JWT_SECRET=your-super-secret-jwt-key-here
 JWT_EXPIRES_IN=24h
 REFRESH_TOKEN_SECRET=your-refresh-token-secret-here
 REFRESH_TOKEN_EXPIRES_IN=7d
+SESSION_SECRET=your-session-secret-here
 
 # Database
-DATABASE_PATH=./data/library.db
+DB_PATH=./database/library.db
 
 # Frontend URL (for CORS)
 FRONTEND_URL=http://localhost:5173
+ALLOWED_DOMAINS=your-domain.com,api.your-domain.com
+
+# Rate Limiting
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX=5000
+AUTH_RATE_LIMIT_WINDOW_MS=900000
+AUTH_RATE_LIMIT_MAX=20
 
 # Borrowing Rules
 BORROWING_PERIOD_DAYS=21

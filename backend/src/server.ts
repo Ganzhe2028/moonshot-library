@@ -23,6 +23,51 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const NODE_ENV = process.env.NODE_ENV || 'development';
+const isProduction = NODE_ENV === 'production';
+
+const normalizeOrigin = (origin: string): string => origin.replace(/\/$/, '');
+
+const parseEnvInt = (value: string | undefined, fallback: number): number => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+};
+
+const allowedOrigins = new Set<string>(
+  [process.env.FRONTEND_URL].filter(Boolean).map((origin) => normalizeOrigin(origin as string))
+);
+const allowedDomainSuffixes = (process.env.ALLOWED_DOMAINS || '')
+  .split(',')
+  .map((domain) => domain.trim().toLowerCase())
+  .filter(Boolean);
+
+const apiRateLimitWindowMs = parseEnvInt(process.env.RATE_LIMIT_WINDOW_MS, 15 * 60 * 1000);
+const apiRateLimitMax = parseEnvInt(process.env.RATE_LIMIT_MAX, isProduction ? 5000 : 1000);
+
+const validateRuntimeConfig = (): void => {
+  if (!isProduction) {
+    return;
+  }
+
+  const secrets = [
+    { name: 'JWT_SECRET', value: process.env.JWT_SECRET },
+    { name: 'REFRESH_TOKEN_SECRET', value: process.env.REFRESH_TOKEN_SECRET },
+    { name: 'SESSION_SECRET', value: process.env.SESSION_SECRET }
+  ];
+
+  const weakSecrets = secrets
+    .filter((secret) => !secret.value || secret.value.length < 16 || secret.value.includes('your-'))
+    .map((secret) => secret.name);
+
+  if (weakSecrets.length > 0) {
+    console.error(`❌ Missing/weak secrets in production: ${weakSecrets.join(', ')}`);
+    process.exit(1);
+  }
+
+  if (allowedOrigins.size === 0 && allowedDomainSuffixes.length === 0) {
+    console.warn('⚠️  No CORS allowlist set in production (FRONTEND_URL or ALLOWED_DOMAINS).');
+  }
+};
 
 // Swagger配置
 const swaggerOptions = {
@@ -69,6 +114,7 @@ const swaggerSpec = swaggerJsdoc(swaggerOptions);
 
 const startServer = async () => {
   try {
+    validateRuntimeConfig();
     await initDatabase();
     await ensureDemoAccounts();
 
@@ -84,44 +130,52 @@ const startServer = async () => {
 };
 
 // 安全中间件
+app.disable('x-powered-by');
 app.use(helmet());
 
 // CORS 配置 - 支持多个开发端口
-const allowedOrigins = [
-  process.env.FRONTEND_URL,
-  'http://localhost:5173',
-  'http://localhost:5174',
-  'http://localhost:3000',
-  'http://localhost:8080'
-].filter(Boolean) as string[];
+if (!isProduction) {
+  [
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'http://localhost:3000',
+    'http://localhost:8080'
+  ].forEach((origin) => allowedOrigins.add(origin));
+}
 
 app.use(cors({
   origin: (origin, callback) => {
-    // 开发环境下，允许所有 localhost 请求
-    if (!origin ||
-        origin.startsWith('http://localhost') ||
-        process.env.NODE_ENV === 'development') {
+    if (!origin) {
       return callback(null, true);
     }
 
-    // 检查 origin 是否在允许列表中
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else if (process.env.NODE_ENV === 'production') {
-      // 生产环境下，从环境变量读取允许的域名列表
-      const allowedDomains = process.env.ALLOWED_DOMAINS ?
-        process.env.ALLOWED_DOMAINS.split(',') : [];
-
-      if (allowedDomains.some(domain => origin.includes(domain))) {
-        callback(null, true);
-      } else {
-        // 生产环境默认允许来自服务器自身的请求
-        callback(null, true);
-      }
-    } else {
-      // 仅在严格模式下拒绝请求
-      callback(new Error('Not allowed by CORS'));
+    if (!isProduction) {
+      return callback(null, true);
     }
+
+    const normalizedOrigin = normalizeOrigin(origin);
+
+    if (allowedOrigins.has(normalizedOrigin)) {
+      return callback(null, true);
+    }
+
+    if (allowedDomainSuffixes.length > 0) {
+      try {
+        const { hostname } = new URL(normalizedOrigin);
+        const hostnameLower = hostname.toLowerCase();
+        const isAllowedDomain = allowedDomainSuffixes.some(
+          (domain) => hostnameLower === domain || hostnameLower.endsWith(`.${domain}`)
+        );
+
+        if (isAllowedDomain) {
+          return callback(null, true);
+        }
+      } catch {
+        // Invalid origin; reject below.
+      }
+    }
+
+    return callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -148,9 +202,11 @@ app.use(session({
 
 // 请求限制
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 分钟
-  max: 100, // 限制每个 IP 15 分钟内最多 100 个请求
-  message: '请求过于频繁，请稍后再试'
+  windowMs: apiRateLimitWindowMs, // 15 分钟
+  max: apiRateLimitMax, // 限制每个 IP 在窗口内的请求数
+  message: '请求过于频繁，请稍后再试',
+  standardHeaders: true,
+  legacyHeaders: false
 });
 app.use('/api/', limiter);
 

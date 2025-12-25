@@ -13,8 +13,30 @@ import {
   validateMsalAuth
 } from '../controllers/authController';
 import { authenticate } from '../middleware/auth';
+import rateLimit from 'express-rate-limit';
 
 const router = Router();
+
+const parseEnvInt = (value: string | undefined, fallback: number): number => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+};
+
+const authRateLimitWindowMs = parseEnvInt(process.env.AUTH_RATE_LIMIT_WINDOW_MS, 15 * 60 * 1000);
+const authRateLimitMax = parseEnvInt(process.env.AUTH_RATE_LIMIT_MAX, 20);
+
+const authLimiter = rateLimit({
+  windowMs: authRateLimitWindowMs,
+  max: authRateLimitMax,
+  message: 'Too many authentication attempts, please try again later',
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true,
+  keyGenerator: (req) => {
+    const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+    return email ? `email:${email}` : `ip:${req.ip}`;
+  }
+});
 
 /**
  * @swagger
@@ -90,7 +112,7 @@ const router = Router();
  *       409:
  *         description: 用户已存在
  */
-router.post('/login', validateLogin, login);
+router.post('/login', authLimiter, validateLogin, login);
 
 /**
  * @swagger
@@ -153,7 +175,7 @@ router.post('/login', validateLogin, login);
  *       400:
  *         description: 请求参数错误
  */
-router.post('/register', validateRegister, register);
+router.post('/register', authLimiter, validateRegister, register);
 
 /**
  * @swagger
@@ -198,7 +220,7 @@ router.post('/register', validateRegister, register);
  *       401:
  *         description: refresh token无效
  */
-router.post('/refresh', refreshToken);
+router.post('/refresh', authLimiter, refreshToken);
 
 /**
  * @swagger

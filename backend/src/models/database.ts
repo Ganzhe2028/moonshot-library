@@ -23,8 +23,12 @@ export const getDatabase = (): Database => {
       console.log('📚 Connected to SQLite database');
     });
 
-    // 启用外键约束
-    db.run('PRAGMA foreign_keys = ON');
+    // 启用外键约束与更稳定的并发设置
+    db.serialize(() => {
+      db?.run('PRAGMA foreign_keys = ON');
+      db?.run('PRAGMA journal_mode = WAL');
+      db?.run('PRAGMA busy_timeout = 5000');
+    });
   }
   return db;
 };
